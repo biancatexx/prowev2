@@ -2,7 +2,11 @@
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
-import { DayPicker, type DayContentProps } from "react-day-picker"
+import { DayPicker } from "react-day-picker"
+
+type DayContentProps = {
+  date: Date
+}
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
