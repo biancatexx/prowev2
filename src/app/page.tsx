@@ -1,103 +1,209 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import Navbar from "@/components/Navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { MapPin, Star, Heart, Search, SlidersHorizontal, Bell, ChevronDown } from "lucide-react";
+import { mockProfessionals, mockServices } from "@/data/mockData";
+import NavbarApp from "@/components/NavbarApp";
+import Link from "next/link";
 
-export default function Home() {
+interface Professional {
+  id: string;
+  name: string;
+  specialty: string | null;
+  address_city: string | null;
+  address_street: string | null;
+  address_neighborhood: string | null;
+  profile_image: string | null;
+  services?: Array<{
+    category: string;
+    price: number;
+  }>;
+}
+
+const categories = [
+  { name: "Todos", icon: "🎯" },
+  { name: "Cabelo", icon: "💇‍♀️" },
+  { name: "Manicure", icon: "💅" },
+  { name: "Estética", icon: "✨" },
+  { name: "Maquiagem", icon: "💄" },
+  { name: "Depilação", icon: "🪒" },
+  { name: "Massagem", icon: "💆‍♀️" },
+];
+
+const Explorar = () => {
+  const [selectedCategory, setSelectedCategory] = useState("Todos");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const professionals = mockProfessionals.map(prof => {
+    const profServices = mockServices.filter(s => s.professionalId === prof.id);
+    return {
+      ...prof,
+      services: profServices
+    };
+  });
+
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((fav) => fav !== id) : [...prev, id]
+    );
+  };
+
+  const getAddress = (prof: any) => {
+    return prof.address || "Endereço não informado";
+  };
+
+  const getPriceRange = (prof: any) => {
+    if (!prof.services || prof.services.length === 0) return "Consultar preços";
+    const prices = prof.services.map((s: any) => s.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
+  };
+
+  const getServices = (prof: any) => {
+    if (!prof.services || prof.services.length === 0) return "Serviços não informados";
+    return prof.services.map((s: any) => s.category).join(", ");
+  };
+
+  const filteredProfessionals = professionals.filter((prof: any) => {
+    const matchesSearch = prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      prof.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesCategory = selectedCategory === "Todos" ||
+      prof.services?.some((s: any) => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
+
+    return matchesSearch && matchesCategory;
+  });
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-background">
+      <Navbar />
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+      {/* Header com busca */}
+      <header className="bg-gradient-to-br from-primary/10 via-accent/5 to-background py-12 rounded-b-3xl pb-6 pt-12 px-4">
+        <div className="container mx-auto max-w-screen-lg px-4">
+          {/* Greeting */}
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-zinc-800">Encontre o profissional disponível mais perto de você</h1>
+            <div className="flex gap-2 hidden">
+              <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+                <Bell className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Location */}
+          <button className="flex items-center text-zinc-700 mb-6 hover:text-zinc-900">
+            <MapPin className="w-4 h-4 mr-1" />
+            <span className="text-sm">Rua Paulo Candido, Jardim Cearense</span>
+            <ChevronDown className="w-4 h-4 ml-1" />
+          </button>
+
+          {/* Search */}
+
+          <div className=" mx-auto mb-8">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="Buscar por serviço, profissional ou local..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 pr-4 py-6 text-lg rounded-xl border-2 focus:border-primary"
+              />
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </header>
+
+
+      {/* Listagem de profissionais */}
+      <section className="py-12">
+        <div className="container mx-auto max-w-screen-lg px-">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-2xl font-bold">Profissionais Perto de Você</h2>
+              <p className="text-muted-foreground mt-1">
+                {loading ? "Carregando..." : `${filteredProfessionals.length} profissionais encontrados`}
+              </p>
+            </div>
+            <Button variant="outline" size="default">
+              <SlidersHorizontal className="mr-2 w-4 h-4" />
+              Filtros
+            </Button>
+          </div>
+
+          {/* Lista de profissionais */}
+          <div className="space-y-4">
+            {loading ? (
+              <p className="text-center text-muted-foreground">Carregando profissionais...</p>
+            ) : filteredProfessionals.length === 0 ? (
+              <p className="text-center text-muted-foreground">Nenhum profissional encontrado.</p>
+            ) : (
+              filteredProfessionals.map((professional) => (
+                <div
+                  key={professional.id}
+                  className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="flex gap-3">
+                    {/* Profile Image */}
+                    <Link href={`/profissional/${professional.id}`} className="flex-shrink-0">
+                      <img
+                        src={(professional as any).profileImage || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=100&h=100&fit=crop"}
+                        alt={professional.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    </Link>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/profissional/${professional.id}`}>
+                        <h3 className="font-bold text-foreground mb-1">{professional.name}</h3>
+                        <p className="text-sm text-muted-foreground mb-1 truncate">
+                          {getServices(professional)}
+                        </p>
+                        <p className="text-sm font-semibold text-foreground mb-2">
+                          {getPriceRange(professional)}
+                        </p>
+                      </Link>
+
+                    </div>
+
+                    {/* Favorite Button */}
+                    <button
+                      onClick={() => toggleFavorite(professional.id)}
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
+                      aria-label="Adicionar aos favoritos"
+                    >
+                      <Heart
+                        className={`w-5 h-5 ${favorites.includes(professional.id)
+                          ? "fill-red-500 text-red-500"
+                          : "text-zinc-400"
+                          }`}
+                      />
+                    </button>
+                  </div>
+                  <div className="border-t border-border mt-2 pt-4">
+
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <MapPin className="w-3 h-3 mr-1" />
+                      <span className="truncate">{getAddress(professional)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </section>
+
+      <NavbarApp />
     </div>
   );
-}
+};
+
+export default Explorar;
