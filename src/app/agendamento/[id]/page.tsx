@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, Edit2, Plus, X } from "lucide-react"
+import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { saveAppointment, mockProfessionals, mockServices } from "@/data/mockData"
 
@@ -101,6 +101,17 @@ export default function Agendamento() {
     })
   }
 
+  const handleClearServices = () => {
+    setSelectedServices([])
+    toast.success("Serviços limpos")
+  }
+
+  const handleClearDateTime = () => {
+    setDate(undefined)
+    setSelectedTime("")
+    toast.success("Data e horário limpos")
+  }
+
   const handleOpenServicesModal = () => {
     setShowServicesModal(true)
   }
@@ -110,13 +121,13 @@ export default function Agendamento() {
   }
 
   const handleConfirm = () => {
-    if (!cliente) {
+    if (!isProfessional && !whatsapp) {
       toast.error("Preencha o WhatsApp")
       whatsappRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
       whatsappRef.current?.focus()
       return
     }
-    if (!isProfessional && !whatsapp) {
+    if (!cliente) {
       toast.error("Preencha o nome do cliente")
       clienteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
       clienteRef.current?.focus()
@@ -181,7 +192,7 @@ export default function Agendamento() {
 
       setTimeout(() => {
         if (isProfessional) {
-          router.push("/admin/agenda")
+          router.push("/professional/agenda")
         } else {
           router.push("/agendamento-sucesso")
         }
@@ -206,7 +217,7 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {!cliente && (
+      {!isProfessional && (
         <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
           <h2 className="text-lg font-semibold mb-2">Estabelecimento</h2>
           <p className="font-medium">{professional.name}</p>
@@ -220,15 +231,22 @@ export default function Agendamento() {
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-lg font-semibold">Serviços</h2>
-          {selectedServices.length === 0 ? (
-            <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
-              <Plus className="w-4 h-4 mr-1" /> Selecionar
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
-              <Edit2 className="w-4 h-4 mr-1" /> {isProfessional ? "Selecionar" : "Editar"}
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {selectedServices.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleClearServices}>
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            )}
+            {selectedServices.length === 0 ? (
+              <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
+                <Plus className="w-4 h-4 mr-1" /> Selecionar
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
+                <Edit2 className="w-4 h-4 mr-1" /> {isProfessional ? "Selecionar" : "Editar"}
+              </Button>
+            )}
+          </div>
         </div>
         {selectedServices.length === 0 ? (
           <p className="text-sm text-muted-foreground">Nenhum serviço selecionado</p>
@@ -247,7 +265,14 @@ export default function Agendamento() {
 
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
-        <h2 className="text-lg font-semibold mb-2">Data e Horário</h2>
+        <div className="flex justify-between items-center mb-2">
+          <h2 className="text-lg font-semibold">Data e Horário</h2>
+          {(date || selectedTime) && (
+            <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
         <Card className="border shadow-sm h-full flex justify-center">
           <Calendar selected={date} onSelect={setDate} />
         </Card>

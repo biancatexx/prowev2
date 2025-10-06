@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Heart, ChevronLeft, CalendarIcon, Clock } from "lucide-react"
+import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
   mockProfessionals,
@@ -143,6 +143,23 @@ export default function ProfessionalDetails() {
     }
   }
 
+  const clearServices = () => {
+    setSelectedServices([])
+    toast({
+      title: "Serviços limpos",
+      description: "Todos os serviços foram desmarcados.",
+    })
+  }
+
+  const clearDateTime = () => {
+    setSelectedDate(undefined)
+    setSelectedTime("")
+    toast({
+      title: "Data e horário limpos",
+      description: "A data e horário foram removidos.",
+    })
+  }
+
   if (!professional) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -210,6 +227,10 @@ export default function ProfessionalDetails() {
 
           {/* Serviços */}
           <TabsContent value="servicos">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-foreground">Selecione os serviços</h3>
+
+            </div>
             <div className="space-y-6">
               {Object.entries(groupedServices).map(([category, categoryServices]) => (
                 <div key={category}>
@@ -242,7 +263,10 @@ export default function ProfessionalDetails() {
 
           {/* Agenda */}
           <TabsContent value="agenda">
-            <h3 className="font-bold text-foreground mb-4">Dias e horários</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-foreground">Dias e horários</h3>
+
+            </div>
             <div className="bg-card rounded-2xl p-4 border border-border mb-4">
               <Card className="border shadow-sm h-full flex justify-center mb-4">
                 <Calendar selected={selectedDate} onSelect={setSelectedDate} />
@@ -252,11 +276,10 @@ export default function ProfessionalDetails() {
                   <button
                     key={hour}
                     onClick={() => setSelectedTime(hour)}
-                    className={`py-3 px-2 rounded-xl border-2 font-medium text-sm ${
-                      selectedTime === hour
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border hover:border-primary/50 hover:bg-accent/50"
-                    }`}
+                    className={`py-3 px-2 rounded-xl border-2 font-medium text-sm ${selectedTime === hour
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/50 hover:bg-accent/50"
+                      }`}
                   >
                     {hour}
                   </button>
@@ -290,32 +313,46 @@ export default function ProfessionalDetails() {
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30">
         <div className="container mx-auto max-w-screen-lg flex flex-col gap-3">
           {(selectedServices.length > 0 || selectedDate || selectedTime) && (
-            <div className="text-sm text-foreground bg-accent/40 p-3 rounded-lg border border-border flex flex-col gap-1">
-              {selectedServices.length > 0 && (
-                <div>
-                  <p className="font-medium">
-                    {selectedServices.length} serviço(s) • {totalDuration} min
-                  </p>
-                  <p className="text-primary font-bold">Total: R$ {totalPrice.toFixed(2)}</p>
-                </div>
-              )}
-              {(selectedDate || selectedTime) && (
-                <div className="flex flex-wrap items-center gap-4 mt-1">
-                  {selectedDate && (
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="w-4 h-4 text-primary" />
-                      <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
-                    </div>
-                  )}
-                  {selectedTime && (
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-primary" />
-                      <span>{selectedTime}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 align-center">
+              <div className="w-full text-sm text-foreground bg-accent/40 p-3 rounded-lg border border-border flex flex-col gap-1">
+                {selectedServices.length > 0 && (
+                  <div>
+                    <p className="font-medium">
+                      {selectedServices.length} serviço(s) • {totalDuration} min
+                    </p>
+                    <p className="text-primary font-bold">Total: R$ {totalPrice.toFixed(2)}</p>
+                  </div>
+                )}
+                {(selectedDate || selectedTime) && (
+                  <div className="flex flex-wrap items-center gap-4 mt-1">
+                    {selectedDate && (
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    )}
+                    {selectedTime && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span>{selectedTime}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <div className="">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearServices}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Limpar
+                </Button>
+              </div>
             </div>
+
           )}
 
           <Button size="lg" onClick={handleSchedule} className="w-full">
