@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef, useEffect } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner"
@@ -16,10 +15,11 @@ import { saveAppointment, mockProfessionals, mockServices } from "@/data/mockDat
 export default function Agendamento() {
   const params = useParams()
   const router = useRouter()
-  const searchParams = useSearchParams()
+  const pathname = usePathname()
   const id = params?.id as string
 
-  const isProfessional = searchParams?.get("from") === "professional"
+  // Considera como view do profissional se estiver na URL /admin/ ou /professional/
+  const isProfessionalView = pathname.includes("/admin/") || pathname.includes("/professional/")
 
   const [bookingData, setBookingData] = useState<any>(null)
 
@@ -40,20 +40,13 @@ export default function Agendamento() {
       if (stored) {
         const data = JSON.parse(stored)
         setBookingData(data)
-        if (data.selectedDate) {
-          setDate(new Date(data.selectedDate))
-        }
-        if (data.selectedTime) {
-          setSelectedTime(data.selectedTime)
-        }
-        if (!isProfessional && data.selectedServices) {
-          setSelectedServices(data.selectedServices)
-        }
-        // Clear after loading
+        if (data.selectedDate) setDate(new Date(data.selectedDate))
+        if (data.selectedTime) setSelectedTime(data.selectedTime)
+        if (!isProfessionalView && data.selectedServices) setSelectedServices(data.selectedServices)
         localStorage.removeItem("booking_data")
       }
     }
-  }, [isProfessional])
+  }, [isProfessionalView])
 
   // Refs para scroll/foco
   const whatsappRef = useRef<HTMLInputElement>(null)
@@ -69,7 +62,6 @@ export default function Agendamento() {
     }
 
   const availableServices = mockServices.filter((s) => s.professionalId === id)
-
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
 
@@ -93,11 +85,8 @@ export default function Agendamento() {
   const toggleServiceSelection = (service: any) => {
     setSelectedServices((prev) => {
       const exists = prev.find((s) => s.id === service.id)
-      if (exists) {
-        return prev.filter((s) => s.id !== service.id)
-      } else {
-        return [...prev, service]
-      }
+      if (exists) return prev.filter((s) => s.id !== service.id)
+      return [...prev, service]
     })
   }
 
@@ -112,16 +101,11 @@ export default function Agendamento() {
     toast.success("Data e horário limpos")
   }
 
-  const handleOpenServicesModal = () => {
-    setShowServicesModal(true)
-  }
-
-  const handleCloseServicesModal = () => {
-    setShowServicesModal(false)
-  }
+  const handleOpenServicesModal = () => setShowServicesModal(true)
+  const handleCloseServicesModal = () => setShowServicesModal(false)
 
   const handleConfirm = () => {
-    if (!isProfessional && !whatsapp) {
+    if (!isProfessionalView && !whatsapp) {
       toast.error("Preencha o WhatsApp")
       whatsappRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
       whatsappRef.current?.focus()
@@ -158,8 +142,7 @@ export default function Agendamento() {
         setLoading(false)
         return
       }
-
-      if (!isProfessional && !whatsapp) {
+      if (!isProfessionalView && !whatsapp) {
         toast.error("Preencha o WhatsApp")
         setLoading(false)
         return
@@ -187,15 +170,11 @@ export default function Agendamento() {
       }
 
       saveAppointment(newAppointment)
-
       toast.success("Agendamento criado com sucesso!")
 
       setTimeout(() => {
-        if (isProfessional) {
-          router.push("/professional/agenda")
-        } else {
-          router.push("/agendamento-sucesso")
-        }
+        if (isProfessionalView) router.push("/admin/agenda")
+        else router.push("/agendamento-sucesso")
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
@@ -217,7 +196,8 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {!isProfessional && (
+      {/* Estabelecimento */}
+      {!isProfessionalView && (
         <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
           <h2 className="text-lg font-semibold mb-2">Estabelecimento</h2>
           <p className="font-medium">{professional.name}</p>
@@ -237,15 +217,9 @@ export default function Agendamento() {
                 <Trash2 className="w-4 h-4" />
               </Button>
             )}
-            {selectedServices.length === 0 ? (
-              <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
-                <Plus className="w-4 h-4 mr-1" /> Selecionar
-              </Button>
-            ) : (
-              <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
-                <Edit2 className="w-4 h-4 mr-1" /> {isProfessional ? "Selecionar" : "Editar"}
-              </Button>
-            )}
+            <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
+              {selectedServices.length === 0 ? <><Plus className="w-4 h-4 mr-1" /> Selecionar</> : <><Edit2 className="w-4 h-4 mr-1" /> {isProfessionalView ? "Selecionar" : "Editar"}</>}
+            </Button>
           </div>
         </div>
         {selectedServices.length === 0 ? (
@@ -294,42 +268,26 @@ export default function Agendamento() {
         <h2 className="text-lg font-semibold mb-2">Cliente</h2>
         <div className="space-y-3">
           <div>
-            <Label>WhatsApp {!isProfessional && <span className="text-destructive">*</span>}</Label>
-            <Input
-              type="tel"
-              value={whatsapp}
-              onChange={handleWhatsappChange}
-              placeholder="(00) 00000-0000"
-              ref={whatsappRef}
-            />
+            <Label>WhatsApp {!isProfessionalView && <span className="text-destructive">*</span>}</Label>
+            <Input type="tel" value={whatsapp} onChange={handleWhatsappChange} placeholder="(00) 00000-0000" ref={whatsappRef} />
           </div>
           <div>
-            <Label>
-              Nome <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              value={cliente}
-              onChange={(e) => setCliente(e.target.value)}
-              ref={clienteRef}
-              placeholder="Nome completo do cliente"
-            />
+            <Label>Nome <span className="text-destructive">*</span></Label>
+            <Input value={cliente} onChange={(e) => setCliente(e.target.value)} ref={clienteRef} placeholder="Nome completo do cliente" />
           </div>
         </div>
       </div>
 
-      {/* Botão Fixado */}
+      {/* Botão fixado */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
         <div className="container mx-auto max-w-md">
-          <Button
-            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-            onClick={handleConfirm}
-            disabled={loading}
-          >
+          <Button className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={handleConfirm} disabled={loading}>
             Confirmar Agendamento
           </Button>
         </div>
       </div>
 
+      {/* Modal Serviços */}
       {showServicesModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
@@ -339,18 +297,11 @@ export default function Agendamento() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-
             <div className="space-y-2">
               {availableServices.map((service) => {
                 const isSelected = selectedServices.some((s) => s.id === service.id)
                 return (
-                  <div
-                    key={service.id}
-                    onClick={() => toggleServiceSelection(service)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
-                    }`}
-                  >
+                  <div key={service.id} onClick={() => toggleServiceSelection(service)} className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"}`}>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
@@ -368,7 +319,6 @@ export default function Agendamento() {
                 )
               })}
             </div>
-
             <div className="border-t pt-4 mt-4">
               <Button onClick={handleCloseServicesModal} className="w-full">
                 Confirmar Seleção ({selectedServices.length})
@@ -378,58 +328,34 @@ export default function Agendamento() {
         </div>
       )}
 
-      {/* Modal de Confirmação */}
+      {/* Modal Confirmação */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md space-y-3">
             <div className="text-center border-b pb-3">
               <h2 className="font-bold text-xl">Confirmar Agendamento</h2>
             </div>
-            {!isProfessional && (
+            {!isProfessionalView && (
               <>
-                <p>
-                  <b>Estabelecimento:</b> {professional.name}
-                </p>
-                <p>
-                  <b>Endereço:</b> {professional.address}
-                </p>
+                <p><b>Estabelecimento:</b> {professional.name}</p>
+                <p><b>Endereço:</b> {professional.address}</p>
               </>
             )}
-            <p>
-              <b>Serviços:</b>
-            </p>
+            <p><b>Serviços:</b></p>
             <ul className="list-disc pl-5">
               {selectedServices.map((s, i) => (
-                <li key={i}>
-                  {s.name} - R$ {s.price}
-                </li>
+                <li key={i}>{s.name} - R$ {s.price}</li>
               ))}
             </ul>
-            <p>
-              <b>Duração:</b> {formatDuration(totalDuration)}
-            </p>
-            <p>
-              <b>Total:</b> R$ {totalPrice}
-            </p>
-            <p>
-              <b>Cliente:</b> {cliente}
-            </p>
-            {whatsapp && (
-              <p>
-                <b>WhatsApp:</b> {whatsapp}
-              </p>
-            )}
-            <p>
-              <b>Data:</b> {date?.toLocaleDateString("pt-BR")} às {selectedTime}
-            </p>
+            <p><b>Duração:</b> {formatDuration(totalDuration)}</p>
+            <p><b>Total:</b> R$ {totalPrice}</p>
+            <p><b>Cliente:</b> {cliente}</p>
+            {whatsapp && <p><b>WhatsApp:</b> {whatsapp}</p>}
+            <p><b>Data:</b> {date?.toLocaleDateString("pt-BR")} às {selectedTime}</p>
 
             <div className="flex gap-2 justify-center border-t pt-3">
-              <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>
-                Cancelar
-              </Button>
-              <Button onClick={handleFinish} disabled={loading}>
-                {loading ? "Salvando..." : "Confirmar"}
-              </Button>
+              <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>Cancelar</Button>
+              <Button onClick={handleFinish} disabled={loading}>{loading ? "Salvando..." : "Confirmar"}</Button>
             </div>
           </div>
         </div>
