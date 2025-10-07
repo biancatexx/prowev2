@@ -55,17 +55,14 @@ export default function Perfil() {
               <Label>Nome do Estabelecimento {professional.id}</Label>
               <Input value={professional.name} disabled={!isEditing} />
             </div>
-            <div>
-              <Label>Especialidade</Label>
-              <Input value={professional.specialty} disabled={!isEditing} />
-            </div>
+             
             <div>
               <Label>Descrição</Label>
               <Textarea value={professional.description} disabled={!isEditing} rows={3} />
             </div>
             <div>
               <Label>Endereço</Label>
-              <Input value={professional.address} disabled={!isEditing} />
+              <Input value={professional.address.street} disabled={!isEditing} />
             </div>
             <div>
               <Label>Telefone</Label>

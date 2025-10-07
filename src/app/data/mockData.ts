@@ -40,6 +40,7 @@ export interface User {
   profileImage?: string
   birthDate?: string
   createdAt: string
+  
   type: "client" | "professional"
 }
 

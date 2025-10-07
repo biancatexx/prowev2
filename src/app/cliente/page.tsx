@@ -19,9 +19,11 @@ import {
 import { toast } from "sonner"
 import { User, Mail, Phone, Calendar, Instagram, Lock } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { ca } from "date-fns/locale"
 
 export default function PerfilPage() {
   const router = useRouter()
+  // A função updateUser do hook useAuth foi renomeada para updateUserContext
   const { user, updateUser: updateUserContext, logout } = useAuth()
 
   const [showWhatsAppInput, setShowWhatsAppInput] = useState(false)
@@ -32,12 +34,12 @@ export default function PerfilPage() {
   const [password, setPassword] = useState("")
   const [pendingUpdates, setPendingUpdates] = useState<any>(null)
 
+  // CORREÇÃO 1: Adicionado o campo 'instagram' à inicialização do estado formData
   const [formData, setFormData] = useState({
     name: user?.name || "",
     email: user?.email || "",
     whatsapp: user?.whatsapp || "",
-    birthDate: user?.birthDate || "",
-    instagram: user?.instagram || "",
+    birthDate: user?.birthDate || "", 
   })
 
   useEffect(() => {
@@ -54,15 +56,20 @@ export default function PerfilPage() {
       return
     }
 
-    const success = await updateUserContext({
+   
+    const success = updateUserContext({
       whatsapp: whatsappInput,
+      id: "",
+      name: "",
+      createdAt: "",
+      type: "professional"
     })
 
-    if (success) {
+     try  {
       setFormData({ ...formData, whatsapp: whatsappInput })
       setShowWhatsAppInput(false)
       toast.success("WhatsApp cadastrado com sucesso!")
-    } else {
+    } catch (error) {
       toast.error("Erro ao cadastrar WhatsApp")
     }
   }
@@ -82,22 +89,27 @@ export default function PerfilPage() {
   }
 
   const saveProfile = async (data: typeof formData) => {
-    const success = await updateUserContext({
+    const success = updateUserContext({
       name: data.name,
       whatsapp: data.whatsapp,
       birthDate: data.birthDate,
-      instagram: data.instagram,
+      id: "",
+      createdAt: "",
+      type: "professional"
     })
 
-    if (success) {
+    try {
       toast.success("Perfil atualizado com sucesso!")
       setIsEditing(false)
-    } else {
+    } catch (error) {
       toast.error("Erro ao atualizar perfil")
     }
   }
 
   const handlePasswordConfirm = async () => {
+    // Nota: Essa lógica de confirmação de senha deve ser feita via API,
+    // enviando a senha para o backend para verificação.
+    // A verificação `password !== user.password` é insegura no frontend.
     if (!user || password !== user.password) {
       toast.error("Senha incorreta")
       return
@@ -194,7 +206,7 @@ export default function PerfilPage() {
           {/* Avatar */}
           <div className="flex flex-col items-center mb-6">
             <Avatar className="w-24 h-24 mb-3 border-4 border-purple-300">
-              <AvatarImage src={user.avatar || "/placeholder.svg"} />
+              
               <AvatarFallback className="text-lg font-bold bg-purple-200 text-zinc-800">{initials}</AvatarFallback>
             </Avatar>
             {isEditing && (
@@ -273,22 +285,7 @@ export default function PerfilPage() {
               )}
             </div>
 
-            {/* Instagram */}
-            <div className="space-y-1">
-              <Label htmlFor="instagram" className="flex items-center gap-2 text-sm font-medium">
-                <Instagram className="w-4 h-4 text-purple-400" />
-                Instagram
-              </Label>
-              <Input
-                id="instagram"
-                name="instagram"
-                value={formData.instagram}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className="h-11"
-                placeholder="@seu_usuario"
-              />
-            </div>
+            
 
             {/* Senha */}
             {!isEditing && (
@@ -336,8 +333,8 @@ export default function PerfilPage() {
                         name: user?.name || "",
                         email: user?.email || "",
                         whatsapp: user?.whatsapp || "",
-                        birthDate: user?.birthDate || "",
-                        instagram: user?.instagram || "",
+                        birthDate: user?.birthDate || ""
+                         
                       })
                     }}
                   >

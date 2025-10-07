@@ -62,7 +62,7 @@ export default function ProfessionalDetails() {
     .reduce((sum, service) => sum + service.duration, 0)
 
   const handleSchedule = () => {
-     
+
 
     if (typeof window !== "undefined") {
       const selectedServicesData = services.filter((s) => selectedServices.includes(s.id))
@@ -306,7 +306,12 @@ export default function ProfessionalDetails() {
                 <div className="flex flex-col gap-3">
                   {professional.social_instagram && (
                     <a
-                      href={`https://instagram.com/${professional.social_instagram.replace("@", "")}`}
+                      href={
+                        typeof professional.social_instagram === "string"
+                          ? `https://instagram.com/${professional.social_instagram.replace("@", "")}`
+                          : "#"
+                      }
+
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm"
