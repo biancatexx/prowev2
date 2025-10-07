@@ -114,7 +114,7 @@ export default function Perfil() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="p-6 hidden">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold">Serviços Cadastrados</h2>
             <Button size="sm">Adicionar Serviço</Button>

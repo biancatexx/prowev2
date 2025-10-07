@@ -2,16 +2,18 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Calendar, Users, User } from "lucide-react"
+import { LayoutDashboard, Calendar, Users, User, ChartPie} from "lucide-react"
 
 export default function NavbarProfessional() {
   const pathname = usePathname()
 
   const links = [
-    { href: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/admin/dashboard", icon: ChartPie, label: "Dashboard" },
     { href: "/admin/agenda", icon: Calendar, label: "Agenda" },
     { href: "/admin/clientes", icon: Users, label: "Clientes" },
+     { href: "/admin/servicos", icon:LayoutDashboard, label: "Serviços" },
     { href: "/admin/perfil", icon: User, label: "Perfil" },
+   
   ]
 
   return (
