@@ -179,7 +179,7 @@ export default function ProfessionalDetails() {
   return (
     <div className="min-h-screen bg-background pb-28">
       {/* Header */}
-      <header className="bg-gradient-to-br from-primary/40 via-primary/20 to-accent/10 rounded-b-3xl pb-6 pt-8 px-4">
+      <header className="bg-primary rounded-b-3xl pb-6 pt-8 px-4">
         <div className="container mx-auto max-w-screen-lg">
           <div className="flex items-center justify-between mb-6">
             <button

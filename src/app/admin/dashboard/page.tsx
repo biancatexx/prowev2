@@ -1,14 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Calendar, Users, DollarSign, Clock, Share2, TrendingUp } from "lucide-react"
+import { Calendar, Users, DollarSign, Clock, Share2, TrendingUp, SquareArrowOutUpRight } from "lucide-react"
 import { getStoredAppointments } from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
-import NavbarProfessional from "@/components/NavbarProfessional"
-import { useToast } from "@/hooks/use-toast"
+import NavbarProfessional from "@/components/NavbarProfessional"  
 
 import {
   BarChart,
@@ -23,11 +22,11 @@ import {
   Cell,
   Legend,
 } from "recharts"
+import { toast } from "sonner"
 
 export default function Dashboard() {
-  const { professional } = useAuth()
-  const { toast } = useToast()
-
+  const { professional } = useAuth() 
+  const inputRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState({
     todayAppointments: 0,
     totalClients: 0,
@@ -114,7 +113,7 @@ export default function Dashboard() {
     { name: "Agendados", value: appointmentStats.agendados, color: "#facc15" },
     { name: "Cancelados", value: appointmentStats.cancelados, color: "#dc2626" },
   ].filter((item) => item.value > 0) // Only show non-zero values
-  
+
 
   if (!professional) {
     return (
@@ -123,7 +122,12 @@ export default function Dashboard() {
       </div>
     )
   }
-
+const handleCopyLink = () => {
+  if (inputRef.current) {
+    navigator.clipboard.writeText(inputRef.current.value);
+    toast.success("Link copiado para a área de transferência!");
+  }
+};
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
@@ -184,7 +188,31 @@ export default function Dashboard() {
         </div>
 
         <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
-      
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Share2 className="h-5 w-5" /> Link do Perfil
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={`/profissional/${professional.id}`}
+                  readOnly
+                  ref={inputRef}
+                  className="flex-1 px-3 py-2 bg-muted rounded-lg text-sm"
+                />
+                <Button size="sm" onClick={handleCopyLink}>
+                  Copiar
+                </Button>
+                <Link href={`/profissional/${professional.id}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary flex items-center bg-zinc-900 justify-center px-3   rounded-lg">
+                  Acessar <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
+                </Link>
+                 
+              </div>
+            </CardContent>
+          </Card>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

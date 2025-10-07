@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Cog, MoreVertical, Plus, Settings } from "lucide-react"
+import { Cog, List, MoreVertical, Plus, Rows3, Settings } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CustomCalendar } from "@/components/CustomCalendar"
@@ -105,76 +105,64 @@ export default function Agenda() {
       {/* Calendário */}
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
 
+        {/* Buttons das tabs */}
         <div className="flex justify-center gap-2">
-          <button
-            onClick={() => setTab("hora")}
-            className={`px-4 py-2 rounded-t-md font-medium ${tab === "hora" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
-          >
-            Por Hora
-          </button>
-          <button
-            onClick={() => setTab("dia")}
-            className={`px-4 py-2 rounded-t-md font-medium ${tab === "dia" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
-          >
-            Por Dia
-          </button>
+          <div className="inline-flex h-10 items-center justify-center text-muted-foreground w-full bg-card border border-border rounded-xl p-1 mb-6">
+            <button
+              onClick={() => setTab("hora")}
+              className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-primary data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 rounded-lg 
+                 ${tab === "dia" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
+            >
+              <List className="mr-2 w-3 h-3" /> Visão diária
+            </button>
+            <button
+              onClick={() => setTab("dia")}
+              className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-primary data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 rounded-lg
+                 ${tab === "hora" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
+            >
+              <Rows3 className="mr-2 w-3 h-3" /> Visão mensal
+            </button>
+          </div>
+
         </div>
 
-        {tab === "hora" && (
-          <Card className="border shadow-sm h-full flex justify-center items-center p-4">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="">
-
-                <CustomCalendar
-                  selected={date}
-                  onSelect={setDate}
-                  appointmentDates={appointmentDates}
-                  className="rounded-md border"
-                />
-              </div>
-            </div>
-            <div className="flex-1 text-center p-4">
-              <div>
-                <h2 className="text-lg text-primary font-bold mb-2">
-
-                  {date
-                    ? date.toLocaleDateString("pt-BR", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric",
-                    })
-                    : "Selecione um dia"}
-                </h2>
-                <p className="text-lg text-zinc-900">
-                  {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? "s" : ""}
-                </p>
-              </div>
-
-            </div>
-
-          </Card>
-        )}
-        {tab === "dia" && (
-          <Card className="border shadow-sm h-full p-4">
-            <h2 className="text-lg text-primary mb-2">
-              {date
-                ? date.toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "2-digit",
-                  month: "long",
-                  year: "numeric",
-                })
-                : "Selecione um dia"}
-            </h2>
-          </Card>
-        )}
-      </div>
-
-      {/* Conteúdo das tabs */}
-      <div className="container mx-auto max-w-screen-lg px-4 mt-2">
+        {/* Conteúdo das tabs */}
         {tab === "hora" && (
           <>
+
+            <Card className="border shadow-sm h-full flex justify-center items-center p-4">
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div className="">
+
+                  <CustomCalendar
+                    selected={date}
+                    onSelect={setDate}
+                    appointmentDates={appointmentDates}
+                    className="rounded-md border"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 text-center p-4">
+                <div>
+                  <h2 className="text-lg text-primary font-bold mb-2">
+
+                    {date
+                      ? date.toLocaleDateString("pt-BR", {
+                        weekday: "long",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                      })
+                      : "Selecione um dia"}
+                  </h2>
+                  <p className="text-lg text-zinc-900">
+                    {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+
+              </div>
+
+            </Card>
             <h2 className="text-lg font-bold text-primary mb-2">
               {date ? (
                 <p> Dia
@@ -258,9 +246,19 @@ export default function Agenda() {
             </div>
           </>
         )}
-
         {tab === "dia" && (
           <>
+            <Card className="border shadow-sm h-full p-4">
+              <h2 className="text-lg text-primary mb-2"> Visão do mês de
+                {date
+                  ? date.toLocaleDateString("pt-BR", {
+
+                    month: "long",
+                    year: "numeric",
+                  })
+                  : "Selecione um dia"}
+              </h2>
+            </Card>
             {(() => {
               const currentMonthDate = date ?? new Date()
               const currentMonthNumber = currentMonthDate.getMonth()
@@ -335,9 +333,13 @@ export default function Agenda() {
                 </div>
               )
             })()}
+
           </>
+
         )}
       </div>
+
+
 
       {/* Botão flutuante */}
       <Link href={`/admin/agenda/ajustes`}>
