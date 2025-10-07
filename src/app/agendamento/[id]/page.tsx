@@ -332,7 +332,7 @@ export default function Agendamento() {
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
         <div className="container mx-auto max-w-screen-lg">
           <Button
-            className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
+            className="w-full bg-zinc-900 hover:bg-zinc-900 text-zinc-50"
             onClick={handleConfirm}
             disabled={loading}
           >

@@ -25,7 +25,7 @@ const Navbar = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
               <Check className="w-6 h-6 text-primary-foreground" />
             </div>
-            <span className="text-xl text-zinc-800 font-bold from-primary to-secondary bg-clip-text text-transparent">
+            <span className="text-xl text-zinc-900 font-bold from-primary to-secondary bg-clip-text text-transparent">
               Prowe
             </span>
           </Link>

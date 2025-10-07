@@ -71,7 +71,7 @@ export default function Favoritos() {
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
-            <h1 className="text-3xl font-bold text-zinc-800 mb-2 text-center">Meus Favoritos</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-2 text-center">Meus Favoritos</h1>
           </div>
         </header>
 
@@ -102,7 +102,7 @@ export default function Favoritos() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meus Favoritos</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meus Favoritos</h1>
             <p className="text-sm text-zinc-600">
               {favorites.length} {favorites.length === 1 ? "profissional salvo" : "profissionais salvos"}
             </p>

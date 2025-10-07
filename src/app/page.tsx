@@ -86,7 +86,7 @@ const Explorar = () => {
       <header className="bg-gradient-to-br from-primary/10 via-accent/5 to-background py-12 rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-zinc-800">Encontre o profissional disponível mais perto de você</h1>
+            <h1 className="text-3xl font-bold text-zinc-900">Encontre o profissional disponível mais perto de você</h1>
             <div className="flex gap-2 hidden">
               <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
                 <Bell className="w-5 h-5" />

@@ -433,8 +433,8 @@ export default function ProfessionalDetails() {
 
             onClick={handleSchedule}
             className={`w-full ${selectedServices.length === 0 && !selectedDate && !selectedTime
-              ? "bg-zinc-800 text-white hover:bg-zinc-700"
-              : "bg-primary text-zinc-800 hover:bg-primary/90"
+              ? "bg-zinc-900 text-white hover:bg-zinc-700"
+              : "bg-primary text-zinc-900 hover:bg-primary/90"
               }`}
           >
             {selectedServices.length === 0 && !selectedDate && !selectedTime

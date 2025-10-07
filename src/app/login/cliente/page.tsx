@@ -54,7 +54,7 @@ export default function LoginClientePage() {
     <div className="min-h-screen bg-background flex flex-col">
       <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 p-6">
         <div className="container mx-auto max-w-md">
-          <Link href="/" className="flex items-center gap-2 text-zinc-800 hover:opacity-80">
+          <Link href="/" className="flex items-center gap-2 text-zinc-900 hover:opacity-80">
             <ArrowLeft className="h-5 w-5" />
             <span className="font-semibold">Voltar</span>
           </Link>

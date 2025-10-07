@@ -85,7 +85,7 @@ export function Calendar({
       >
         <span>{date.getDate()}</span>
         {count > 0 && (
-          <span className="absolute -bottom-1 right-0 flex items-center justify-center w-3 h-3 rounded-full bg-zinc-800 text-white text-[0.6rem]">
+          <span className="absolute -bottom-1 right-0 flex items-center justify-center w-3 h-3 rounded-full bg-zinc-900 text-white text-[0.6rem]">
             {count}
           </span>
         )}

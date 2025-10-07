@@ -53,7 +53,7 @@ export default function HistoricoPage() {
       <div className="min-h-screen bg-background pb-24">
         <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
           <div className="container text-center mx-auto max-w-md">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-1">Meus Agendamentos</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-1">Meus Agendamentos</h1>
             <p className="text-muted-foreground">Aguarde, carregando histórico...</p>
           </div>
         </header>
@@ -71,7 +71,7 @@ export default function HistoricoPage() {
       <div className="min-h-screen bg-background pb-24">
         <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
           <div className="container mx-auto max-w-md text-center">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meus Agendamentos</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meus Agendamentos</h1>
           </div>
         </header>
 
@@ -99,7 +99,7 @@ export default function HistoricoPage() {
       {/* Header */}
       <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container text-center mx-auto max-w-md">
-          <h1 className="text-3xl font-bold text-zinc-800 mb-1">Meus Agendamentos</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 mb-1">Meus Agendamentos</h1>
           <p className="text-sm text-zinc-600">Olá, {user.name.split(" ")[0]}! Seu histórico completo.</p>
         </div>
       </header>
@@ -143,17 +143,17 @@ export default function HistoricoPage() {
 
                   <div className="space-y-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-zinc-800" />
+                      <Calendar className="w-4 h-4 text-zinc-900" />
                       <span>{appointment.date?.split("T")[0] || appointment.date}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-zinc-800" />
+                      <Clock className="w-4 h-4 text-zinc-900" />
                       <span>
                         {appointment.time} ({appointment.totalDuration || appointment.duration} min)
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-base text-zinc-800">
+                      <span className="font-semibold text-base text-zinc-900">
                         R$ {appointment.totalPrice || appointment.price}
                       </span>
                     </div>
@@ -161,7 +161,7 @@ export default function HistoricoPage() {
 
                   {appointment.status === "concluido" && !appointment.paid && (
                     <div className="pt-4 border-t border-border flex gap-3 mt-4">
-                      <Button className="flex-1 rounded-xl bg-zinc-800 text-white hover:bg-zinc-900">
+                      <Button className="flex-1 rounded-xl bg-zinc-900 text-white hover:bg-zinc-900">
                         <CreditCard className="mr-2 w-4 h-4" />
                         Pagar com Cartão
                       </Button>

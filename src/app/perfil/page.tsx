@@ -84,7 +84,7 @@ export default function PerfilPage() {
       <div className="min-h-screen bg-background pb-24">
         <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
           <div className="container mx-auto max-w-md text-center">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meu Perfil</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meu Perfil</h1>
           </div>
         </header>
 
@@ -117,7 +117,7 @@ export default function PerfilPage() {
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meu Perfil</h1>
+            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meu Perfil</h1>
             <p className="text-sm text-zinc-600">Gerencie suas informações pessoais</p>
           </div>
         </div>

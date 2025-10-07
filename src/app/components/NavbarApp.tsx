@@ -15,7 +15,7 @@ const NavbarApp = () => {
   
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-zinc-800 border-t border-zinc-700 safe-area-bottom z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-700 safe-area-bottom z-50">
       <div className="container mx-auto max-w-md">
         <div className="flex items-center justify-around py-3">
           {navLinks.map((link) => {

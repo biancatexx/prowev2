@@ -104,6 +104,7 @@ export default function Agenda() {
 
       {/* Calendário */}
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
+
         <div className="flex justify-center gap-2">
           <button
             onClick={() => setTab("hora")}
@@ -120,19 +121,43 @@ export default function Agenda() {
         </div>
 
         {tab === "hora" && (
-          <Card className="border shadow-sm h-full flex justify-center ">
-            <CustomCalendar
-              selected={date}
-              onSelect={setDate}
-              appointmentDates={appointmentDates}
-              className="rounded-md border"
-            />
+          <Card className="border shadow-sm h-full flex justify-center items-center p-4">
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="">
+
+                <CustomCalendar
+                  selected={date}
+                  onSelect={setDate}
+                  appointmentDates={appointmentDates}
+                  className="rounded-md border"
+                />
+              </div>
+            </div>
+            <div className="flex-1 text-center p-4">
+              <div>
+                <h2 className="text-lg text-primary font-bold mb-2">
+
+                  {date
+                    ? date.toLocaleDateString("pt-BR", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    })
+                    : "Selecione um dia"}
+                </h2>
+                <p className="text-lg text-zinc-900">
+                  {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+            </div>
+
           </Card>
         )}
         {tab === "dia" && (
           <Card className="border shadow-sm h-full p-4">
             <h2 className="text-lg text-primary mb-2">
-              Hoje,
               {date
                 ? date.toLocaleDateString("pt-BR", {
                   weekday: "long",
@@ -147,15 +172,15 @@ export default function Agenda() {
       </div>
 
       {/* Conteúdo das tabs */}
-      <div className="container mx-auto max-w-screen-lg px-4 mt-4">
+      <div className="container mx-auto max-w-screen-lg px-4 mt-2">
         {tab === "hora" && (
           <>
             <h2 className="text-lg font-bold text-primary mb-2">
               {date ? (
-                <p>
-                  {`${date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })}`}
-                  <br />
-                  <span className="text-muted-foreground">{` ${filteredAppointments.length}  agendamento${filteredAppointments.length !== 1 ? "s" : ""}`}</span>
+                <p> Dia
+                  {`${date.toLocaleDateString("pt-BR", { day: "2-digit", })}`}
+
+
                 </p>
               ) : (
                 "Selecione um dia"
@@ -326,7 +351,6 @@ export default function Agenda() {
           <Plus className="w-10 h-10 text-zinc-900" />
         </Button>
       </Link>
-
 
       <NavbarProfessional />
     </div>
