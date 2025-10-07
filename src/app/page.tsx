@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Star, Heart, Search, SlidersHorizontal, Bell, ChevronDown } from "lucide-react";
-import { mockProfessionals, mockServices } from "@/data/mockData";
+import { getProfessionals, mockServices } from "@/data/mockData"; 
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
 
@@ -20,6 +20,11 @@ interface Professional {
     category: string;
     price: number;
   }>;
+  address: {
+    street: string;
+    neighborhood: string;
+    city: string;
+  };
 }
 
 const categories = [
@@ -36,15 +41,22 @@ const Explorar = () => {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [professionals, setProfessionals] = useState<Professional[]>([]); 
+  const [loading, setLoading] = useState(true);
 
-  const professionals = mockProfessionals.map(prof => {
-    const profServices = mockServices.filter(s => s.professionalId === prof.id);
-    return {
-      ...prof,
-      services: profServices
-    };
-  });
+  useEffect(() => {
+    const rawProfessionals = getProfessionals();
+    const loadedProfessionals: Professional[] = rawProfessionals.map((prof: any) => {
+      const profServices = mockServices.filter(s => s.professionalId === prof.id);
+      return {
+        ...prof,
+        address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A" }, 
+        services: profServices
+      };
+    }) as Professional[];
+    setProfessionals(loadedProfessionals);
+    setLoading(false);
+  }, []);
 
   const toggleFavorite = (id: string) => {
     setFavorites((prev) =>
@@ -53,7 +65,10 @@ const Explorar = () => {
   };
 
   const getAddress = (prof: any) => {
-    return prof.address || "Endereço não informado";
+    if (prof.address && typeof prof.address === 'object') {
+      return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}`;
+    }
+    return "Endereço não informado";
   };
 
   const getPriceRange = (prof: any) => {
@@ -72,21 +87,16 @@ const Explorar = () => {
   const filteredProfessionals = professionals.filter((prof: any) => {
     const matchesSearch = prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       prof.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
-
     const matchesCategory = selectedCategory === "Todos" ||
       prof.services?.some((s: any) => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
-
     return matchesSearch && matchesCategory;
   });
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* Header com busca */}
       <header className="bg-gradient-to-br from-primary/10 via-accent/5 to-background py-12 rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container mx-auto max-w-screen-lg px-4">
-          {/* Greeting */}
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold text-zinc-800">Encontre o profissional disponível mais perto de você</h1>
             <div className="flex gap-2 hidden">
@@ -95,17 +105,12 @@ const Explorar = () => {
               </button>
             </div>
           </div>
-
-          {/* Location */}
           <button className="flex items-center text-zinc-700 mb-6 hover:text-zinc-900">
             <MapPin className="w-4 h-4 mr-1" />
             <span className="text-sm">Rua Paulo Candido, Jardim Cearense</span>
             <ChevronDown className="w-4 h-4 ml-1" />
           </button>
-
-          {/* Search */}
-
-          <div className=" mx-auto mb-8">
+          <div className="mx-auto mb-8">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input
@@ -119,9 +124,6 @@ const Explorar = () => {
           </div>
         </div>
       </header>
-
-
-      {/* Listagem de profissionais */}
       <section className="py-12">
         <div className="container mx-auto max-w-screen-lg px-">
           <div className="flex justify-between items-center mb-8">
@@ -136,8 +138,6 @@ const Explorar = () => {
               Filtros
             </Button>
           </div>
-
-          {/* Lista de profissionais */}
           <div className="space-y-4">
             {loading ? (
               <p className="text-center text-muted-foreground">Carregando profissionais...</p>
@@ -150,7 +150,6 @@ const Explorar = () => {
                   className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="flex gap-3">
-                    {/* Profile Image */}
                     <Link href={`/profissional/${professional.id}`} className="flex-shrink-0">
                       <img
                         src={(professional as any).profileImage || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=100&h=100&fit=crop"}
@@ -158,8 +157,6 @@ const Explorar = () => {
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     </Link>
-
-                    {/* Info */}
                     <div className="flex-1 min-w-0">
                       <Link href={`/profissional/${professional.id}`}>
                         <h3 className="font-bold text-foreground mb-1">{professional.name}</h3>
@@ -170,10 +167,7 @@ const Explorar = () => {
                           {getPriceRange(professional)}
                         </p>
                       </Link>
-
                     </div>
-
-                    {/* Favorite Button */}
                     <button
                       onClick={() => toggleFavorite(professional.id)}
                       className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
@@ -183,12 +177,11 @@ const Explorar = () => {
                         className={`w-5 h-5 ${favorites.includes(professional.id)
                           ? "fill-red-500 text-red-500"
                           : "text-zinc-400"
-                          }`}
+                        }`}
                       />
                     </button>
                   </div>
                   <div className="border-t border-border mt-2 pt-4">
-
                     <div className="flex items-center text-xs text-muted-foreground">
                       <MapPin className="w-3 h-3 mr-1" />
                       <span className="truncate">{getAddress(professional)}</span>
@@ -200,7 +193,6 @@ const Explorar = () => {
           </div>
         </div>
       </section>
-
       <NavbarApp />
     </div>
   );

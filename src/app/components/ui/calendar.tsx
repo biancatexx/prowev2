@@ -1,4 +1,4 @@
-"use client"
+"use client" 
 
 import * as React from "react"
 import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
@@ -48,27 +48,40 @@ export function Calendar({
     {} as Record<string, number>,
   )
 
-  // ✅ Versão corrigida: `day.date` é o objeto Date real
+  /**
+   * CORREÇÃO: Usando <button> e a lógica de classes para destaque de seleção.
+   * Não espalhamos props de div para evitar erro de tipagem.
+   */
   function CustomDay({
     day,
     modifiers,
-    ...divProps
   }: { day: CalendarDay; modifiers: Modifiers } & React.HTMLAttributes<HTMLDivElement>) {
-    const date = day.date // 👈 aqui está a correção
+    const date = day.date
     const dateStr = date.toISOString().split("T")[0]
     const count = appointmentCount[dateStr] ?? 0
-    const isSelected = selected && date.toDateString() === selected.toDateString()
+    const isSelected = modifiers.selected
     const isToday = dateStr === todayStr
+    const isDisabled = modifiers.disabled
 
     return (
-      <div
-        {...divProps}
+      <button
+        type="button"
         className={cn(
-          "h-9 w-9 flex items-center justify-center rounded-full relative select-none",
-          isSelected && "bg-primary text-primary-foreground",
-          isToday && "border border-primary",
+          buttonVariants({ variant: "ghost" }), 
+          "h-9 w-9 p-0 font-normal mx-auto relative select-none", 
+
+          // Estilo quando o dia está selecionado (destaque)
+          isSelected && 
+            "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+
+          // Estilo para o dia de hoje (apenas borda se não estiver selecionado)
+          isToday && !isSelected && "border border-primary", 
+
+          // Estilo para dias fora do mês e desabilitados
           modifiers.outside && "opacity-40",
+          isDisabled && "text-muted-foreground opacity-50 cursor-not-allowed",
         )}
+        disabled={isDisabled}
       >
         <span>{date.getDate()}</span>
         {count > 0 && (
@@ -76,7 +89,7 @@ export function Calendar({
             {count}
           </span>
         )}
-      </div>
+      </button>
     )
   }
 
@@ -102,7 +115,7 @@ export function Calendar({
 
   return (
     <div className="">
-      {/* Header customizado */}
+      {/* Header customizado (Controles de Mês/Ano) */}
       <div className="flex items-center justify-between mb-4 gap-2">
         <div className="flex items-center gap-2">
           <button
@@ -161,27 +174,31 @@ export function Calendar({
           locale={ptBR}
           month={currentMonth}
           showOutsideDays={showOutsideDays}
-          className={cn("border-none p-0 w-full", className)}
+          className={cn("border-none p-0 w-full flex justify-center items-center", className)}
           selected={selected}
-          onSelect={onSelect}
+          onSelect={onSelect} 
           onMonthChange={setCurrentMonthFn}
           components={{
             Day: CustomDay,
+            // REMOVIDO: Head: CustomHead (para evitar o erro de tipagem)
           }}
           classNames={{
             months: "flex justify-center items-center",
             month: "space-y-4",
-            caption: "hidden",
+            caption: "hidden", 
             nav: "hidden",
             nav_button: cn(buttonVariants({ variant: "outline" })),
             table: "w-full border-collapse border-spacing-0",
+            
+            // CORREÇÃO DO LAYOUT: Garante que os dias da semana estejam em linha
             head_row: "flex w-full",
-            head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center min-w-[2.25rem]",
+            // CORREÇÃO DO LAYOUT: Garante que cada dia ocupe 1/7 da largura
+            head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center min-w-[2.25rem] py-2",
+            
             row: "flex w-full mt-2",
             cell: "flex-1 text-center p-0 relative min-w-[2.25rem]",
-            day: cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal mx-auto"),
-            day_selected:
-              "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
+            day: "h-9 w-9 p-0 font-normal mx-auto", 
+            
             day_outside: "opacity-40",
             day_disabled: "text-muted-foreground opacity-50",
             day_hidden: "invisible",

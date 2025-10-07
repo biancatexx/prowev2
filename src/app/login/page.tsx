@@ -107,7 +107,7 @@ export default function LoginPage() {
 
                 <div className="text-sm text-muted-foreground">
                   Ainda não tem uma conta?{" "}
-                  <Link href="/cadastro-profissional" className="text-primary font-semibold hover:underline">
+                  <Link href="/login/cadastro-profissional" className="text-primary font-semibold hover:underline">
                     Cadastre-se aqui
                   </Link>
                 </div>

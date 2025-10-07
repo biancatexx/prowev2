@@ -1,94 +1,87 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { mockUsers, mockProfessionals, STORAGE_KEYS, type MockUser, type MockProfessional } from "@/data/mockData"
+import { useRouter } from "next/navigation"
+import { getUserByWhatsapp, getProfessionalByEmail, type User, type Professional } from "@/data/mockData"
 
 interface AuthContextType {
-  user: MockUser | null
-  professional: MockProfessional | null
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
-  updateUser: (updates: Partial<MockUser>) => Promise<boolean>
+  user: User | null
+  professional: Professional | null
   isAuthenticated: boolean
   isLoading: boolean
+  login: (email: string, password: string) => Promise<boolean>
+  loginClient: (whatsapp: string) => Promise<boolean>
+  logout: () => void
+  updateUser: (user: User) => void
+  updateProfessional: (professional: Professional) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<MockUser | null>(null)
-  const [professional, setProfessional] = useState<MockProfessional | null>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [professional, setProfessional] = useState<Professional | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
-  // Carregar usuário do localStorage ao iniciar
   useEffect(() => {
-    const loadUser = () => {
-      try {
-        const storedUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER)
-        if (storedUser) {
-          const parsedUser = JSON.parse(storedUser) as MockUser
-          setUser(parsedUser)
+    // Check for stored session
+    if (typeof window !== "undefined") {
+      const storedUser = localStorage.getItem("mock_current_user")
+      const storedProfessional = localStorage.getItem("mock_current_professional")
 
-          // Carregar dados do profissional
-          if (parsedUser.professionalId) {
-            const prof = mockProfessionals.find((p) => p.id === parsedUser.professionalId)
-            setProfessional(prof || null)
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar usuário:", error)
-      } finally {
-        setIsLoading(false)
+      if (storedUser) {
+        setUser(JSON.parse(storedUser))
       }
-    }
 
-    loadUser()
+      if (storedProfessional) {
+        setProfessional(JSON.parse(storedProfessional))
+      }
+
+      setIsLoading(false)
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    try {
-      // Buscar usuário no mock
-      const foundUser = mockUsers.find((u) => u.email === email && u.password === password)
+    const prof = getProfessionalByEmail(email)
 
-      if (!foundUser) {
-        return false
-      }
-
-      // Salvar no localStorage
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(foundUser))
-      setUser(foundUser)
-
-      // Carregar dados do profissional
-      if (foundUser.professionalId) {
-        const prof = mockProfessionals.find((p) => p.id === foundUser.professionalId)
-        setProfessional(prof || null)
-      }
-
+    if (prof && prof.password === password) {
+      setProfessional(prof)
+      localStorage.setItem("mock_current_professional", JSON.stringify(prof))
       return true
-    } catch (error) {
-      console.error("Erro ao fazer login:", error)
-      return false
     }
+
+    return false
+  }
+
+  const loginClient = async (whatsapp: string): Promise<boolean> => {
+    const clientUser = getUserByWhatsapp(whatsapp)
+
+    if (clientUser) {
+      setUser(clientUser)
+      localStorage.setItem("mock_current_user", JSON.stringify(clientUser))
+      return true
+    }
+
+    return false
   }
 
   const logout = () => {
-    localStorage.removeItem(STORAGE_KEYS.CURRENT_USER)
     setUser(null)
     setProfessional(null)
+    localStorage.removeItem("mock_current_user")
+    localStorage.removeItem("mock_current_professional")
+    router.push("/")
   }
 
-  const updateUser = async (updates: Partial<MockUser>): Promise<boolean> => {
-    try {
-      if (!user) return false
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser)
+    localStorage.setItem("mock_current_user", JSON.stringify(updatedUser))
+  }
 
-      const updatedUser = { ...user, ...updates }
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(updatedUser))
-      setUser(updatedUser)
-      return true
-    } catch (error) {
-      console.error("Erro ao atualizar usuário:", error)
-      return false
-    }
+  const updateProfessional = (updatedProfessional: Professional) => {
+    setProfessional(updatedProfessional)
+    localStorage.setItem("mock_current_professional", JSON.stringify(updatedProfessional))
   }
 
   return (
@@ -96,11 +89,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         professional,
+        isAuthenticated: !!user || !!professional,
+        isLoading,
         login,
+        loginClient,
         logout,
         updateUser,
-        isAuthenticated: !!user,
-        isLoading,
+        updateProfessional,
       }}
     >
       {children}

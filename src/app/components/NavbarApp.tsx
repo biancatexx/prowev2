@@ -6,7 +6,7 @@ const NavbarApp = () => {
   const pathname = usePathname();
   const isActive = (path: string) => pathname === path;
   const navLinks = [
-    { path: "/explorar", label: "Explorar", icon: HomeIcon },
+    { path: "/", label: "Explorar", icon: HomeIcon },
     { path: "/historico", label: "Agendamentos", icon: Calendar },
     { path: "/favoritos", label: "Favoritos", icon: Heart },
     { path: "/perfil", label: "Perfil", icon: User },

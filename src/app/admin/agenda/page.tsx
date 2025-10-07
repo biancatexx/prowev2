@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MoreVertical, Plus } from "lucide-react"
+import { MoreVertical, Plus, Settings } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { CustomCalendar } from "@/components/CustomCalendar"
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { Card, CardContent } from "@/components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
@@ -91,8 +91,13 @@ export default function Agenda() {
       {/* Header */}
       <header className="bg-gradient-to-br from-primary via-primary to-accent sticky top-0 z-50">
         <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
-          <div className="text-center">
+          <div className="flex items-center justify-between">
             <h1 className="text-xl font-bold text-primary-foreground">Agenda</h1>
+            <Link href="/admin/configuracoes-agenda">
+              <Button variant="ghost" size="icon" className="text-primary-foreground">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -116,7 +121,7 @@ export default function Agenda() {
 
         {tab === "hora" && (
           <Card className="border shadow-sm h-full flex justify-center ">
-            <Calendar
+            <CustomCalendar
               selected={date}
               onSelect={setDate}
               appointmentDates={appointmentDates}
@@ -310,7 +315,7 @@ export default function Agenda() {
       </div>
 
       {/* Botão flutuante */}
-      <Link href={`/admin/agendamento/${professionalId}`}>
+      <Link href={`/admin/agendamento/`}>
         <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           <Plus className="w-6 h-6" />
         </Button>

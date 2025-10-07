@@ -4,13 +4,14 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { useParams, useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
+import { CustomCalendar } from "@/components/CustomCalendar"
+import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { saveAppointment, mockProfessionals, mockServices } from "@/data/mockData"
+import { saveAppointment, mockProfessionals, mockServices, isDateAvailable } from "@/data/mockData"
 
 export default function Agendamento() {
   const params = useParams()
@@ -53,13 +54,13 @@ export default function Agendamento() {
   const calendarRef = useRef<HTMLDivElement>(null)
   const timesRef = useRef<HTMLDivElement>(null)
 
-  const professional = bookingData?.professional ||
-    mockProfessionals.find((p) => p.id === id) || {
-      id: id || "1",
-      name: "Studio Beleza Premium",
-      address: "Rua das Flores, 123 - Centro, São Paulo - SP",
-    }
+  const professional = bookingData?.professional || mockProfessionals.find((p) => p.id === id)
 
+  if (!professional) {
+    toast.error("Profissional não encontrado")
+    router.back()
+    return null
+  }
   const availableServices = mockServices.filter((s) => s.professionalId === id)
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
@@ -70,8 +71,6 @@ export default function Agendamento() {
     const m = minutes % 60
     return `${h > 0 ? `${h}h ` : ""}${m}min`
   }
-
-  const availableTimes = ["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00", "15:30", "16:00"]
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, "")
@@ -152,6 +151,7 @@ export default function Agendamento() {
       const newAppointment = {
         id: `apt-${Date.now()}`,
         professionalId: String(professional.id),
+        professionalName: String(professional.name),
         clientName: String(cliente),
         clientWhatsapp: String(cleanWhatsapp || "N/A"),
         services: selectedServices.map((s) => ({
@@ -164,7 +164,7 @@ export default function Agendamento() {
         time: String(selectedTime),
         totalPrice: Number(totalPrice),
         totalDuration: Number(totalDuration),
-        status: "agendado",
+        status: "agendado" as const,
         createdAt: new Date().toISOString(),
       }
 
@@ -174,13 +174,19 @@ export default function Agendamento() {
       setTimeout(() => {
         if (isProfessionalView) router.push("/admin/agenda")
         else router.push(`/agendamento/${professional.id}/sucesso`)
-         
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
       toast.error("Erro ao criar agendamento. Tente novamente.")
       setLoading(false)
     }
+  }
+
+  const getDateStatus = (checkDate: Date) => {
+    if (!isDateAvailable(id, checkDate)) {
+      return "unavailable" as const
+    }
+    return "available" as const
   }
 
   return (
@@ -202,7 +208,8 @@ export default function Agendamento() {
           <h2 className="text-lg font-semibold mb-2">Estabelecimento</h2>
           <p className="font-medium">{professional.name}</p>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4" /> {professional.address}
+            <MapPin className="w-4 h-4" />
+            {`${professional.address.street}, ${professional.address.number} - ${professional.address.city}`}
           </p>
         </div>
       )}
@@ -255,19 +262,16 @@ export default function Agendamento() {
             </Button>
           )}
         </div>
-        <Card className="border shadow-sm h-full flex justify-center">
-          <Calendar selected={date} onSelect={setDate} />
+        <Card className="border shadow-sm">
+          <CustomCalendar selected={date} onSelect={setDate} getDateStatus={getDateStatus} />
         </Card>
-        <div className="grid grid-cols-3 gap-2 mt-3" ref={timesRef}>
-          {availableTimes.map((t) => (
-            <button
-              key={t}
-              onClick={() => setSelectedTime(t)}
-              className={`py-2 rounded-xl border ${selectedTime === t ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
-            >
-              {t}
-            </button>
-          ))}
+        <div className="mt-3" ref={timesRef}>
+          <TimeSlotPicker
+            professionalId={id}
+            selectedDate={date}
+            selectedTime={selectedTime}
+            onTimeSelect={setSelectedTime}
+          />
         </div>
       </div>
 
@@ -334,7 +338,7 @@ export default function Agendamento() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-4 h-4" />
+                          <input type="checkbox" checked={isSelected} onChange={() => { }} className="w-4 h-4" />
                           <h3 className="font-semibold">{service.name}</h3>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">{service.category}</p>
@@ -370,7 +374,10 @@ export default function Agendamento() {
                   <b>Estabelecimento:</b> {professional.name}
                 </p>
                 <p>
-                  <b>Endereço:</b> {professional.address}
+                  <p className="text-sm text-muted-foreground flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    {`${professional.address.street}, ${professional.address.number} - ${professional.address.city}`}
+                  </p>
                 </p>
               </>
             )}

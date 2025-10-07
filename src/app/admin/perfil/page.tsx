@@ -52,7 +52,7 @@ export default function Perfil() {
           <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
           <div className="space-y-4">
             <div>
-              <Label>Nome do Estabelecimento</Label>
+              <Label>Nome do Estabelecimento {professional.id}</Label>
               <Input value={professional.name} disabled={!isEditing} />
             </div>
             <div>

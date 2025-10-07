@@ -4,16 +4,19 @@ import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar } from "@/components/ui/calendar"
+import { CustomCalendar } from "@/components/CustomCalendar"
+import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2 } from "lucide-react"
+import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
-  mockProfessionals,
-  mockServices,
+  getProfessionals,
   addFavorite,
   removeFavorite,
   isFavorite,
+  isDateAvailable,
+  generateTimeSlots,
+  getUnavailableReason,
   type Favorite,
 } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
@@ -31,10 +34,18 @@ export default function ProfessionalDetails() {
   const [activeTab, setActiveTab] = useState("servicos")
   const [selectedServices, setSelectedServices] = useState<string[]>([])
 
-  const professional = mockProfessionals.find((p) => p.id === id)
-  const services = mockServices.filter((s) => s.professionalId === id)
+  const professionals = getProfessionals()
+  const professional = professionals.find((p) => p.id === id)
 
-  const availableHours = ["09:00", "09:30", "10:00", "11:00", "13:00", "14:30", "15:00", "16:00"]
+  if (!professional) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Profissional não encontrado</p>
+      </div>
+    )
+  }
+
+  const services = professional.services
 
   const toggleService = (serviceId: string) => {
     setSelectedServices((prev) =>
@@ -51,21 +62,17 @@ export default function ProfessionalDetails() {
     .reduce((sum, service) => sum + service.duration, 0)
 
   const handleSchedule = () => {
-    if (selectedServices.length === 0) {
-      alert("Selecione pelo menos um serviço para agendar.")
-      return
-    }
+     
 
-    // Salvar dados no localStorage para usar na página de agendamento
     if (typeof window !== "undefined") {
       const selectedServicesData = services.filter((s) => selectedServices.includes(s.id))
       localStorage.setItem(
         "booking_data",
         JSON.stringify({
           professional: {
-            id: professional?.id,
-            name: professional?.name,
-            address: professional?.address,
+            id: professional.id,
+            name: professional.name,
+            address: professional.address,
           },
           selectedServices: selectedServicesData,
           selectedDate: selectedDate?.toISOString(),
@@ -104,8 +111,6 @@ export default function ProfessionalDetails() {
       return
     }
 
-    if (!professional) return
-
     try {
       if (isFav) {
         removeFavorite(userWhatsapp, id)
@@ -118,14 +123,11 @@ export default function ProfessionalDetails() {
         const favorite: Favorite = {
           professionalId: id,
           name: professional.name,
-          category: professional.specialty,
-          rating: 4.8,
-          reviews: 127,
-          distance: "1.2 km",
-          address: professional.address,
+          category: professional.specialty as string,
           priceRange: "R$ 50 - R$ 300",
+          address: `${professional.address.street}, ${professional.address.number}`,
+          distance: "1.2 km",
           image: professional.profileImage || "/placeholder.svg",
-          addedAt: new Date().toISOString(),
         }
         addFavorite(userWhatsapp, favorite)
         setIsFav(true)
@@ -134,13 +136,18 @@ export default function ProfessionalDetails() {
           description: `${professional.name} foi adicionado aos seus favoritos.`,
         })
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Erro",
         description: "Não foi possível atualizar os favoritos.",
         variant: "destructive",
       })
     }
+  }
+
+  const getAddress = () => {
+    const addr = professional.address
+    return `${addr.street}, ${addr.number}${addr.neighborhood ? `, ${addr.neighborhood}` : ""}, ${addr.city} - ${addr.state}`
   }
 
   const clearServices = () => {
@@ -160,14 +167,6 @@ export default function ProfessionalDetails() {
     })
   }
 
-  if (!professional) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Profissional não encontrado</p>
-      </div>
-    )
-  }
-
   // Agrupar serviços por categoria
   const groupedServices = services.reduce(
     (acc, service) => {
@@ -177,6 +176,10 @@ export default function ProfessionalDetails() {
     },
     {} as Record<string, typeof services>,
   )
+
+  const getDateStatus = (date: Date) => {
+    return isDateAvailable(id, date) ? "available" : "unavailable"
+  }
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -229,7 +232,6 @@ export default function ProfessionalDetails() {
           <TabsContent value="servicos">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-foreground">Selecione os serviços</h3>
-
             </div>
             <div className="space-y-6">
               {Object.entries(groupedServices).map(([category, categoryServices]) => (
@@ -265,46 +267,88 @@ export default function ProfessionalDetails() {
           <TabsContent value="agenda">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-foreground">Dias e horários</h3>
-
             </div>
             <div className="bg-card rounded-2xl p-4 border border-border mb-4">
-              <Card className="border shadow-sm h-full flex justify-center mb-4">
-                <Calendar selected={selectedDate} onSelect={setSelectedDate} />
+              <Card className="border shadow-sm mb-4">
+                <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
               </Card>
-              <div className="grid grid-cols-4 gap-2">
-                {availableHours.map((hour) => (
-                  <button
-                    key={hour}
-                    onClick={() => setSelectedTime(hour)}
-                    className={`py-3 px-2 rounded-xl border-2 font-medium text-sm ${selectedTime === hour
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-primary/50 hover:bg-accent/50"
-                      }`}
-                  >
-                    {hour}
-                  </button>
-                ))}
-              </div>
+              <TimeSlotPicker
+                professionalId={id}
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                onTimeSelect={setSelectedTime}
+              />
             </div>
           </TabsContent>
 
           {/* Sobre */}
           <TabsContent value="sobre">
-            <div className="bg-card rounded-2xl p-6 border border-border space-y-4">
-              <div>
-                <h3 className="font-bold text-foreground mb-2">Sobre o negócio</h3>
-                <p className="text-muted-foreground">{professional.description}</p>
+            {/* Descrição */}
+            {professional.description && (
+              <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+                <h3 className="font-bold text-foreground mb-3">Descrição</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{professional.description}</p>
               </div>
-              <div>
-                <h3 className="font-bold text-foreground mb-2">Endereço</h3>
-                <p className="text-muted-foreground">{professional.address}</p>
+            )}
+
+            {/* Experiência */}
+            {professional.experience_years && (
+              <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+                <h3 className="font-bold text-foreground mb-3">Experiência</h3>
+                <p className="text-sm text-muted-foreground">{professional.experience_years} anos</p>
               </div>
-              <div>
-                <h3 className="font-bold text-foreground mb-2">Contato</h3>
-                <p className="text-muted-foreground">{professional.phone}</p>
-                <p className="text-muted-foreground">{professional.email}</p>
+            )}
+
+            {/* Redes Sociais */}
+            {(professional.social_instagram || professional.social_facebook) && (
+              <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+                <h3 className="font-bold text-foreground mb-3">Redes Sociais</h3>
+                <div className="flex flex-col gap-3">
+                  {professional.social_instagram && (
+                    <a
+                      href={`https://instagram.com/${professional.social_instagram.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm"
+                    >
+                      <Instagram className="w-4 h-4" /> @{professional.social_instagram}
+                    </a>
+                  )}
+                  {professional.social_facebook && (
+                    <a
+                      href={`https://facebook.com/${professional.social_facebook}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm"
+                    >
+                      <Facebook className="w-4 h-4" /> {professional.social_facebook}
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Contato */}
+            {professional.phone && (
+              <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+                <h3 className="font-bold text-foreground mb-3">Contato</h3>
+                <a href={`tel:${professional.phone}`} className="text-sm text-foreground flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  {professional.phone}
+                </a>
+              </div>
+            )}
+
+            {/* Endereço */}
+            {getAddress() && (
+              <div className="bg-card rounded-2xl p-4 border border-border space-y-2 mb-4">
+                <h3 className="font-bold text-foreground mb-3">Endereço</h3>
+                <p className="text-sm text-muted-foreground mb-3 flex items-start gap-2">
+                  <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  {getAddress()}
+                </p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
@@ -316,48 +360,30 @@ export default function ProfessionalDetails() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 align-center">
               <div className="w-full text-sm text-foreground bg-accent/40 p-3 rounded-lg border border-border flex flex-col gap-1">
                 {selectedServices.length > 0 && (
-                  <div>
-                    <p className="font-medium">
-                      {selectedServices.length} serviço(s) • {totalDuration} min
-                    </p>
-                    <p className="text-primary font-bold">Total: R$ {totalPrice.toFixed(2)}</p>
-                  </div>
+                  <span>
+                    {selectedServices.length} serviço{selectedServices.length > 1 ? "s" : ""} selecionado
+                  </span>
                 )}
-                {(selectedDate || selectedTime) && (
-                  <div className="flex flex-wrap items-center gap-4 mt-1">
-                    {selectedDate && (
-                      <div className="flex items-center gap-2">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
-                        <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    )}
-                    {selectedTime && (
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>{selectedTime}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {selectedDate && <span>Data: {selectedDate.toLocaleDateString()}</span>}
+                {selectedTime && <span>Horário: {selectedTime}</span>}
+                {selectedServices.length > 0 && <span>Total: R$ {totalPrice.toFixed(2)}</span>}
               </div>
-              <div className="">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearServices}
-                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Limpar
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={clearServices}>
+                  Limpar serviços
                 </Button>
+                <Button variant="outline" onClick={clearDateTime}>
+                  Limpar data/hora
+                </Button>
+                <Button onClick={handleSchedule}>Agendar</Button>
               </div>
             </div>
-
           )}
-
-          <Button size="lg" onClick={handleSchedule} className="w-full">
-            Agendar atendimento
-          </Button>
+          {selectedServices.length === 0 && !selectedDate && !selectedTime && (
+            <Button size="lg" onClick={handleSchedule} className="w-full">
+              Agendar agendamento
+            </Button>
+          )}
         </div>
       </div>
     </div>
