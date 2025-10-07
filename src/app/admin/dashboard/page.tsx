@@ -281,7 +281,7 @@ export default function Dashboard() {
           </Card>
 
           <div className="grid grid-cols-2 gap-4">
-            <Link href="/professional/agenda">
+            <Link href="/admin/agenda">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <Calendar className="h-12 w-12 text-primary mb-2" />
@@ -289,7 +289,7 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
             </Link>
-            <Link href="/professional/clientes">
+            <Link href="/admin/clientes">
               <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <TrendingUp className="h-12 w-12 text-primary mb-2" />

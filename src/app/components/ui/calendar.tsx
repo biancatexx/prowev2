@@ -3,10 +3,7 @@
 import * as React from "react"
 import { ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react"
 import { DayPicker } from "react-day-picker"
-
-type DayContentProps = {
-  date: Date
-}
+import type { CalendarDay, Modifiers } from "react-day-picker"
 import { ptBR } from "date-fns/locale"
 import { cn } from "@/lib/utils"
 import { buttonVariants } from "@/components/ui/button"
@@ -20,18 +17,8 @@ export type CalendarProps = Omit<React.ComponentProps<typeof DayPicker>, "mode" 
 }
 
 const months = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
+  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ]
 
 export function Calendar({
@@ -61,24 +48,31 @@ export function Calendar({
     {} as Record<string, number>,
   )
 
-  // Componente customizado para renderizar os dias com a bolinha
-  function CustomDay(props: DayContentProps) {
-    const dateStr = props.date.toISOString().split("T")[0]
+  // ✅ Versão corrigida: `day.date` é o objeto Date real
+  function CustomDay({
+    day,
+    modifiers,
+    ...divProps
+  }: { day: CalendarDay; modifiers: Modifiers } & React.HTMLAttributes<HTMLDivElement>) {
+    const date = day.date // 👈 aqui está a correção
+    const dateStr = date.toISOString().split("T")[0]
     const count = appointmentCount[dateStr] ?? 0
-    const isSelected = selected && props.date.toDateString() === selected.toDateString()
+    const isSelected = selected && date.toDateString() === selected.toDateString()
+    const isToday = dateStr === todayStr
 
     return (
       <div
+        {...divProps}
         className={cn(
-          "h-9 w-9 flex items-center justify-center rounded-full relative",
+          "h-9 w-9 flex items-center justify-center rounded-full relative select-none",
           isSelected && "bg-primary text-primary-foreground",
-          props.date.toISOString().split("T")[0] === todayStr && "border border-primary",
+          isToday && "border border-primary",
+          modifiers.outside && "opacity-40",
         )}
       >
-        <span>{props.date.getDate()}</span>
-
+        <span>{date.getDate()}</span>
         {count > 0 && (
-          <span className="absolute -bottom-1 right-0 flex items-center text-center justify-center w-3 h-3 rounded-full bg-zinc-800 text-white text-[0.6rem]">
+          <span className="absolute -bottom-1 right-0 flex items-center justify-center w-3 h-3 rounded-full bg-zinc-800 text-white text-[0.6rem]">
             {count}
           </span>
         )}
@@ -172,18 +166,18 @@ export function Calendar({
           onSelect={onSelect}
           onMonthChange={setCurrentMonthFn}
           components={{
-            DayContent: CustomDay,
+            Day: CustomDay,
           }}
           classNames={{
-            months: "flex justify-center items-center ", 
+            months: "flex justify-center items-center",
             month: "space-y-4",
             caption: "hidden",
             nav: "hidden",
             nav_button: cn(buttonVariants({ variant: "outline" })),
             table: "w-full border-collapse border-spacing-0",
-            head_row: "flex w-full", // Removed justify-between
+            head_row: "flex w-full",
             head_cell: "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] text-center min-w-[2.25rem]",
-            row: "flex w-full mt-2", // Removed justify-between
+            row: "flex w-full mt-2",
             cell: "flex-1 text-center p-0 relative min-w-[2.25rem]",
             day: cn(buttonVariants({ variant: "ghost" }), "h-9 w-9 p-0 font-normal mx-auto"),
             day_selected:

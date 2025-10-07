@@ -19,6 +19,18 @@ export default function Agenda() {
     loadAppointments()
   }, [])
 
+  const [professionalId, setProfessionalId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const currentUser = localStorage.getItem("mock_current_user")
+      if (currentUser) {
+        const user = JSON.parse(currentUser)
+        setProfessionalId(user.professionalId)
+      }
+    }
+  }, [])
+
   const loadAppointments = () => {
     const stored = getStoredAppointments()
     const formatted = stored.map((apt) => ({
@@ -108,7 +120,7 @@ export default function Agenda() {
               selected={date}
               onSelect={setDate}
               appointmentDates={appointmentDates}
-              className=""
+              className="rounded-md border"
             />
           </Card>
         )}
@@ -298,7 +310,7 @@ export default function Agenda() {
       </div>
 
       {/* Botão flutuante */}
-      <Link href="/agendamento/1">
+      <Link href={`/admin/agendamento/${professionalId}`}>
         <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           <Plus className="w-6 h-6" />
         </Button>

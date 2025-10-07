@@ -1,99 +1,140 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { Card } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Search, Users, Phone } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { Search, User } from "lucide-react"
-import { getStoredAppointments } from "@/data/mockData"
+import { Card } from "@/components/ui/card"
 import NavbarProfessional from "@/components/NavbarProfessional"
+import { getClientsByProfessional, type Client } from "@/data/mockData"
 
-interface Client {
-  whatsapp: string
-  name: string
-  appointmentsCount: number
-  lastAppointment: string
-}
-
-export default function Clientes() {
+export default function ClientesPage() {
+  const router = useRouter()
   const [clients, setClients] = useState<Client[]>([])
+  const [filteredClients, setFilteredClients] = useState<Client[]>([])
   const [searchTerm, setSearchTerm] = useState("")
+  const [professionalId, setProfessionalId] = useState<string | null>(null)
 
   useEffect(() => {
-    loadClients()
+    if (typeof window !== "undefined") {
+      const currentUser = localStorage.getItem("mock_current_user")
+      if (currentUser) {
+        const user = JSON.parse(currentUser)
+        const profId = user.professionalId || "1"
+        setProfessionalId(profId)
+
+        const clientsList = getClientsByProfessional(profId)
+        setClients(clientsList)
+        setFilteredClients(clientsList)
+      }
+    }
   }, [])
 
-  const loadClients = () => {
-    const appointments = getStoredAppointments()
-    const clientsMap = new Map<string, Client>()
+  useEffect(() => {
+    if (searchTerm) {
+      const filtered = clients.filter(
+        (client) =>
+          client.name.toLowerCase().includes(searchTerm.toLowerCase()) || client.whatsapp.includes(searchTerm),
+      )
+      setFilteredClients(filtered)
+    } else {
+      setFilteredClients(clients)
+    }
+  }, [searchTerm, clients])
 
-    appointments.forEach((apt) => {
-      const existing = clientsMap.get(apt.clientWhatsapp)
-      if (existing) {
-        existing.appointmentsCount++
-        if (apt.date > existing.lastAppointment) {
-          existing.lastAppointment = apt.date
-        }
-      } else {
-        clientsMap.set(apt.clientWhatsapp, {
-          whatsapp: apt.clientWhatsapp,
-          name: apt.clientName,
-          appointmentsCount: 1,
-          lastAppointment: apt.date,
-        })
-      }
-    })
-
-    setClients(Array.from(clientsMap.values()))
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value)
   }
 
-  const filteredClients = clients.filter((client) => client.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + "T00:00:00")
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+  }
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
-          <h1 className="text-2xl font-bold text-primary-foreground text-center mb-4">Clientes</h1>
+          <div className="text-center mb-4">
+            <h1 className="text-2xl font-bold text-primary-foreground">Clientes</h1>
+            <p className="text-sm text-primary-foreground/80">
+              {clients.length} {clients.length === 1 ? "cliente cadastrado" : "clientes cadastrados"}
+            </p>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               type="text"
-              placeholder="Buscar cliente..."
+              placeholder="Buscar por nome ou WhatsApp..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-card"
+              className="pl-10 bg-white"
             />
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto max-w-screen-lg px-4">
+      <main className="container mx-auto max-w-screen-lg px-4">
         {filteredClients.length === 0 ? (
-          <p className="text-center text-muted-foreground py-8">Nenhum cliente encontrado</p>
+          <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-zinc-400" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">
+              {searchTerm ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {searchTerm
+                ? "Tente buscar por outro nome ou WhatsApp"
+                : "Seus clientes aparecerão aqui após o primeiro agendamento"}
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             {filteredClients.map((client) => (
-              <Link key={client.whatsapp} href={`/admin/clientes/${client.whatsapp}`}>
-                <Card className="p-4 hover:shadow-lg transition-shadow cursor-pointer">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-6 h-6 text-primary" />
+              <Card
+                key={client.id}
+                className="p-4 cursor-pointer hover:shadow-md transition-shadow"
+                onClick={() => router.push(`/admin/clientes/${client.id}`)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-bold text-lg">{client.name}</h3>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          client.status === "ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {client.status}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold">{client.name}</h3>
-                      <p className="text-sm text-muted-foreground">{client.whatsapp}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {client.appointmentsCount} agendamento{client.appointmentsCount !== 1 ? "s" : ""} • Último:{" "}
-                        {new Date(client.lastAppointment).toLocaleDateString("pt-BR")}
-                      </p>
+                    {client.whatsapp && (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+                        <Phone className="w-3 h-3" />
+                        <span>{client.whatsapp}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-muted-foreground">
+                        {client.totalAppointments} agendamento{client.totalAppointments !== 1 ? "s" : ""}
+                      </span>
+                      <span className="text-muted-foreground">•</span>
+                      <span className="font-semibold text-green-600">{formatCurrency(client.totalSpent)}</span>
                     </div>
                   </div>
-                </Card>
-              </Link>
+                  <div className="text-right text-xs text-muted-foreground">
+                    Último: {formatDate(client.lastAppointment)}
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       <NavbarProfessional />
     </div>

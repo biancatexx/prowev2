@@ -1,110 +1,198 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { ArrowLeft, Phone, Mail, Calendar, DollarSign, Clock } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, Phone, MessageCircle, Calendar } from "lucide-react"
-import { getStoredAppointments } from "@/data/mockData"
-import NavbarProfessional from "@/components/NavbarProfessional"
+import { getClientById, getAppointmentsByProfessional, type Client, type MockAppointment } from "@/data/mockData"
 
-export default function ClienteDetalhes() {
+export default function ClienteDetalhePage() {
   const params = useParams()
   const router = useRouter()
-  const id = params?.id as string
+  const clientId = params?.id as string
 
-  const [client, setClient] = useState<any>(null)
-  const [appointments, setAppointments] = useState<any[]>([])
+  const [client, setClient] = useState<Client | null>(null)
+  const [appointments, setAppointments] = useState<MockAppointment[]>([])
+  const [professionalId, setProfessionalId] = useState<string | null>(null)
 
   useEffect(() => {
-    loadClientData()
-  }, [id])
+    if (typeof window !== "undefined") {
+      const currentUser = localStorage.getItem("mock_current_user")
+      if (currentUser) {
+        const user = JSON.parse(currentUser)
+        const profId = user.professionalId || "1"
+        setProfessionalId(profId)
 
-  const loadClientData = () => {
-    const allAppointments = getStoredAppointments()
-    const clientAppointments = allAppointments.filter((apt) => apt.clientWhatsapp === id)
+        const clientData = getClientById(profId, clientId)
+        setClient(clientData)
 
-    if (clientAppointments.length > 0) {
-      const firstApt = clientAppointments[0]
-      setClient({
-        name: firstApt.clientName,
-        whatsapp: firstApt.clientWhatsapp,
-        totalAppointments: clientAppointments.length,
-        totalSpent: clientAppointments.reduce((sum, apt) => sum + apt.totalPrice, 0),
-      })
-      setAppointments(clientAppointments)
+        if (clientData) {
+          const allAppointments = getAppointmentsByProfessional(profId)
+
+          // Filter appointments for this client
+          const isWhatsappId = !clientId.startsWith("no-whatsapp-")
+          let clientAppointments: MockAppointment[] = []
+
+          if (isWhatsappId) {
+            clientAppointments = allAppointments.filter((apt) => apt.clientWhatsapp.replace(/\D/g, "") === clientId)
+          } else {
+            const targetNameSlug = clientId.replace("no-whatsapp-", "")
+            clientAppointments = allAppointments.filter((apt) => {
+              const aptNameSlug = apt.clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-")
+              return !apt.clientWhatsapp && aptNameSlug === targetNameSlug
+            })
+          }
+
+          setAppointments(
+            clientAppointments.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+          )
+        }
+      }
+    }
+  }, [clientId])
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value)
+  }
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr + "T00:00:00")
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+  }
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case "agendado":
+        return { label: "Agendado", color: "bg-yellow-500", textColor: "text-yellow-700", bgColor: "bg-yellow-50" }
+      case "confirmado":
+        return { label: "Confirmado", color: "bg-green-500", textColor: "text-green-700", bgColor: "bg-green-50" }
+      case "concluido":
+        return { label: "Concluído", color: "bg-blue-500", textColor: "text-blue-700", bgColor: "bg-blue-50" }
+      case "cancelado":
+        return { label: "Cancelado", color: "bg-red-500", textColor: "text-red-700", bgColor: "bg-red-50" }
+      default:
+        return { label: status, color: "bg-gray-500", textColor: "text-gray-700", bgColor: "bg-gray-50" }
     }
   }
 
   if (!client) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Cliente não encontrado</p>
+        <p>Carregando...</p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+    <div className="min-h-screen bg-background pb-8">
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
-          <button onClick={() => router.back()} className="mb-4">
-            <ArrowLeft className="w-6 h-6 text-primary-foreground" />
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
           </button>
           <div className="text-center">
-            <div className="w-20 h-20 bg-card rounded-full flex items-center justify-center mx-auto mb-3">
-              <span className="text-3xl font-bold text-primary">{client.name.charAt(0)}</span>
-            </div>
-            <h1 className="text-2xl font-bold text-primary-foreground">{client.name}</h1>
-            <p className="text-primary-foreground/90">{client.whatsapp}</p>
+            <h1 className="text-2xl font-bold text-primary-foreground mb-1">{client.name}</h1>
+            <span
+              className={`inline-block text-xs px-3 py-1 rounded-full ${
+                client.status === "ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+              }`}
+            >
+              {client.status}
+            </span>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-4 text-center">
-            <p className="text-sm text-muted-foreground">Agendamentos</p>
-            <p className="text-2xl font-bold">{client.totalAppointments}</p>
-          </Card>
-          <Card className="p-4 text-center">
-            <p className="text-sm text-muted-foreground">Total Gasto</p>
-            <p className="text-2xl font-bold">R$ {client.totalSpent}</p>
-          </Card>
-        </div>
-
-        <div className="flex gap-2">
-          <Button className="flex-1 bg-transparent" variant="outline">
-            <Phone className="w-4 h-4 mr-2" />
-            Ligar
-          </Button>
-          <Button className="flex-1 bg-transparent" variant="outline">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            WhatsApp
-          </Button>
-        </div>
-
+      <main className="container mx-auto max-w-screen-lg px-4 space-y-4">
         <Card className="p-6">
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Histórico de Agendamentos
-          </h2>
+          <h2 className="text-lg font-bold mb-4">Informações de Contato</h2>
           <div className="space-y-3">
-            {appointments.map((apt) => (
-              <div key={apt.id} className="border-b pb-3 last:border-b-0">
-                <div className="flex justify-between items-start mb-1">
-                  <p className="font-semibold">{new Date(apt.date).toLocaleDateString("pt-BR")}</p>
-                  <span className="text-sm text-primary font-medium">{apt.time}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{apt.services.map((s: any) => s.name).join(", ")}</p>
-                <p className="text-sm font-semibold text-green-600 mt-1">R$ {apt.totalPrice}</p>
+            {client.whatsapp && (
+              <div className="flex items-center gap-3">
+                <Phone className="w-5 h-5 text-muted-foreground" />
+                <span>{client.whatsapp}</span>
               </div>
-            ))}
+            )}
+            {!client.whatsapp && (
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <Phone className="w-5 h-5" />
+                <span className="italic">WhatsApp não cadastrado</span>
+              </div>
+            )}
+            {client.email && (
+              <div className="flex items-center gap-3">
+                <Mail className="w-5 h-5 text-muted-foreground" />
+                <span>{client.email}</span>
+              </div>
+            )}
           </div>
         </Card>
-      </div>
 
-      <NavbarProfessional />
+        <Card className="p-6">
+          <h2 className="text-lg font-bold mb-4">Estatísticas</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Calendar className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{client.totalAppointments}</p>
+                <p className="text-sm text-muted-foreground">Agendamentos</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-green-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{formatCurrency(client.totalSpent)}</p>
+                <p className="text-sm text-muted-foreground">Total gasto</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4" />
+              <span>Último agendamento: {formatDate(client.lastAppointment)}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="text-lg font-bold mb-4">Histórico de Agendamentos</h2>
+          <div className="space-y-3">
+            {appointments.map((appointment) => {
+              const statusConfig = getStatusConfig(appointment.status)
+              return (
+                <div key={appointment.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-semibold">{appointment.services.map((s) => s.name).join(", ")}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDate(appointment.date)} às {appointment.time}
+                      </p>
+                    </div>
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full ${statusConfig.bgColor}`}>
+                      <div className={`w-2 h-2 rounded-full ${statusConfig.color}`} />
+                      <span className={`font-medium text-xs ${statusConfig.textColor}`}>{statusConfig.label}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">{appointment.totalDuration} min</span>
+                    <span className="font-semibold text-green-600">{formatCurrency(appointment.totalPrice)}</span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </main>
     </div>
   )
 }

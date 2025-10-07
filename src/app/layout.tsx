@@ -8,20 +8,22 @@ import "./globals.css"
 import { AuthProvider } from "./contexts/AuthContext"
 
 const poppins = Poppins({
+  weight: ["400", "700"],
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
   variable: "--font-poppins",
-  display: "swap",
+  display: "swap", // garante renderização estável da fonte
 })
 
 export const metadata: Metadata = {
   title: "Prowe - Agende seu horário com os melhores profissionais",
-  description: "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
+  description:
+    "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
   authors: [{ name: "Prowe" }],
   openGraph: {
     type: "website",
     title: "Prowe - Agende seu horário com os melhores profissionais",
-    description: "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
+    description:
+      "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
     images: [
       {
         url: "https://storage.googleapis.com/gpt-engineer-file-uploads/84qFikrz2BNFWQ9QDZNQq36YFSq2/social-images/social-1759442456718-imagem_2025-10-02_190056712.png",
@@ -35,7 +37,8 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@lovable_dev",
     title: "Prowe - Agende seu horário com os melhores profissionais",
-    description: "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
+    description:
+      "Encontre e agende serviços de beleza com os melhores profissionais perto de você",
     images: [
       "https://storage.googleapis.com/gpt-engineer-file-uploads/84qFikrz2BNFWQ9QDZNQq36YFSq2/social-images/social-1759442456718-imagem_2025-10-02_190056712.png",
     ],
@@ -44,17 +47,21 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="pt-BR">
-      <body className={`font-sans ${poppins.variable}`}>
-        <Suspense fallback={null}>
+      {/* Adicionado suppressHydrationWarning para evitar erro de mismatch da fonte */}
+      <body
+        className={`${poppins.variable} font-sans`}
+        suppressHydrationWarning
+      >
+        <Suspense fallback={<div />}>
           <AuthProvider>
             {children}
+            <Toaster position="top-center" richColors />
           </AuthProvider>
-          <Toaster position="top-center" richColors />
         </Suspense>
         <Analytics />
       </body>

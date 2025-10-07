@@ -2,23 +2,20 @@
 
 import type React from "react"
 import { useState, useRef, useEffect } from "react"
-import { useParams, useRouter, usePathname } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2 } from "lucide-react"
+import { ArrowLeft, Edit2, Plus, X, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { saveAppointment, mockProfessionals, mockServices } from "@/data/mockData"
+import { saveAppointment, mockProfessionals, mockServices, getLastClientNameByWhatsapp } from "@/data/mockData"
 
-export default function Agendamento() {
+export default function ProfessionalAgendamento() {
   const params = useParams()
   const router = useRouter()
-  const pathname = usePathname()
   const id = params?.id as string
-
-  const isProfessionalView = pathname.includes("/admin/")
 
   const [bookingData, setBookingData] = useState<any>(null)
 
@@ -33,6 +30,8 @@ export default function Agendamento() {
   const [showServicesModal, setShowServicesModal] = useState(false)
   const [selectedServices, setSelectedServices] = useState<any[]>([])
 
+  const [suggestedName, setSuggestedName] = useState<string | null>(null)
+
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("booking_data")
@@ -41,11 +40,10 @@ export default function Agendamento() {
         setBookingData(data)
         if (data.selectedDate) setDate(new Date(data.selectedDate))
         if (data.selectedTime) setSelectedTime(data.selectedTime)
-        if (!isProfessionalView && data.selectedServices) setSelectedServices(data.selectedServices)
         localStorage.removeItem("booking_data")
       }
     }
-  }, [isProfessionalView])
+  }, [])
 
   // Refs para scroll/foco
   const whatsappRef = useRef<HTMLInputElement>(null)
@@ -79,6 +77,19 @@ export default function Agendamento() {
     value = value.replace(/^(\d{2})(\d)/g, "($1) $2")
     value = value.replace(/(\d{5})(\d)/, "$1-$2")
     setWhatsapp(value)
+
+    // Check if this WhatsApp has a previous client name
+    if (value.replace(/\D/g, "").length >= 10) {
+      const lastClientName = getLastClientNameByWhatsapp(professional.id, value)
+      if (lastClientName) {
+        setSuggestedName(lastClientName)
+        setCliente(lastClientName)
+      } else {
+        setSuggestedName(null)
+      }
+    } else {
+      setSuggestedName(null)
+    }
   }
 
   const toggleServiceSelection = (service: any) => {
@@ -104,12 +115,6 @@ export default function Agendamento() {
   const handleCloseServicesModal = () => setShowServicesModal(false)
 
   const handleConfirm = () => {
-    if (!isProfessionalView && !whatsapp) {
-      toast.error("Preencha o WhatsApp")
-      whatsappRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
-      whatsappRef.current?.focus()
-      return
-    }
     if (!cliente) {
       toast.error("Preencha o nome do cliente")
       clienteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -141,11 +146,6 @@ export default function Agendamento() {
         setLoading(false)
         return
       }
-      if (!isProfessionalView && !whatsapp) {
-        toast.error("Preencha o WhatsApp")
-        setLoading(false)
-        return
-      }
 
       const cleanWhatsapp = whatsapp.replace(/\D/g, "")
 
@@ -153,7 +153,7 @@ export default function Agendamento() {
         id: `apt-${Date.now()}`,
         professionalId: String(professional.id),
         clientName: String(cliente),
-        clientWhatsapp: String(cleanWhatsapp || "N/A"),
+        clientWhatsapp: String(cleanWhatsapp || ""),
         services: selectedServices.map((s) => ({
           id: String(s.id),
           name: String(s.name),
@@ -172,9 +172,7 @@ export default function Agendamento() {
       toast.success("Agendamento criado com sucesso!")
 
       setTimeout(() => {
-        if (isProfessionalView) router.push("/admin/agenda")
-        else router.push(`/agendamento/${professional.id}/sucesso`)
-         
+        router.push("/admin/agenda")
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
@@ -196,17 +194,6 @@ export default function Agendamento() {
         </div>
       </div>
 
-      {/* Estabelecimento */}
-      {!isProfessionalView && (
-        <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
-          <h2 className="text-lg font-semibold mb-2">Estabelecimento</h2>
-          <p className="font-medium">{professional.name}</p>
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <MapPin className="w-4 h-4" /> {professional.address}
-          </p>
-        </div>
-      )}
-
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
         <div className="flex justify-between items-center mb-2">
@@ -224,7 +211,7 @@ export default function Agendamento() {
                 </>
               ) : (
                 <>
-                  <Edit2 className="w-4 h-4 mr-1" /> {isProfessionalView ? "Selecionar" : "Editar"}
+                  <Edit2 className="w-4 h-4 mr-1" /> Selecionar
                 </>
               )}
             </Button>
@@ -263,7 +250,9 @@ export default function Agendamento() {
             <button
               key={t}
               onClick={() => setSelectedTime(t)}
-              className={`py-2 rounded-xl border ${selectedTime === t ? "bg-primary text-primary-foreground" : "hover:bg-accent"}`}
+              className={`py-2 rounded-xl border ${
+                selectedTime === t ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+              }`}
             >
               {t}
             </button>
@@ -276,7 +265,7 @@ export default function Agendamento() {
         <h2 className="text-lg font-semibold mb-2">Cliente</h2>
         <div className="space-y-3">
           <div>
-            <Label>WhatsApp {!isProfessionalView && <span className="text-destructive">*</span>}</Label>
+            <Label>WhatsApp (opcional)</Label>
             <Input
               type="tel"
               value={whatsapp}
@@ -284,6 +273,7 @@ export default function Agendamento() {
               placeholder="(00) 00000-0000"
               ref={whatsappRef}
             />
+            {suggestedName && <p className="text-sm text-green-600 mt-1">✓ Cliente encontrado: {suggestedName}</p>}
           </div>
           <div>
             <Label>
@@ -329,7 +319,9 @@ export default function Agendamento() {
                   <div
                     key={service.id}
                     onClick={() => toggleServiceSelection(service)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"}`}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                      isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
+                    }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -364,16 +356,6 @@ export default function Agendamento() {
             <div className="text-center border-b pb-3">
               <h2 className="font-bold text-xl">Confirmar Agendamento</h2>
             </div>
-            {!isProfessionalView && (
-              <>
-                <p>
-                  <b>Estabelecimento:</b> {professional.name}
-                </p>
-                <p>
-                  <b>Endereço:</b> {professional.address}
-                </p>
-              </>
-            )}
             <p>
               <b>Serviços:</b>
             </p>
