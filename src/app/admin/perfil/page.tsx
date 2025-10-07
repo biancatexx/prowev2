@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit2, Save } from "lucide-react"
-import { mockServices } from "@/data/mockData"
+import { getMockServices } from "@/data/mockData"
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { toast } from "sonner"
 import { useAuth } from "@/contexts/AuthContext" // Importação adicionada
@@ -43,7 +43,9 @@ export default function Perfil() {
   }
 
   // A partir daqui, professionalData tem certeza de ter dados válidos do profissional.
-  const services = mockServices.filter((s) => s.professionalId === professionalData.id)
+  const services = getMockServices().filter((s) => s.professionalId === professionalData.id)
+
+  
 
   const handleSave = () => {
     // Lógica para salvar os dados (usando professionalData)

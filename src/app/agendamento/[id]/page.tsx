@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2 } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { saveAppointment, mockProfessionals, mockServices, isDateAvailable } from "@/data/mockData"
+import { saveAppointment, getMockProfessionals, getMockServices, isDateAvailable } from "@/data/mockData"
 
 export default function Agendamento() {
   const params = useParams()
@@ -54,14 +54,15 @@ export default function Agendamento() {
   const calendarRef = useRef<HTMLDivElement>(null)
   const timesRef = useRef<HTMLDivElement>(null)
 
-  const professional = bookingData?.professional || mockProfessionals.find((p) => p.id === id)
+const professional = bookingData?.professional || getMockProfessionals().find((p) => p.id === id) // Nota: getMockProfessionals também deve ser chamado com ()
+
 
   if (!professional) {
     toast.error("Profissional não encontrado")
     router.back()
     return null
   }
-  const availableServices = mockServices.filter((s) => s.professionalId === id)
+  const availableServices = getMockServices().filter((s) => s.professionalId === id) 
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
 
@@ -327,7 +328,7 @@ export default function Agendamento() {
               </button>
             </div>
             <div className="space-y-2">
-              {availableServices.map((service) => {
+              {availableServices.map((service: { id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; category: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; price: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; duration: number }) => {
                 const isSelected = selectedServices.some((s) => s.id === service.id)
                 return (
                   <div
