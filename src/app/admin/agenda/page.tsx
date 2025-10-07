@@ -322,7 +322,7 @@ export default function Agenda() {
       </Link>
 
       <Link href={`/admin/agenda/ajustes`}>
-        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
+        <Button className="fixed bottom-44 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           Ajustes
         </Button>
       </Link>

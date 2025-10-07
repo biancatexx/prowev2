@@ -114,17 +114,7 @@ export default function Dashboard() {
     { name: "Agendados", value: appointmentStats.agendados, color: "#facc15" },
     { name: "Cancelados", value: appointmentStats.cancelados, color: "#dc2626" },
   ].filter((item) => item.value > 0) // Only show non-zero values
-  const handleCopyLink = () => {
-    if (!professional || typeof window === "undefined") return
-
-    const link = `${window.location.origin}/profissional/${professional.id}`
-    navigator.clipboard.writeText(link)
-
-    toast({
-      title: "Link copiado!",
-      description: "O link do seu perfil foi copiado para a área de transferência.",
-    })
-  }
+  
 
   if (!professional) {
     return (
@@ -194,27 +184,7 @@ export default function Dashboard() {
         </div>
 
         <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" /> Link do Perfil
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/profissional/${professional.id}`}
-                  readOnly
-                  className="flex-1 px-3 py-2 bg-muted rounded-lg text-sm"
-                />
-                <Button size="sm" onClick={handleCopyLink}>
-                  Copiar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
+      
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

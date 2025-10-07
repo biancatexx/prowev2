@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Star, Heart, Search, SlidersHorizontal, Bell, ChevronDown } from "lucide-react";
-import { getProfessionals, mockServices } from "@/data/mockData"; 
+import { getProfessionals, getMockServices } from "@/data/mockData";
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
 
@@ -16,15 +16,8 @@ interface Professional {
   address_street: string | null;
   address_neighborhood: string | null;
   profile_image: string | null;
-  services?: Array<{
-    category: string;
-    price: number;
-  }>;
-  address: {
-    street: string;
-    neighborhood: string;
-    city: string;
-  };
+  services?: Array<{ category: string; price: number }>;
+  address: { street: string; neighborhood: string; city: string };
 }
 
 const categories = [
@@ -34,23 +27,24 @@ const categories = [
   { name: "Estética", icon: "✨" },
   { name: "Maquiagem", icon: "💄" },
   { name: "Depilação", icon: "🪒" },
-  { name: "Massagem", icon: "💆‍♀️" },
+  { name: "Massagem", icon: "💆‍♀️" }
 ];
 
 const Explorar = () => {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [professionals, setProfessionals] = useState<Professional[]>([]); 
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const rawProfessionals = getProfessionals();
+    const allMockServices = getMockServices();
     const loadedProfessionals: Professional[] = rawProfessionals.map((prof: any) => {
-      const profServices = mockServices.filter(s => s.professionalId === prof.id);
+      const profServices = allMockServices.filter((s: any) => s.professionalId === prof.id);
       return {
         ...prof,
-        address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A" }, 
+        address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A" },
         services: profServices
       };
     }) as Professional[];
@@ -59,15 +53,11 @@ const Explorar = () => {
   }, []);
 
   const toggleFavorite = (id: string) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((fav) => fav !== id) : [...prev, id]
-    );
+    setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
   };
 
   const getAddress = (prof: any) => {
-    if (prof.address && typeof prof.address === 'object') {
-      return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}`;
-    }
+    if (prof.address && typeof prof.address === 'object') return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}`;
     return "Endereço não informado";
   };
 
@@ -85,10 +75,8 @@ const Explorar = () => {
   };
 
   const filteredProfessionals = professionals.filter((prof: any) => {
-    const matchesSearch = prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      prof.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "Todos" ||
-      prof.services?.some((s: any) => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
+    const matchesSearch = prof.name.toLowerCase().includes(searchQuery.toLowerCase()) || prof.specialty?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === "Todos" || prof.services?.some((s: any) => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
     return matchesSearch && matchesCategory;
   });
 
@@ -117,7 +105,7 @@ const Explorar = () => {
                 type="text"
                 placeholder="Buscar por serviço, profissional ou local..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={e => setSearchQuery(e.target.value)}
                 className="pl-12 pr-4 py-6 text-lg rounded-xl border-2 focus:border-primary"
               />
             </div>
@@ -125,17 +113,14 @@ const Explorar = () => {
         </div>
       </header>
       <section className="py-12">
-        <div className="container mx-auto max-w-screen-lg px-">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex justify-between items-center mb-8">
             <div>
               <h2 className="text-2xl font-bold">Profissionais Perto de Você</h2>
-              <p className="text-muted-foreground mt-1">
-                {loading ? "Carregando..." : `${filteredProfessionals.length} profissionais encontrados`}
-              </p>
+              <p className="text-muted-foreground mt-1">{loading ? "Carregando..." : `${filteredProfessionals.length} profissionais encontrados`}</p>
             </div>
             <Button variant="outline" size="default">
-              <SlidersHorizontal className="mr-2 w-4 h-4" />
-              Filtros
+              <SlidersHorizontal className="mr-2 w-4 h-4" />Filtros
             </Button>
           </div>
           <div className="space-y-4">
@@ -144,41 +129,21 @@ const Explorar = () => {
             ) : filteredProfessionals.length === 0 ? (
               <p className="text-center text-muted-foreground">Nenhum profissional encontrado.</p>
             ) : (
-              filteredProfessionals.map((professional) => (
-                <div
-                  key={professional.id}
-                  className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow"
-                >
+              filteredProfessionals.map(professional => (
+                <div key={professional.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex gap-3">
                     <Link href={`/profissional/${professional.id}`} className="flex-shrink-0">
-                      <img
-                        src={(professional as any).profileImage || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=100&h=100&fit=crop"}
-                        alt={professional.name}
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
+                      <img src={(professional as any).profileImage || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=100&h=100&fit=crop"} alt={professional.name} className="w-16 h-16 rounded-full object-cover" />
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link href={`/profissional/${professional.id}`}>
                         <h3 className="font-bold text-foreground mb-1">{professional.name}</h3>
-                        <p className="text-sm text-muted-foreground mb-1 truncate">
-                          {getServices(professional)}
-                        </p>
-                        <p className="text-sm font-semibold text-foreground mb-2">
-                          {getPriceRange(professional)}
-                        </p>
+                        <p className="text-sm text-muted-foreground mb-1 truncate">{getServices(professional)}</p>
+                        <p className="text-sm font-semibold text-foreground mb-2">{getPriceRange(professional)}</p>
                       </Link>
                     </div>
-                    <button
-                      onClick={() => toggleFavorite(professional.id)}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
-                      aria-label="Adicionar aos favoritos"
-                    >
-                      <Heart
-                        className={`w-5 h-5 ${favorites.includes(professional.id)
-                          ? "fill-red-500 text-red-500"
-                          : "text-zinc-400"
-                        }`}
-                      />
+                    <button onClick={() => toggleFavorite(professional.id)} className="flex-shrink-0 w-8 h-8 flex items-center justify-center" aria-label="Adicionar aos favoritos">
+                      <Heart className={`w-5 h-5 ${favorites.includes(professional.id) ? "fill-red-500 text-red-500" : "text-zinc-400"}`} />
                     </button>
                   </div>
                   <div className="border-t border-border mt-2 pt-4">

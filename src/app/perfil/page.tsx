@@ -1,383 +1,187 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { toast } from "sonner"
-import { User, Mail, Phone, Calendar, Lock } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { ArrowLeft, UserIcon, LogOut } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
+import { saveUser, type User } from "@/data/mockData"
+import { useToast } from "@/hooks/use-toast"
 import NavbarApp from "@/components/NavbarApp"
 
 export default function PerfilPage() {
   const router = useRouter()
-  const { user, updateUser: updateUserContext, logout } = useAuth()
-
-  const [showWhatsAppInput, setShowWhatsAppInput] = useState(false)
-  const [whatsappInput, setWhatsappInput] = useState("")
-  const [isEditing, setIsEditing] = useState(false)
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
-  const [password, setPassword] = useState("")
-  const [pendingUpdates, setPendingUpdates] = useState<any>(null)
-
+  const { user, updateUser, logout } = useAuth()
+  const { toast } = useToast()
+  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    whatsapp: user?.whatsapp || "",
-    birthDate: user?.birthDate || "",
+    name: "",
+    whatsapp: "",
+    email: "",
+    birthDate: "",
   })
 
   useEffect(() => {
-    if (user && !user.whatsapp) {
-      setShowWhatsAppInput(true)
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        whatsapp: user.whatsapp || "",
+        email: user.email || "",
+        birthDate: user.birthDate || "",
+      })
     }
   }, [user])
 
-  const handleWhatsAppSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!whatsappInput) {
-      toast.error("Por favor, digite seu WhatsApp")
-      return
-    }
-
-    if (!user || !user.id) {
-      toast.error("Usuário não encontrado")
-      return
-    }
-
-    try {
-      await updateUserContext({
-        id: user.id,
-        name: user.name!,
-        email: user.email!,
-        password: user.password!,
-        profileImage: user.profileImage,
-        whatsapp: whatsappInput,
-        birthDate: user.birthDate!,
-        createdAt: user.createdAt!,
-        type: user.type!,
-      })
-      setFormData({ ...formData, whatsapp: whatsappInput })
-      setShowWhatsAppInput(false)
-      toast.success("WhatsApp cadastrado com sucesso!")
-    } catch {
-      toast.error("Erro ao cadastrar WhatsApp")
-    }
-  }
-
-  const saveProfile = async (data: typeof formData) => {
-    if (!user || !user.id) {
-      toast.error("Usuário não encontrado")
-      return
-    }
-
-    try {
-      await updateUserContext({
-        id: user.id,
-        name: data.name || user.name!,
-        email: user.email!,
-        password: user.password!,
-        profileImage: user.profileImage,
-        whatsapp: data.whatsapp || user.whatsapp!,
-        birthDate: data.birthDate || user.birthDate!,
-        createdAt: user.createdAt!,
-        type: user.type!,
-      })
-      toast.success("Perfil atualizado com sucesso!")
-      setIsEditing(false)
-    } catch (error) {
-      toast.error("Erro ao atualizar perfil")
-      console.error(error)
-    }
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (formData.birthDate !== user?.birthDate && formData.birthDate) {
-      setPendingUpdates(formData)
-      setShowPasswordDialog(true)
-      return
-    }
-    await saveProfile(formData)
-  }
+    setLoading(true)
 
-  const handlePasswordConfirm = async () => {
-    if (!user || password !== user.password) {
-      toast.error("Senha incorreta")
-      return
-    }
-    setShowPasswordDialog(false)
-    setPassword("")
-    await saveProfile(pendingUpdates)
-    setPendingUpdates(null)
-  }
+    try {
+      if (!user) return
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    })
+      const updatedUser: User = {
+        ...user,
+        name: formData.name,
+        whatsapp: formData.whatsapp.replace(/\D/g, ""),
+        email: formData.email,
+        birthDate: formData.birthDate,
+      }
+
+      saveUser(updatedUser)
+      updateUser(updatedUser)
+
+      toast({
+        title: "Perfil atualizado!",
+        description: "Suas informações foram salvas com sucesso.",
+      })
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o perfil.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleLogout = () => {
     logout()
-    router.push("/login")
+    toast({
+      title: "Logout realizado",
+      description: "Você saiu da sua conta.",
+    })
+    router.push("/")
   }
 
   if (!user) {
-    router.push("/login")
-    return null
-  }
-
-  if (showWhatsAppInput) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background pb-24">
         <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-          <div className="container text-center mx-auto max-w-md">
-            <h1 className="text-3xl font-bold text-zinc-800 mb-1">Bem-vindo!</h1>
-            <p className="text-muted-foreground">Complete seu cadastro para continuar</p>
+          <div className="container mx-auto max-w-md text-center">
+            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meu Perfil</h1>
           </div>
         </header>
-        <main className="container mx-auto max-w-screen-lg px-4 py-6">
-          <div className="bg-white rounded-2xl border border-border p-8 text-center shadow-sm">
-            <div className="max-w-md mx-auto space-y-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-300 to-purple-200 rounded-full flex items-center justify-center mx-auto">
-                <Phone className="w-10 h-10 text-purple-800" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold mb-2">Cadastre seu WhatsApp</h2>
-                <p className="text-muted-foreground text-sm">
-                  Precisamos do seu WhatsApp para enviar confirmações e lembretes dos seus agendamentos
-                </p>
-              </div>
-              <form onSubmit={handleWhatsAppSubmit} className="space-y-4">
-                <Input
-                  type="tel"
-                  placeholder="(11) 98765-4321"
-                  value={whatsappInput}
-                  onChange={(e) => setWhatsappInput(e.target.value)}
-                  className="h-14 text-lg text-center"
-                  required
-                />
-                <Button type="submit" className="w-full h-12 rounded-xl bg-zinc-800 text-white hover:bg-zinc-900">
-                  Continuar
-                </Button>
-              </form>
+
+        <main className="container mx-auto max-w-md px-4 mt-8">
+          <Card className="p-8 text-center">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UserIcon className="w-8 h-8 text-zinc-400" />
             </div>
-          </div>
+            <h2 className="text-xl font-bold mb-2">Faça login</h2>
+            <p className="text-sm text-muted-foreground mb-6">Entre na sua conta para acessar seu perfil</p>
+            <Button onClick={() => router.push("/login")} className="w-full">
+              Fazer Login
+            </Button>
+          </Card>
         </main>
+
+        <NavbarApp />
       </div>
     )
   }
 
-  const initials = formData.name
-    ? formData.name
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : "U"
-
   return (
-    <>
-      <div className="min-h-screen bg-background">
-        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-8 pt-12 px-4">
-          <div className="container mx-auto max-w-md text-center">
+    <div className="min-h-screen bg-background pb-24">
+      <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
+        <div className="container mx-auto max-w-md">
+          <button
+            onClick={() => router.back()}
+            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div className="text-center">
             <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meu Perfil</h1>
             <p className="text-sm text-zinc-600">Gerencie suas informações pessoais</p>
           </div>
-        </header>
-        <main className="container mx-auto max-w-screen-lg px-4 py-6">
-          <div className="bg-white rounded-2xl p-6 border border-border shadow-sm">
-            <div className="flex flex-col items-center mb-6">
-              <Avatar className="w-24 h-24 mb-3 border-4 border-purple-300">
-                <AvatarFallback className="text-lg font-bold bg-purple-200 text-zinc-800">{initials}</AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <Button variant="outline" size="sm">
-                  Alterar Foto
-                </Button>
-              )}
+        </div>
+      </header>
+
+      <main className="container mx-auto max-w-md px-4 mt-6">
+        <Card className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome completo *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
-                  <User className="w-4 h-4 text-purple-400" />
-                  Nome Completo *
-                </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className="h-11"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
-                  <Mail className="w-4 h-4 text-purple-400" />
-                  E-mail
-                </Label>
-                <Input id="email" name="email" type="email" value={formData.email} disabled className="h-11 bg-muted" />
-                <p className="text-xs text-muted-foreground">O e-mail não pode ser alterado</p>
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="whatsapp" className="flex items-center gap-2 text-sm font-medium">
-                  <Phone className="w-4 h-4 text-purple-400" />
-                  WhatsApp *
-                </Label>
-                <Input
-                  id="whatsapp"
-                  name="whatsapp"
-                  type="tel"
-                  value={formData.whatsapp}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className="h-11"
-                  placeholder="(11) 98765-4321"
-                  required
-                />
-              </div>
-
-              <div className="space-y-1">
-                <Label htmlFor="birthDate" className="flex items-center gap-2 text-sm font-medium">
-                  <Calendar className="w-4 h-4 text-purple-400" />
-                  Data de Nascimento
-                </Label>
-                <Input
-                  id="birthDate"
-                  name="birthDate"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={handleChange}
-                  disabled={!isEditing}
-                  className="h-11"
-                />
-                {isEditing && (
-                  <p className="text-xs text-muted-foreground">
-                    Alterar a data de nascimento requer confirmação de senha
-                  </p>
-                )}
-              </div>
-
-              {!isEditing && (
-                <div className="pt-4">
-                  <Button variant="outline" size="default" className="w-full bg-transparent" type="button">
-                    <Lock className="mr-2 w-4 h-4" />
-                    Alterar Senha
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex gap-3 pt-2">
-                {!isEditing ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="default"
-                      size="lg"
-                      className="flex-1 bg-zinc-800 hover:bg-zinc-700"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      Editar Perfil
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="flex-1 bg-transparent"
-                      onClick={handleLogout}
-                    >
-                      Sair
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      className="flex-1 bg-transparent"
-                      onClick={() => {
-                        setIsEditing(false)
-                        setFormData({
-                          name: user?.name || "",
-                          email: user?.email || "",
-                          whatsapp: user?.whatsapp || "",
-                          birthDate: user?.birthDate || "",
-                        })
-                      }}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button type="submit" variant="default" size="lg" className="flex-1 bg-zinc-800 hover:bg-zinc-700">
-                      Salvar
-                    </Button>
-                  </>
-                )}
-              </div>
-            </form>
-
-            <div className="mt-6 pt-4 border-t text-center text-xs text-muted-foreground">
-              <p>* Campos obrigatórios</p>
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp">WhatsApp *</Label>
+              <Input
+                id="whatsapp"
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+                required
+              />
             </div>
-          </div>
-        </main>
 
-        <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Confirme sua senha</DialogTitle>
-              <DialogDescription>
-                Para alterar a data de nascimento, precisamos confirmar sua identidade. Digite sua senha atual.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Digite sua senha"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
             </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowPasswordDialog(false)
-                  setPassword("")
-                  setPendingUpdates(null)
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button onClick={handlePasswordConfirm}>Confirmar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="birthDate">Data de nascimento</Label>
+              <Input
+                id="birthDate"
+                type="date"
+                value={formData.birthDate}
+                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+              />
+            </div>
+
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Salvando..." : "Salvar Alterações"}
+            </Button>
+          </form>
+        </Card>
+
+        <Card className="p-6 mt-4">
+          <Button variant="destructive" className="w-full" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair da Conta
+          </Button>
+        </Card>
+      </main>
+
       <NavbarApp />
-    </>
+    </div>
   )
 }

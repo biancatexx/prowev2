@@ -6,6 +6,8 @@ import { MapPin, Heart, Trash2, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getFavorites, removeFavorite, type Favorite } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
+import Navbar from "@/components/Navbar"
+import NavbarApp from "@/components/NavbarApp"
 
 export default function Favoritos() {
   const router = useRouter()
@@ -178,6 +180,8 @@ export default function Favoritos() {
           </section>
         )}
       </main>
+      <NavbarApp />
+      
     </div>
   )
 }

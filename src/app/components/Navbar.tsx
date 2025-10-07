@@ -37,7 +37,7 @@ const Navbar = () => {
           <div className="flex gap-3">
 
             <Link href={"/login"}>
-              <Button variant="outline">    <Briefcase className="w-5 h-5 text-primary" /> Sou Profissional</Button>
+              <Button variant="outline">    <Briefcase className="w-5 h-5 text-primary" /> Entrar</Button>
             </Link>
 
           </div>

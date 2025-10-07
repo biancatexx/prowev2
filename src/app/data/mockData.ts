@@ -1,7 +1,6 @@
 import { ReactNode } from "react"
 
 // --- INTERFACES ---
-
 export interface ProfessionalAvailability {
   professionalId: string
   workingDays: {
@@ -14,14 +13,14 @@ export interface ProfessionalAvailability {
     sunday: boolean
   }
   workingHours: {
-    start: string // "09:00"
-    end: string // "18:00"
+    start: string
+    end: string
   }
-  slotInterval: number // minutes (e.g., 30)
-  closedDates: string[] // ["2025-01-15", "2025-12-25"]
+  slotInterval: number
+  closedDates: string[]
   customSlots?: {
     date: string
-    slots: string[] // ["09:00", "10:00", "14:00"]
+    slots: string[]
   }[]
 }
 
@@ -40,7 +39,6 @@ export interface User {
   profileImage?: string
   birthDate?: string
   createdAt: string
-  
   type: "client" | "professional"
 }
 
@@ -48,10 +46,10 @@ export interface Service {
   id: string
   category: string
   name: string
-  duration: number // in minutes
+  duration: number
   price: number
   description?: string
-  professionalId?: string // Adicionado para facilitar o mockServices
+  professionalId?: string
 }
 
 export interface Professional {
@@ -134,8 +132,7 @@ export interface Client {
   lastAppointment: string
 }
 
-// --- CONSTANTES E CHAVES DE ARMAZENAMENTO ---
-
+// --- CONSTANTES ---
 export const defaultCategories: ServiceCategory[] = [
   { id: "1", name: "Cabelo", icon: "💇‍♀️" },
   { id: "2", name: "Unha", icon: "💅" },
@@ -154,8 +151,7 @@ const FAVORITES_STORAGE_KEY = "mock_favorites"
 const CATEGORIES_STORAGE_KEY = "mock_categories"
 const APPOINTMENTS_STORAGE_KEY = "mock_appointments"
 
-// --- DADOS INICIAIS MOCK ---
-
+// --- DADOS MOCK ---
 const initialMockProfessionals: Professional[] = [
   {
     id: "1",
@@ -179,9 +175,9 @@ const initialMockProfessionals: Professional[] = [
       zipCode: "01000-000",
     },
     services: [
-      { id: "s1", category: "Cabelo", name: "Corte Feminino", duration: 60, price: 80.00, description: "Corte e lavagem." },
-      { id: "s2", category: "Unha", name: "Manicure e Pedicure", duration: 90, price: 55.00, description: "Esmaltação comum." },
-      { id: "s3", category: "Estética", name: "Limpeza de Pele", duration: 75, price: 120.00, description: "Limpeza profunda." },
+      { id: "s1", category: "Cabelo", name: "Corte Feminino", duration: 60, price: 80.0, description: "Corte e lavagem." },
+      { id: "s2", category: "Unha", name: "Manicure e Pedicure", duration: 90, price: 55.0, description: "Esmaltação comum." },
+      { id: "s3", category: "Estética", name: "Limpeza de Pele", duration: 75, price: 120.0, description: "Limpeza profunda." },
     ],
     workingHours: {
       monday: { enabled: true, start: "09:00", end: "18:00" },
@@ -217,8 +213,8 @@ const initialMockProfessionals: Professional[] = [
       zipCode: "02000-000",
     },
     services: [
-      { id: "s4", category: "Barba", name: "Barba Clássica", duration: 40, price: 40.00, description: "Toalha quente e finalização." },
-      { id: "s5", category: "Cabelo", name: "Corte Masculino", duration: 30, price: 50.00, description: "Corte e lavagem." },
+      { id: "s4", category: "Barba", name: "Barba Clássica", duration: 40, price: 40.0, description: "Toalha quente e finalização." },
+      { id: "s5", category: "Cabelo", name: "Corte Masculino", duration: 30, price: 50.0, description: "Corte e lavagem." },
     ],
     workingHours: {
       monday: { enabled: true, start: "10:00", end: "19:00" },
@@ -235,37 +231,32 @@ const initialMockProfessionals: Professional[] = [
 ]
 
 const initialMockAppointments: MockAppointment[] = [
-    {
-        id: "apt-1",
-        professionalId: "1",
-        professionalName: "Studio Beleza Premium",
-        clientName: "Ana Silva",
-        clientWhatsapp: "11988887777",
-        date: "2025-10-15",
-        time: "10:00",
-        services: [{ id: "s1", name: "Corte Feminino", duration: 60, price: 80.00 }],
-        totalDuration: 60,
-        totalPrice: 80.00,
-        status: "agendado",
-        createdAt: new Date().toISOString(),
-    },
+  {
+    id: "apt-1",
+    professionalId: "1",
+    professionalName: "Studio Beleza Premium",
+    clientName: "Ana Silva",
+    clientWhatsapp: "11988887777",
+    date: "2025-10-15",
+    time: "10:00",
+    services: [{ id: "s1", name: "Corte Feminino", duration: 60, price: 80.0 }],
+    totalDuration: 60,
+    totalPrice: 80.0,
+    status: "agendado",
+    createdAt: new Date().toISOString(),
+  },
 ]
 
 // --- FUNÇÕES DE ARMAZENAMENTO E MOCK ---
-
 const initializeMocks = () => {
   if (typeof window === "undefined") return
-  // Inicializa profissionais se não houver no localStorage
   if (!localStorage.getItem(PROFESSIONALS_STORAGE_KEY)) {
     localStorage.setItem(PROFESSIONALS_STORAGE_KEY, JSON.stringify(initialMockProfessionals))
   }
-  // Inicializa agendamentos
   if (!localStorage.getItem(APPOINTMENTS_STORAGE_KEY)) {
     localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(initialMockAppointments))
   }
 }
-// Executa a inicialização
-initializeMocks()
 
 // User functions
 export const getUsers = (): User[] => {
@@ -278,13 +269,8 @@ export const saveUser = (user: User): void => {
   if (typeof window === "undefined") return
   const users = getUsers()
   const existingIndex = users.findIndex((u) => u.id === user.id)
-
-  if (existingIndex >= 0) {
-    users[existingIndex] = user
-  } else {
-    users.push(user)
-  }
-
+  if (existingIndex >= 0) users[existingIndex] = user
+  else users.push(user)
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
 }
 
@@ -301,21 +287,17 @@ export const getUserById = (id: string): User | null => {
 // Professional functions
 export const getProfessionals = (): Professional[] => {
   if (typeof window === "undefined") return []
+  initializeMocks()
   const stored = localStorage.getItem(PROFESSIONALS_STORAGE_KEY)
-  return stored ? JSON.parse(stored) : initialMockProfessionals // Fallback para o mock
+  return stored ? JSON.parse(stored) : initialMockProfessionals
 }
 
 export const saveProfessional = (professional: Professional): void => {
   if (typeof window === "undefined") return
   const professionals = getProfessionals()
   const existingIndex = professionals.findIndex((p) => p.id === professional.id)
-
-  if (existingIndex >= 0) {
-    professionals[existingIndex] = professional
-  } else {
-    professionals.push(professional)
-  }
-
+  if (existingIndex >= 0) professionals[existingIndex] = professional
+  else professionals.push(professional)
   localStorage.setItem(PROFESSIONALS_STORAGE_KEY, JSON.stringify(professionals))
 }
 
@@ -334,7 +316,7 @@ export const getServicesByProfessionalId = (professionalId: string): Service[] =
   return professional ? professional.services : []
 }
 
-// Favorites functions (mantidas, mas simplificadas para não poluir)
+// Favorites functions
 export const getFavorites = (userWhatsapp: string): Favorite[] => {
   if (typeof window === "undefined") return []
   const stored = localStorage.getItem(FAVORITES_STORAGE_KEY)
@@ -346,11 +328,7 @@ export const addFavorite = (userWhatsapp: string, favorite: Favorite): void => {
   if (typeof window === "undefined") return
   const stored = localStorage.getItem(FAVORITES_STORAGE_KEY)
   const allFavorites = stored ? JSON.parse(stored) : {}
-
-  if (!allFavorites[userWhatsapp]) {
-    allFavorites[userWhatsapp] = []
-  }
-
+  if (!allFavorites[userWhatsapp]) allFavorites[userWhatsapp] = []
   const exists = allFavorites[userWhatsapp].find((f: Favorite) => f.professionalId === favorite.professionalId)
   if (!exists) {
     allFavorites[userWhatsapp].push(favorite)
@@ -362,7 +340,6 @@ export const removeFavorite = (userWhatsapp: string, professionalId: string): vo
   if (typeof window === "undefined") return
   const stored = localStorage.getItem(FAVORITES_STORAGE_KEY)
   const allFavorites = stored ? JSON.parse(stored) : {}
-
   if (allFavorites[userWhatsapp]) {
     allFavorites[userWhatsapp] = allFavorites[userWhatsapp].filter((f: Favorite) => f.professionalId !== professionalId)
     localStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(allFavorites))
@@ -385,169 +362,104 @@ export const saveCategory = (category: ServiceCategory): void => {
   if (typeof window === "undefined") return
   const categories = getCategories()
   const existingIndex = categories.findIndex((c) => c.id === category.id)
-
-  if (existingIndex >= 0) {
-    categories[existingIndex] = category
-  } else {
-    categories.push(category)
-  }
-
+  if (existingIndex >= 0) categories[existingIndex] = category
+  else categories.push(category)
   localStorage.setItem(CATEGORIES_STORAGE_KEY, JSON.stringify(categories))
 }
 
 // Availability functions
 export const getProfessionalAvailability = (professionalId: string): ProfessionalAvailability | null => {
   if (typeof window === "undefined") return null
-
   const stored = localStorage.getItem(AVAILABILITY_STORAGE_KEY)
   if (!stored) return null
-
   const allAvailability = JSON.parse(stored)
   return allAvailability[professionalId] || null
 }
 
 export const saveProfessionalAvailability = (availability: ProfessionalAvailability): void => {
   if (typeof window === "undefined") return
-
   const stored = localStorage.getItem(AVAILABILITY_STORAGE_KEY)
   const allAvailability = stored ? JSON.parse(stored) : {}
-
   allAvailability[availability.professionalId] = availability
   localStorage.setItem(AVAILABILITY_STORAGE_KEY, JSON.stringify(allAvailability))
 }
 
 export const getDefaultAvailability = (professionalId: string): ProfessionalAvailability => {
   const professional = getProfessionalById(professionalId)
-  
-  // Mapeia os workingHours do Professional para o formato ProfessionalAvailability
   const workingDays: ProfessionalAvailability['workingDays'] = {
-      monday: professional?.workingHours.monday.enabled ?? true,
-      tuesday: professional?.workingHours.tuesday.enabled ?? true,
-      wednesday: professional?.workingHours.wednesday.enabled ?? true,
-      thursday: professional?.workingHours.thursday.enabled ?? true,
-      friday: professional?.workingHours.friday.enabled ?? true,
-      saturday: professional?.workingHours.saturday.enabled ?? false,
-      sunday: professional?.workingHours.sunday.enabled ?? false,
-  };
-
-  const workingHours = {
-      start: professional?.workingHours.monday.start ?? "09:00",
-      end: professional?.workingHours.monday.end ?? "18:00",
-  };
-  
-  return {
-    professionalId,
-    workingDays,
-    workingHours,
-    slotInterval: 30, // Padrão
-    closedDates: [],
-    customSlots: [],
+    monday: professional?.workingHours.monday.enabled ?? true,
+    tuesday: professional?.workingHours.tuesday.enabled ?? true,
+    wednesday: professional?.workingHours.wednesday.enabled ?? true,
+    thursday: professional?.workingHours.thursday.enabled ?? true,
+    friday: professional?.workingHours.friday.enabled ?? true,
+    saturday: professional?.workingHours.saturday.enabled ?? false,
+    sunday: professional?.workingHours.sunday.enabled ?? false,
   }
+  const workingHours = {
+    start: professional?.workingHours.monday.start ?? "09:00",
+    end: professional?.workingHours.monday.end ?? "18:00",
+  }
+  return { professionalId, workingDays, workingHours, slotInterval: 30, closedDates: [], customSlots: [] }
 }
 
 const isTimeSlotBooked = (professionalId: string, date: string, time: string): boolean => {
   const appointments = getStoredAppointments()
-  return appointments.some(
-    (apt) =>
-      apt.professionalId === professionalId && apt.date === date && apt.time === time && apt.status !== "cancelado",
-  )
+  return appointments.some(apt => apt.professionalId === professionalId && apt.date === date && apt.time === time && apt.status !== "cancelado")
 }
 
 export const generateTimeSlots = (professionalId: string, date: Date): TimeSlot[] => {
   const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
   const dateStr = date.toISOString().split("T")[0]
-  const dayOfWeek = date.getDay()
-  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayName = dayNames[dayOfWeek] as keyof typeof availability.workingDays
-
-  if (availability.closedDates.includes(dateStr)) {
-    return []
-  }
-
-  if (!availability.workingDays[dayName]) {
-    return []
-  }
-
-  const customSlot = availability.customSlots?.find((cs) => cs.date === dateStr)
-  if (customSlot) {
-    return customSlot.slots.map((time) => ({
-      time,
-      available: !isTimeSlotBooked(professionalId, dateStr, time),
-    }))
-  }
-
+  const dayNames = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"]
+  const dayName = dayNames[date.getDay()] as keyof typeof availability.workingDays
+  if (availability.closedDates.includes(dateStr)) return []
+  if (!availability.workingDays[dayName]) return []
+  const customSlot = availability.customSlots?.find(cs => cs.date === dateStr)
+  if (customSlot) return customSlot.slots.map(time => ({ time, available: !isTimeSlotBooked(professionalId,dateStr,time) }))
   const slots: TimeSlot[] = []
-  const [startHour, startMinute] = availability.workingHours.start.split(":").map(Number)
-  const [endHour, endMinute] = availability.workingHours.end.split(":").map(Number)
-
-  let currentMinutes = startHour * 60 + startMinute
-  const endMinutes = endHour * 60 + endMinute
-
+  const [startHour,startMinute] = availability.workingHours.start.split(":").map(Number)
+  const [endHour,endMinute] = availability.workingHours.end.split(":").map(Number)
+  let currentMinutes = startHour*60 + startMinute
+  const endMinutes = endHour*60 + endMinute
   while (currentMinutes < endMinutes) {
-    const hours = Math.floor(currentMinutes / 60)
+    const hours = Math.floor(currentMinutes/60)
     const minutes = currentMinutes % 60
-    const timeStr = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
-
-    // Verifica se o slot já passou (para o dia de hoje)
+    const timeStr = `${String(hours).padStart(2,"0")}:${String(minutes).padStart(2,"0")}`
     const now = new Date()
     const checkDate = new Date(date)
-    checkDate.setHours(hours, minutes, 0, 0)
-    
-    if (checkDate > now) {
-        slots.push({
-            time: timeStr,
-            available: !isTimeSlotBooked(professionalId, dateStr, timeStr),
-        })
-    } else if (date.toDateString() !== now.toDateString()) {
-         slots.push({
-            time: timeStr,
-            available: !isTimeSlotBooked(professionalId, dateStr, timeStr),
-        })
+    checkDate.setHours(hours,minutes,0,0)
+    if (checkDate > now || date.toDateString() !== now.toDateString()) {
+      slots.push({ time: timeStr, available: !isTimeSlotBooked(professionalId,dateStr,timeStr) })
     }
-
     currentMinutes += availability.slotInterval
   }
-
   return slots
 }
 
 export const isDateAvailable = (professionalId: string, date: Date): boolean => {
   const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
   const dateStr = date.toISOString().split("T")[0]
-  const dayOfWeek = date.getDay()
-  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayName = dayNames[dayOfWeek] as keyof typeof availability.workingDays
-
-  if (availability.closedDates.includes(dateStr)) {
-    return false
-  }
-
+  const dayNames = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"]
+  const dayName = dayNames[date.getDay()] as keyof typeof availability.workingDays
+  if (availability.closedDates.includes(dateStr)) return false
   return availability.workingDays[dayName]
 }
 
 export const getUnavailableReason = (professionalId: string, date: Date): string => {
   const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
   const dateStr = date.toISOString().split("T")[0]
-  const dayOfWeek = date.getDay()
-  const dayNames = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayName = dayNames[dayOfWeek] as keyof typeof availability.workingDays
-
-  if (availability.closedDates.includes(dateStr)) {
-    return "Fechado neste dia"
-  }
-
-  if (!availability.workingDays[dayName]) {
-    return "Estabelecimento fechado"
-  }
-
+  const dayNames = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"]
+  const dayName = dayNames[date.getDay()] as keyof typeof availability.workingDays
+  if (availability.closedDates.includes(dateStr)) return "Fechado neste dia"
+  if (!availability.workingDays[dayName]) return "Estabelecimento fechado"
   return "Não há horários disponíveis"
 }
 
-// Appointment and Client functions
+// Appointments
 export const getStoredAppointments = (): MockAppointment[] => {
   if (typeof window === "undefined") return []
   const stored = localStorage.getItem(APPOINTMENTS_STORAGE_KEY)
-  return stored ? JSON.parse(stored) : initialMockAppointments // Fallback para o mock
+  return stored ? JSON.parse(stored) : initialMockAppointments
 }
 
 export const saveAppointment = (appointment: MockAppointment): void => {
@@ -557,35 +469,23 @@ export const saveAppointment = (appointment: MockAppointment): void => {
   localStorage.setItem(APPOINTMENTS_STORAGE_KEY, JSON.stringify(appointments))
 }
 
-export const getAppointments = (): MockAppointment[] => {
-  return getStoredAppointments()
-}
+export const getAppointments = (): MockAppointment[] => getStoredAppointments()
 
-export const getAppointmentsByProfessional = (professionalId: string): MockAppointment[] => {
-  const appointments = getStoredAppointments()
-  return appointments.filter((apt) => apt.professionalId === professionalId)
-}
-
-// (Funções de Cliente omitidas para brevidade, mas mantidas as que você usava)
+export const getAppointmentsByProfessional = (professionalId: string): MockAppointment[] =>
+  getStoredAppointments().filter(apt => apt.professionalId === professionalId)
 
 export const getClientsByProfessional = (professionalId: string): Client[] => {
   const appointments = getAppointmentsByProfessional(professionalId)
   const clientsMap = new Map<string, Client>()
-
-  appointments.forEach((apt) => {
-    const clientId = apt.clientWhatsapp || `no-whatsapp-${apt.clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
-
+  appointments.forEach(apt => {
+    const clientId = apt.clientWhatsapp || `no-whatsapp-${apt.clientName.toLowerCase().replace(/[^a-z0-9]+/g,"-")}`
     if (clientsMap.has(clientId)) {
       const client = clientsMap.get(clientId)!
       client.totalAppointments++
-      if (apt.status === "concluido") {
-        client.totalSpent += apt.totalPrice
-      }
-      if (new Date(apt.date) > new Date(client.lastAppointment)) {
-        client.lastAppointment = apt.date
-      }
+      if (apt.status === "concluido") client.totalSpent += apt.totalPrice
+      if (new Date(apt.date) > new Date(client.lastAppointment)) client.lastAppointment = apt.date
     } else {
-      clientsMap.set(clientId, {
+      clientsMap.set(clientId,{
         id: clientId,
         name: apt.clientName,
         whatsapp: apt.clientWhatsapp,
@@ -597,39 +497,28 @@ export const getClientsByProfessional = (professionalId: string): Client[] => {
       })
     }
   })
-
-  return Array.from(clientsMap.values()).sort(
-    (a, b) => new Date(b.lastAppointment).getTime() - new Date(a.lastAppointment).getTime(),
-  )
+  return Array.from(clientsMap.values()).sort((a,b)=>new Date(b.lastAppointment).getTime()-new Date(a.lastAppointment).getTime())
 }
 
-export const getClientById = (professionalId: string, clientId: string): Client | null => {
+export const getClientById = (professionalId:string,clientId:string): Client | null => {
   const clients = getClientsByProfessional(professionalId)
-  return clients.find((c) => c.id === clientId) || null
+  return clients.find(c=>c.id===clientId)||null
 }
 
-// Variáveis exportadas
-export const mockProfessionals = getProfessionals()
+// GETTERS SEGUROS
+export const getMockProfessionals = (): Professional[] => getProfessionals()
 
-export const mockServices = getProfessionals().flatMap((prof) =>
-  prof.services.map((service) => ({
-    ...service,
-    professionalId: prof.id,
-  })),
-)
+export const getMockServices = () => {
+  if (typeof window === "undefined") return []
+  const professionals = getProfessionals()
+  return professionals.flatMap(prof => prof.services.map(service => ({ ...service, professionalId: prof.id })))
+}
 
-// Função corrigida para buscar o nome do cliente mais recente
 export const getLastClientNameByWhatsapp = (whatsapp: string): string | null => {
   const appointments = getStoredAppointments()
-  const cleanWhatsapp = whatsapp.replace(/\D/g, "")
-  const clientAppointments = appointments.filter((apt) => apt.clientWhatsapp === cleanWhatsapp)
-
-  if (clientAppointments.length === 0) return null
-
-  // Ordena por data de criação do agendamento decrescente
-  const sortedAppointments = clientAppointments.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-  )
-
+  const cleanWhatsapp = whatsapp.replace(/\D/g,"")
+  const clientAppointments = appointments.filter(apt => apt.clientWhatsapp === cleanWhatsapp)
+  if (!clientAppointments.length) return null
+  const sortedAppointments = clientAppointments.sort((a,b)=>new Date(b.createdAt).getTime()-new Date(a.createdAt).getTime())
   return sortedAppointments[0].clientName
 }

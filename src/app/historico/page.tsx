@@ -1,32 +1,36 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Calendar, Clock, CreditCard, Check } from "lucide-react"
+import { Card } from "@/components/ui/card"
+import { Calendar, Clock, CreditCard, Check, UserIcon } from "lucide-react"
 import { getAppointments } from "@/data/mockData"
-import { Nav } from "react-day-picker"
 import NavbarApp from "@/components/NavbarApp"
+import { useAuth } from "@/contexts/AuthContext" // Importação adicionada
 
 export default function HistoricoPage() {
-  const [whatsapp, setWhatsapp] = useState("")
-  const [showHistory, setShowHistory] = useState(false)
+  const router = useRouter()
+  const { user } = useAuth() // Usa o contexto de autenticação
   const [appointments, setAppointments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (showHistory && whatsapp) {
-      // Filtra agendamentos pelo WhatsApp
+    if (user?.whatsapp) {
+      setLoading(true)
+      // Filtra agendamentos pelo WhatsApp do usuário logado
       const allAppointments = getAppointments()
-      const filtered = allAppointments.filter((apt) => apt.clientWhatsapp === whatsapp.replace(/\D/g, ""))
+      const userWhatsappClean = user.whatsapp.replace(/\D/g, "")
+      const filtered = allAppointments.filter(
+        (apt) => apt.clientWhatsapp === userWhatsappClean,
+      )
       setAppointments(filtered)
+      setLoading(false)
+    } else if (user === null) {
+      // Usuário não logado
+      setLoading(false)
     }
-  }, [showHistory, whatsapp])
-
-  const handleSearch = () => {
-    if (whatsapp) {
-      setShowHistory(true)
-    }
-  }
+  }, [user])
 
   const getStatusConfig = (status: string) => {
     switch (status) {
@@ -43,68 +47,79 @@ export default function HistoricoPage() {
     }
   }
 
+  // Se ainda estiver carregando, mostra um estado de carregamento simples
+  if (loading && user !== null) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
+          <div className="container text-center mx-auto max-w-md">
+            <h1 className="text-3xl font-bold text-zinc-800 mb-1">Meus Agendamentos</h1>
+            <p className="text-muted-foreground">Aguarde, carregando histórico...</p>
+          </div>
+        </header>
+        <main className="container mx-auto max-w-screen-lg px-4 py-6 text-center">
+          <p className="mt-8">Carregando...</p>
+        </main>
+        <NavbarApp />
+      </div>
+    )
+  }
+
+  // Tela de Login/Acesso se o usuário NÃO estiver logado
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
+          <div className="container mx-auto max-w-md text-center">
+            <h1 className="text-3xl font-bold text-zinc-800 mb-2">Meus Agendamentos</h1>
+          </div>
+        </header>
+
+        <main className="container mx-auto max-w-md px-4 mt-8">
+          <Card className="p-8 text-center">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <UserIcon className="w-8 h-8 text-zinc-400" />
+            </div>
+            <h2 className="text-xl font-bold mb-2">Acesso Restrito</h2>
+            <p className="text-sm text-muted-foreground mb-6">Entre na sua conta para visualizar seu histórico de agendamentos</p>
+            <Button onClick={() => router.push("/login")} className="w-full">
+              Fazer Login
+            </Button>
+          </Card>
+        </main>
+
+        <NavbarApp />
+      </div>
+    )
+  }
+
+  // Tela de Histórico se o usuário ESTIVER logado
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container text-center mx-auto max-w-md">
           <h1 className="text-3xl font-bold text-zinc-800 mb-1">Meus Agendamentos</h1>
-          <p className="text-muted-foreground">Acompanhe todos os seus agendamentos</p>
+          <p className="text-sm text-zinc-600">Olá, {user.name.split(" ")[0]}! Seu histórico completo.</p>
         </div>
       </header>
 
-      <main className="container mx-auto max-w-screen-lg px-4 py-6">
-        {/* Busca por WhatsApp */}
-        {!showHistory && (
-          <div className="bg-white rounded-2xl border border-border p-8 text-center shadow-sm">
-            <div className="max-w-md mx-auto space-y-6">
-              <div className="w-20 h-20 bg-gradient-to-br from-purple-300 to-purple-200 rounded-full flex items-center justify-center mx-auto">
-                <Calendar className="w-10 h-10 text-purple-800" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold mb-2">Consultar Agendamentos</h2>
-                <p className="text-muted-foreground text-sm">Digite seu WhatsApp para visualizar seu histórico</p>
-              </div>
-              <div className="space-y-4">
-                <Input
-                  type="tel"
-                  placeholder="(11) 98765-4321"
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  className="h-14 text-lg text-center"
-                />
-                <Button
-                  onClick={handleSearch}
-                  className="w-full h-12 rounded-xl bg-zinc-800 text-white hover:bg-zinc-900"
-                  disabled={!whatsapp}
-                >
-                  Consultar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
+      <main className="container mx-auto max-w-md px-4 py-6">
         {/* Lista de Agendamentos */}
-        {showHistory && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-white rounded-xl border border-border p-4 shadow-sm">
-              <div>
-                <p className="text-sm text-muted-foreground">Buscando agendamentos de:</p>
-                <p className="font-semibold text-lg">{whatsapp}</p>
+        <div className="space-y-4">
+          {appointments.length === 0 ? (
+            <Card className="p-6 text-center mt-4">
+              <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Calendar className="w-8 h-8 text-zinc-400" />
               </div>
-              <Button variant="outline" size="sm" onClick={() => setShowHistory(false)} className="rounded-full">
-                Alterar
+              <h2 className="text-xl font-bold mb-2">Nenhum Agendamento</h2>
+              <p className="text-sm text-muted-foreground">Você ainda não possui agendamentos no seu histórico.</p>
+              <Button onClick={() => router.push("/")} className="w-full mt-4">
+                Agendar Agora
               </Button>
-            </div>
-
-            {appointments.length === 0 && (
-              <p className="text-center text-muted-foreground mt-6">
-                Nenhum agendamento encontrado para este WhatsApp.
-              </p>
-            )}
-
-            {appointments.map((appointment) => {
+            </Card>
+          ) : (
+            appointments.map((appointment) => {
               const statusConfig = getStatusConfig(appointment.status)
               return (
                 <div
@@ -164,9 +179,9 @@ export default function HistoricoPage() {
                   )}
                 </div>
               )
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
       </main>
       <NavbarApp />
     </div>
