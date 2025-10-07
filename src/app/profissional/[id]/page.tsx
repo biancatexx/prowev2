@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CustomCalendar } from "@/components/CustomCalendar"
 import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin } from "lucide-react"
+import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin, CalendarCheck } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
   getProfessionals,
@@ -267,7 +267,35 @@ export default function ProfessionalDetails() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-foreground">Dias e horários</h3>
             </div>
-            <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+            <div className="bg-card rounded-2xl border p-5 mb-4" >
+              <div className="flex justify-between items-center mb-2">
+
+                <h2 className="text-lg font-semibold"> <CalendarCheck className="inline" /> Data e horário</h2>
+                <hr className="border-t" />
+                
+              </div>
+
+              <div className="flex flex-col lg:flex-row gap-4">
+                <div>
+                  <h2 className="">Selecione o dia</h2>
+                  <Card className="border flex-1">
+                    <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
+                  </Card>
+                </div>
+
+                <div className="flex-1"  >
+                  <h2 className="">Selecione o horário</h2>
+                  <Card className="border flex-1 p-3">
+                    <TimeSlotPicker
+                      professionalId={id}
+                      selectedDate={selectedDate}
+                      selectedTime={selectedTime}
+                      onTimeSelect={setSelectedTime}
+                    /></Card>
+                </div>
+              </div>
+            </div>
+            <div className="bg-card rounded-2xl p-4 border border-border mb-4 hidden">
               <Card className="border shadow-sm mb-4">
                 <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
               </Card>
@@ -360,32 +388,60 @@ export default function ProfessionalDetails() {
       {/* Footer fixo */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30">
         <div className="container mx-auto max-w-screen-lg flex flex-col gap-3">
+
           {(selectedServices.length > 0 || selectedDate || selectedTime) && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 align-center">
-              <div className="w-full text-sm text-foreground bg-accent/40 p-3 rounded-lg border border-border flex flex-col gap-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 align-center bg-primary/20 p-3 rounded-lg border border-border ">
+              <div className="text-sm text-foreground    flex flex-col gap-1">
+
                 {selectedServices.length > 0 && (
-                  <span>
-                    {selectedServices.length} serviço{selectedServices.length > 1 ? "s" : ""} selecionado
-                  </span>
+                  <div>
+                    <p className="font-medium">
+                      {selectedServices.length} serviço(s) • {totalDuration} min
+                    </p>
+                    <p className="text-primary font-bold">
+                      Total: R$ {totalPrice.toFixed(2)}
+                    </p>
+                  </div>
                 )}
-                {selectedDate && <span>Data: {selectedDate.toLocaleDateString()}</span>}
-                {selectedTime && <span>Horário: {selectedTime}</span>}
-                {selectedServices.length > 0 && <span>Total: R$ {totalPrice.toFixed(2)}</span>}
+                {(selectedDate || selectedTime) && (
+                  <div className="flex flex-wrap items-center gap-4 mt-1">
+                    {selectedDate && (
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    )}
+                    {selectedTime && (
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span>{selectedTime}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={clearData}>
                   Limpar
                 </Button>
-
-                <Button onClick={handleSchedule}>Agendar</Button>
               </div>
             </div>
           )}
-          {selectedServices.length === 0 && !selectedDate && !selectedTime && (
-            <Button size="lg" onClick={handleSchedule} className="w-full">
-              Agendar agendamento
-            </Button>
-          )}
+          {/* Botão de agendar */}
+          <Button
+
+            onClick={handleSchedule}
+            className={`w-full ${selectedServices.length === 0 && !selectedDate && !selectedTime
+              ? "bg-zinc-800 text-white hover:bg-zinc-700"
+              : "bg-primary text-zinc-800 hover:bg-primary/90"
+              }`}
+          >
+            {selectedServices.length === 0 && !selectedDate && !selectedTime
+              ? "Agendar atendimento"
+              : "Continuar agendamento"}
+          </Button>
+
         </div>
       </div>
     </div>

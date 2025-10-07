@@ -452,7 +452,7 @@ export const getUnavailableReason = (professionalId: string, date: Date): string
   const dayName = dayNames[date.getDay()] as keyof typeof availability.workingDays
   if (availability.closedDates.includes(dateStr)) return "Fechado neste dia"
   if (!availability.workingDays[dayName]) return "Estabelecimento fechado"
-  return "Não há horários disponíveis"
+  return "Não há horários disponíveis para este dia"
 }
 
 // Appointments

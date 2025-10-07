@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MoreVertical, Plus, Settings } from "lucide-react"
+import { Cog, MoreVertical, Plus, Settings } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { CustomCalendar } from "@/components/CustomCalendar"
@@ -315,17 +315,18 @@ export default function Agenda() {
       </div>
 
       {/* Botão flutuante */}
-      <Link href={`/admin/agendamento/`}>
-        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
-          <Plus className="w-6 h-6" />
+      <Link href={`/admin/agenda/ajustes`}>
+        <Button className="fixed bottom-44 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
+          <Cog className="w-10 h-10 text-zinc-900" />
         </Button>
       </Link>
 
-      <Link href={`/admin/agenda/ajustes`}>
-        <Button className="fixed bottom-44 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
-          Ajustes
+      <Link href={`/admin/agendamento/`}>
+        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg zinc-900" size="icon">
+          <Plus className="w-10 h-10 text-zinc-900" />
         </Button>
       </Link>
+
 
       <NavbarProfessional />
     </div>

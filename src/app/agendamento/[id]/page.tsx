@@ -9,7 +9,7 @@ import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2 } from "lucide-react"
+import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2, CalendarCheck, House, LayoutGrid } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { saveAppointment, getMockProfessionals, getMockServices, isDateAvailable } from "@/data/mockData"
 
@@ -30,10 +30,17 @@ export default function Agendamento() {
   const [cliente, setCliente] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
-
   const [showServicesModal, setShowServicesModal] = useState(false)
   const [selectedServices, setSelectedServices] = useState<any[]>([])
+  const [redirectToBack, setRedirectToBack] = useState(false)
 
+  // Refs para scroll/foco
+  const whatsappRef = useRef<HTMLInputElement>(null)
+  const clienteRef = useRef<HTMLInputElement>(null)
+  const calendarRef = useRef<HTMLDivElement>(null)
+  const timesRef = useRef<HTMLDivElement>(null)
+
+  // Carregar dados do localStorage no cliente
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("booking_data")
@@ -48,21 +55,23 @@ export default function Agendamento() {
     }
   }, [isProfessionalView])
 
-  // Refs para scroll/foco
-  const whatsappRef = useRef<HTMLInputElement>(null)
-  const clienteRef = useRef<HTMLInputElement>(null)
-  const calendarRef = useRef<HTMLDivElement>(null)
-  const timesRef = useRef<HTMLDivElement>(null)
+  const professional = bookingData?.professional || getMockProfessionals().find((p) => p.id === id)
 
-const professional = bookingData?.professional || getMockProfessionals().find((p) => p.id === id) // Nota: getMockProfessionals também deve ser chamado com ()
+  // Redireciona no cliente se o profissional não existir
+  useEffect(() => {
+    if (!professional) {
+      toast.error("Profissional não encontrado")
+      setRedirectToBack(true)
+    }
+  }, [professional])
 
+  useEffect(() => {
+    if (redirectToBack) {
+      router.back()
+    }
+  }, [redirectToBack, router])
 
-  if (!professional) {
-    toast.error("Profissional não encontrado")
-    router.back()
-    return null
-  }
-  const availableServices = getMockServices().filter((s) => s.professionalId === id) 
+  const availableServices = getMockServices().filter((s) => s.professionalId === id)
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
 
@@ -191,7 +200,7 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
   }
 
   return (
-    <div className="container mx-auto max-w-md px-4 py-6 mb-16">
+    <div className="container mx-auto max-w-screen-lg pb-20">
       {/* Header */}
       <div className="sticky top-0 bg-background border-b border-border z-20">
         <div className="flex items-center justify-between px-4 py-4">
@@ -204,9 +213,9 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
       </div>
 
       {/* Estabelecimento */}
-      {!isProfessionalView && (
+      {!isProfessionalView && professional && (
         <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
-          <h2 className="text-lg font-semibold mb-2">Estabelecimento</h2>
+          <h2 className="text-lg font-semibold mb-2"><House className="inline"/> Estabelecimento</h2>
           <p className="font-medium">{professional.name}</p>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <MapPin className="w-4 h-4" />
@@ -218,11 +227,11 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Serviços</h2>
+          <h2 className="text-lg font-semibold"> <LayoutGrid className="inline"/> Serviços</h2>
           <div className="flex gap-2">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" /> Limpar dados
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
@@ -256,23 +265,38 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Data e Horário</h2>
+
+          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline"/> Data e horário</h2>
+          <hr className="border-t" />
           {(date || selectedTime) && (
             <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-4 h-4" /> Limpar dados
             </Button>
           )}
         </div>
-        <Card className="border shadow-sm">
-          <CustomCalendar selected={date} onSelect={setDate} getDateStatus={getDateStatus} />
-        </Card>
-        <div className="mt-3" ref={timesRef}>
-          <TimeSlotPicker
-            professionalId={id}
-            selectedDate={date}
-            selectedTime={selectedTime}
-            onTimeSelect={setSelectedTime}
-          />
+
+        <div className="flex flex-col lg:flex-row gap-4">
+          <div>
+            <h2 className="">Selecione o dia</h2>
+            <Card className="border flex-1">
+              <CustomCalendar
+                selected={date}
+                onSelect={setDate}
+                getDateStatus={getDateStatus}
+              />
+            </Card>
+          </div>
+
+          <div className="flex-1" ref={timesRef}>
+            <h2 className="">Selecione o horário</h2>
+            <Card className="border flex-1 p-3">
+              <TimeSlotPicker
+                professionalId={id}
+                selectedDate={date}
+                selectedTime={selectedTime}
+                onTimeSelect={setSelectedTime}
+              /></Card>
+          </div>
         </div>
       </div>
 
@@ -306,9 +330,9 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
 
       {/* Botão fixado */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
-        <div className="container mx-auto max-w-md">
+        <div className="container mx-auto max-w-screen-lg">
           <Button
-            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+            className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
             onClick={handleConfirm}
             disabled={loading}
           >
@@ -317,7 +341,8 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
         </div>
       </div>
 
-      {/* Modal Serviços */}
+      {/* Modais */}
+      {/* Serviços */}
       {showServicesModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
@@ -328,7 +353,7 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
               </button>
             </div>
             <div className="space-y-2">
-              {availableServices.map((service: { id: React.Key | null | undefined; name: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; category: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; price: string | number | bigint | boolean | React.ReactElement<any, string | React.JSXElementConstructor<any>> | Iterable<React.ReactNode> | React.ReactPortal | Promise<React.AwaitedReactNode> | null | undefined; duration: number }) => {
+              {availableServices.map((service: any) => {
                 const isSelected = selectedServices.some((s) => s.id === service.id)
                 return (
                   <div
@@ -362,17 +387,17 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
         </div>
       )}
 
-      {/* Modal Confirmação */}
+      {/* Confirmação */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md space-y-3">
             <div className="text-center border-b pb-3">
               <h2 className="font-bold text-xl">Confirmar Agendamento</h2>
             </div>
-            {!isProfessionalView && (
+            {!isProfessionalView && professional && (
               <>
                 <div>
-                  <b>Estabelecimento:</b> {professional.name}
+                  <p> <House /> Estabelecimento:</p> {professional.name}
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   <MapPin className="w-4 h-4" />
@@ -380,33 +405,17 @@ const professional = bookingData?.professional || getMockProfessionals().find((p
                 </p>
               </>
             )}
-            <p>
-              <b>Serviços:</b>
-            </p>
+            <p><p>Serviços:</p></p>
             <ul className="list-disc pl-5">
               {selectedServices.map((s, i) => (
-                <li key={i}>
-                  {s.name} - R$ {s.price}
-                </li>
+                <li key={i}>{s.name} - R$ {s.price}</li>
               ))}
             </ul>
-            <p>
-              <b>Duração:</b> {formatDuration(totalDuration)}
-            </p>
-            <p>
-              <b>Total:</b> R$ {totalPrice}
-            </p>
-            <p>
-              <b>Cliente:</b> {cliente}
-            </p>
-            {whatsapp && (
-              <p>
-                <b>WhatsApp:</b> {whatsapp}
-              </p>
-            )}
-            <p>
-              <b>Data:</b> {date?.toLocaleDateString("pt-BR")} às {selectedTime}
-            </p>
+            <p><p>Duração:</p> {formatDuration(totalDuration)}</p>
+            <p><p>Total:</p> R$ {totalPrice}</p>
+            <p><p>Cliente:</p> {cliente}</p>
+            {whatsapp && <p><p>WhatsApp:</p> {whatsapp}</p>}
+            <p><p>Data:</p> {date?.toLocaleDateString("pt-BR")} às {selectedTime}</p>
 
             <div className="flex gap-2 justify-center border-t pt-3">
               <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>

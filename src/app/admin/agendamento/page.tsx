@@ -322,7 +322,7 @@ export default function ProfessionalAgendamento() {
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Data e Horário</h2>
+          <h2 className="text-lg font-semibold">Selecione o dia</h2>
           {(date || selectedTime) && (
             <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
               <Trash2 className="w-4 h-4" />
@@ -332,7 +332,9 @@ export default function ProfessionalAgendamento() {
         <Card className="border shadow-sm">
           <CustomCalendar selected={date} onSelect={setDate} getDateStatus={getDateStatus} />
         </Card>
+
         <div className="mt-3" ref={timesRef}>
+          <h2 className="text-lg font-semibold">Selecione o Horário</h2>
           <TimeSlotPicker
             professionalId={professional.id}
             selectedDate={date}
