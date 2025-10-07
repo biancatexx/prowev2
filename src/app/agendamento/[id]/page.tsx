@@ -370,14 +370,12 @@ export default function Agendamento() {
             </div>
             {!isProfessionalView && (
               <>
-                <p>
+                <div>
                   <b>Estabelecimento:</b> {professional.name}
-                </p>
-                <p>
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    {`${professional.address.street}, ${professional.address.number} - ${professional.address.city}`}
-                  </p>
+                </div>
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  {`${professional.address.street}, ${professional.address.number} - ${professional.address.city}`}
                 </p>
               </>
             )}

@@ -135,11 +135,11 @@ export default function Agenda() {
               Hoje,
               {date
                 ? date.toLocaleDateString("pt-BR", {
-                    weekday: "long",
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                  })
+                  weekday: "long",
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })
                 : "Selecione um dia"}
             </h2>
           </Card>
@@ -318,6 +318,12 @@ export default function Agenda() {
       <Link href={`/admin/agendamento/`}>
         <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           <Plus className="w-6 h-6" />
+        </Button>
+      </Link>
+
+      <Link href={`/admin/agenda/ajustes`}>
+        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
+          Ajustes
         </Button>
       </Link>
 

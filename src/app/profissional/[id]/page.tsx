@@ -150,22 +150,17 @@ export default function ProfessionalDetails() {
     return `${addr.street}, ${addr.number}${addr.neighborhood ? `, ${addr.neighborhood}` : ""}, ${addr.city} - ${addr.state}`
   }
 
-  const clearServices = () => {
+  const clearData = () => {
     setSelectedServices([])
+    setSelectedDate(undefined)
+    setSelectedTime("")
     toast({
-      title: "Serviços limpos",
+      title: "Informações removidas",
       description: "Todos os serviços foram desmarcados.",
     })
   }
 
-  const clearDateTime = () => {
-    setSelectedDate(undefined)
-    setSelectedTime("")
-    toast({
-      title: "Data e horário limpos",
-      description: "A data e horário foram removidos.",
-    })
-  }
+
 
   // Agrupar serviços por categoria
   const groupedServices = services.reduce(
@@ -202,11 +197,15 @@ export default function ProfessionalDetails() {
           </div>
 
           <div className="flex flex-col items-center text-center">
-            <img
-              src={professional.profileImage || "/placeholder.svg"}
-              alt={professional.name}
-              className="w-20 h-20 rounded-full object-cover border-4 border-card shadow-lg mb-3"
-            />
+            {professional.profileImage ? (
+              <img
+                src={professional.profileImage}
+                alt={professional.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{professional.name.charAt(0).toUpperCase()}</span>
+            )}
             <h1 className="text-xl font-bold mb-1">{professional.name}</h1>
             <p className="text-sm text-muted-foreground">{professional.specialty}</p>
           </div>
@@ -374,12 +373,10 @@ export default function ProfessionalDetails() {
                 {selectedServices.length > 0 && <span>Total: R$ {totalPrice.toFixed(2)}</span>}
               </div>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={clearServices}>
-                  Limpar serviços
+                <Button variant="outline" onClick={clearData}>
+                  Limpar
                 </Button>
-                <Button variant="outline" onClick={clearDateTime}>
-                  Limpar data/hora
-                </Button>
+
                 <Button onClick={handleSchedule}>Agendar</Button>
               </div>
             </div>
