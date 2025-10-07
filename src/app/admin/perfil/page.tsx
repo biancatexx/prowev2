@@ -1,23 +1,52 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit2, Save } from "lucide-react"
-import { mockProfessionals, mockServices } from "@/data/mockData"
+import { mockServices } from "@/data/mockData"
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { toast } from "sonner"
+import { useAuth } from "@/contexts/AuthContext" // Importação adicionada
 
 export default function Perfil() {
+  const { professional: authProfessional, isLoading } = useAuth() // Usa o hook de autenticação
   const [isEditing, setIsEditing] = useState(false)
-  const [professional, setProfessional] = useState(mockProfessionals[0])
+  // Define um estado para o formulário, inicializando com os dados de authProfessional
+  // Usa o profissional do contexto se disponível, ou um objeto vazio para evitar o erro de build
+  const [professionalData, setProfessionalData] = useState(authProfessional || {
+    id: '',
+    name: '',
+    description: '',
+    address: { street: '' },
+    phone: '',
+    email: '',
+    profileImage: ''
+  });
 
-  const services = mockServices.filter((s) => s.professionalId === professional.id)
+  // Atualiza o estado quando os dados do contexto de autenticação são carregados
+  useEffect(() => {
+    if (authProfessional) {
+      setProfessionalData(authProfessional);
+    }
+  }, [authProfessional]);
+  // Se os dados ainda estão carregando ou o profissional não está logado, mostra o "Carregando..."
+  if (isLoading || !authProfessional) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando perfil...</p>
+      </div>
+    );
+  }
+
+  // A partir daqui, professionalData tem certeza de ter dados válidos do profissional.
+  const services = mockServices.filter((s) => s.professionalId === professionalData.id)
 
   const handleSave = () => {
+    // Lógica para salvar os dados (usando professionalData)
     toast.success("Perfil atualizado com sucesso!")
     setIsEditing(false)
   }
@@ -38,11 +67,19 @@ export default function Perfil() {
             </Button>
           </div>
           <div className="text-center">
-            <img
-              src={professional.profileImage || "/placeholder.svg"}
-              alt={professional.name}
-              className="w-20 h-20 rounded-full object-cover mx-auto mb-3 border-4 border-card"
-            />
+            {/* CORRIGIDO: Agora usa professionalData e sabe que ele existe */}
+            {professionalData.profileImage ? (
+              <img
+                src={professionalData.profileImage}
+                alt={professionalData.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              // Garantia de que professionalData.name existe antes de usar charAt
+              <div className="w-24 h-24 mx-auto rounded-full bg-primary/20 text-primary flex items-center justify-center text-4xl font-bold">
+                <span>{professionalData.name ? professionalData.name.charAt(0).toUpperCase() : 'P'}</span>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -52,25 +89,25 @@ export default function Perfil() {
           <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
           <div className="space-y-4">
             <div>
-              <Label>Nome do Estabelecimento {professional.id}</Label>
-              <Input value={professional.name} disabled={!isEditing} />
+              <Label>Nome do Estabelecimento {professionalData.id}</Label>
+              <Input value={professionalData.name} disabled={!isEditing} />
             </div>
-             
+
             <div>
               <Label>Descrição</Label>
-              <Textarea value={professional.description} disabled={!isEditing} rows={3} />
+              <Textarea value={professionalData.description} disabled={!isEditing} rows={3} />
             </div>
             <div>
               <Label>Endereço</Label>
-              <Input value={professional.address.street} disabled={!isEditing} />
+              <Input value={professionalData.address?.street} disabled={!isEditing} />
             </div>
             <div>
               <Label>Telefone</Label>
-              <Input value={professional.phone} disabled={!isEditing} />
+              <Input value={professionalData.phone} disabled={!isEditing} />
             </div>
             <div>
               <Label>Email</Label>
-              <Input value={professional.email} disabled={!isEditing} />
+              <Input value={professionalData.email} disabled={!isEditing} />
             </div>
           </div>
         </Card>
