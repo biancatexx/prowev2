@@ -7,18 +7,147 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { UserIcon, LogOut, Edit2 } from "lucide-react"
+import { UserIcon, LogOut, Edit2, Save } from "lucide-react" // Importado Save
 import { useAuth } from "@/contexts/AuthContext"
 import { saveUser, type User } from "@/data/mockData"
-import { useToast } from "@/hooks/use-toast"
 import NavbarApp from "@/components/NavbarApp"
+import { toast } from "sonner"
 
+// Componente Header movido para fora do PerfilPage para otimização
+const Header = () => (
+  <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+    <div className="container mx-auto max-w-screen-lg text-center">
+      <h1 className="text-2xl font-bold text-primary-foreground">
+        Perfil do Cliente
+      </h1>
+    </div>
+  </header>
+)
+
+// Tipagem para as props do MainContent
+interface MainContentProps {
+  user: User | null;
+  formData: {
+    name: string;
+    whatsapp: string;
+    email: string;
+    birthDate: string;
+  };
+  isEditing: boolean;
+  loading: boolean;
+  handleSubmit: (e: React.FormEvent) => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleLogout: () => void;
+  router: any; // Adicionado 'router' para o caso de !user
+}
+
+// Componente MainContent movido para fora do PerfilPage para otimização
+const MainContent = ({ user, formData, isEditing, loading, handleSubmit, handleInputChange, handleLogout, router }: MainContentProps) => {
+  if (!user) {
+    return (
+      <main className="container mx-auto max-w-screen-lg px-4">
+        <Card className="p-8 text-center">
+          <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserIcon className="w-8 h-8 text-zinc-400" />
+          </div>
+          <h2 className="text-xl font-bold mb-2">Faça login</h2>
+          <p className="text-sm text-muted-foreground mb-6">
+            Entre na sua conta para acessar seu perfil
+          </p>
+          <Button onClick={() => router.push("/login")}>
+            Fazer Login
+          </Button>
+        </Card>
+      </main>
+    )
+  }
+
+  return (
+    <main className="container mx-auto max-w-screen-lg px-4">
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome completo *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              // OTIMIZAÇÃO: Usando a função única handleInputChange
+              onChange={handleInputChange}
+              required
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
+            <Input
+              id="whatsapp"
+              type="tel"
+              value={formData.whatsapp}
+              // OTIMIZAÇÃO: Usando a função única handleInputChange
+              onChange={handleInputChange}
+              required
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              // OTIMIZAÇÃO: Usando a função única handleInputChange
+              onChange={handleInputChange}
+              disabled={!isEditing}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="birthDate">Data de nascimento</Label>
+            <Input
+              id="birthDate"
+              type="date"
+              value={formData.birthDate}
+              // OTIMIZAÇÃO: Usando a função única handleInputChange
+              onChange={handleInputChange}
+              disabled={!isEditing}
+            />
+          </div>
+
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+            {loading ? "Salvando..." : (
+              isEditing ? (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Alterações
+                </>
+              ) : (
+                <>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Editar Perfil
+                </>
+              )
+            )}
+          </Button>
+        </form>
+        <div className="mt-6 pt-4 border-t border-border">
+          <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair da Conta
+          </Button>
+        </div>
+      </Card>
+    </main>
+  )
+}
+
+// Componente principal
 export default function PerfilPage() {
   const router = useRouter()
   const { user, updateUser, logout } = useAuth()
-  const { toast } = useToast()
-  
-  const [isEditing, setIsEditing] = useState(false) // Novo estado para controle de edição
+
+  const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -39,6 +168,16 @@ export default function PerfilPage() {
     }
   }, [user])
 
+  // OTIMIZAÇÃO: Função centralizada para lidar com a mudança de inputs
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    // Usando o formato de atualização de função (prev) para melhor performance
+    setFormData(prev => ({
+      ...prev,
+      [id]: value,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!isEditing) return setIsEditing(true) // Se não estiver editando, apenas habilita a edição
@@ -49,7 +188,8 @@ export default function PerfilPage() {
       const updatedUser: User = {
         ...user,
         name: formData.name,
-        whatsapp: formData.whatsapp.replace(/\D/g, ""), // Limpa o WhatsApp
+        // Limpar o WhatsApp é melhor feito ao salvar
+        whatsapp: formData.whatsapp.replace(/\D/g, ""),
         email: formData.email,
         birthDate: formData.birthDate,
       }
@@ -57,18 +197,11 @@ export default function PerfilPage() {
       saveUser(updatedUser)
       // 2. Atualiza o contexto global
       updateUser(updatedUser)
-      
+
       setIsEditing(false) // Desliga o modo de edição após salvar
-      toast({
-        title: "Perfil atualizado!",
-        description: "Suas informações foram salvas com sucesso.",
-      })
+      toast.success("Perfil atualizado!")
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o perfil.",
-        variant: "destructive",
-      })
+      toast.success("Não foi possível atualizar o perfil.")
     } finally {
       setLoading(false)
     }
@@ -76,120 +209,23 @@ export default function PerfilPage() {
 
   const handleLogout = () => {
     logout()
-    toast({
-      title: "Logout realizado",
-      description: "Você saiu da sua conta.",
-    })
-    router.push("/")
-  }
-
-  // Header fixo
-  const Header = () => (
-    <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
-      <div className="container mx-auto max-w-screen-lg text-center">
-        <h1 className="text-2xl font-bold text-primary-foreground">
-          Perfil do Cliente
-        </h1>
-      </div>
-    </header>
-  )
-
-  // Main varia conforme login
-  const MainContent = () => {
-    if (!user) {
-      return (
-        <main className="container mx-auto max-w-screen-lg px-4">
-          <Card className="p-8 text-center">
-            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <UserIcon className="w-8 h-8 text-zinc-400" />
-            </div>
-            <h2 className="text-xl font-bold mb-2">Faça login</h2>
-            <p className="text-sm text-muted-foreground mb-6">
-              Entre na sua conta para acessar seu perfil
-            </p>
-            <Button onClick={() => router.push("/login")}>
-              Fazer Login
-            </Button>
-          </Card>
-        </main>
-      )
-    }
-
-    return (
-      <main className="container mx-auto max-w-screen-lg px-4">
-        <Card className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo *</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                required
-                disabled={!isEditing} // Desabilitado
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp *</Label>
-              <Input
-                id="whatsapp"
-                type="tel"
-                value={formData.whatsapp}
-                onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
-                required
-                disabled={!isEditing} // Desabilitado
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={!isEditing} // Desabilitado
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="birthDate">Data de nascimento</Label>
-              <Input
-                id="birthDate"
-                type="date"
-                value={formData.birthDate}
-                onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                disabled={!isEditing} // Desabilitado
-              />
-            </div>
-
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              {loading ? "Salvando..." : (
-                isEditing ? "Salvar Alterações" : (
-                  <>
-                    <Edit2 className="w-4 h-4 mr-2" />
-                    Editar Perfil
-                  </>
-                )
-              )}
-            </Button>
-          </form>
-          <div className="mt-6 pt-4 border-t border-border">
-            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair da Conta
-            </Button>
-          </div>
-        </Card>
-      </main>
-    )
+    toast.success("Você foi deslogado!")
+    router.push("/perfil")
   }
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <Header />
-      <MainContent />
+      <MainContent
+        user={user}
+        formData={formData}
+        isEditing={isEditing}
+        loading={loading}
+        handleSubmit={handleSubmit}
+        handleInputChange={handleInputChange}
+        handleLogout={handleLogout}
+        router={router}
+      />
       <NavbarApp />
     </div>
   )
