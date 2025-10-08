@@ -195,7 +195,7 @@ export default function ProfessionalDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-28">
+    <div className="min-h-screen bg-background pb-48">
       {/* Header */}
       <header className="bg-primary rounded-b-3xl pb-6 pt-8 px-4">
         <div className="container mx-auto max-w-screen-lg">
@@ -228,8 +228,7 @@ export default function ProfessionalDetails() {
                 </div>
               )}
             </div>
-            <h1 className="text-xl font-bold mb-1">{professional.name}</h1>
-            <p className="text-sm text-muted-foreground">{professional.specialty}</p>
+            <h1 className="text-xl font-bold mb-1">{professional.name}</h1> 
           </div>
         </div>
       </header>
@@ -411,11 +410,10 @@ export default function ProfessionalDetails() {
       {/* Footer fixo */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30">
         <div className="container mx-auto max-w-screen-lg flex flex-col gap-3">
-
           {(selectedServices.length > 0 || selectedDate || selectedTime) && (
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 align-center bg-primary/20 p-3 rounded-lg border border-border ">
-              <div className="text-sm text-foreground    flex flex-col gap-1">
-
+            <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-border">
+              {/* Texto */}
+              <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
                 {selectedServices.length > 0 && (
                   <div>
                     <p className="font-medium">
@@ -427,30 +425,32 @@ export default function ProfessionalDetails() {
                   </div>
                 )}
                 {(selectedDate || selectedTime) && (
-                  <div className="flex flex-wrap items-center gap-4 mt-1">
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
                     {selectedDate && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <CalendarIcon className="w-4 h-4 text-primary" />
                         <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
                       </div>
                     )}
                     {selectedTime && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4 text-primary" />
                         <span>{selectedTime}</span>
                       </div>
                     )}
                   </div>
                 )}
-
               </div>
-              <div className="flex gap-2">
+
+              {/* Botão Limpar */}
+              <div className="flex-shrink-0">
                 <Button variant="outline" onClick={clearData}>
                   Limpar
                 </Button>
               </div>
             </div>
           )}
+
           {/* Botão de agendar */}
           <Button
 

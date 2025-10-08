@@ -185,6 +185,7 @@ export default function AjustesAgenda() {
               <div>
                 <Label>Início</Label>
                 <Input
+                  className="bg-background/10"
                   type="time"
                   value={availability.workingHours.start}
                   onChange={(e) =>

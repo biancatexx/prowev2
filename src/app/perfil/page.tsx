@@ -156,14 +156,14 @@ export default function PerfilPage() {
               {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </form>
+          <div className="  mt-4">
+            <Button variant="destructive" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair da Conta
+            </Button>
+          </div>
         </Card>
-
-        <Card className="p-6 mt-4">
-          <Button variant="destructive" onClick={handleLogout}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair da Conta
-          </Button>
-        </Card>
+ 
       </main>
     )
   }
