@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, UserIcon, LogOut } from "lucide-react"
+import { UserIcon, LogOut, Edit2 } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { saveUser, type User } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
@@ -17,6 +17,8 @@ export default function PerfilPage() {
   const router = useRouter()
   const { user, updateUser, logout } = useAuth()
   const { toast } = useToast()
+  
+  const [isEditing, setIsEditing] = useState(false) // Novo estado para controle de edição
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
@@ -25,6 +27,7 @@ export default function PerfilPage() {
     birthDate: "",
   })
 
+  // 1. Inicializa o formulário com os dados do usuário
   useEffect(() => {
     if (user) {
       setFormData({
@@ -38,18 +41,24 @@ export default function PerfilPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isEditing) return setIsEditing(true) // Se não estiver editando, apenas habilita a edição
+
     setLoading(true)
     try {
       if (!user) return
       const updatedUser: User = {
         ...user,
         name: formData.name,
-        whatsapp: formData.whatsapp.replace(/\D/g, ""),
+        whatsapp: formData.whatsapp.replace(/\D/g, ""), // Limpa o WhatsApp
         email: formData.email,
         birthDate: formData.birthDate,
       }
+      // 1. Salva nos dados mockados
       saveUser(updatedUser)
+      // 2. Atualiza o contexto global
       updateUser(updatedUser)
+      
+      setIsEditing(false) // Desliga o modo de edição após salvar
       toast({
         title: "Perfil atualizado!",
         description: "Suas informações foram salvas com sucesso.",
@@ -74,23 +83,22 @@ export default function PerfilPage() {
     router.push("/")
   }
 
-  // Header fixo para todos os estados
+  // Header fixo
   const Header = () => (
     <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
       <div className="container mx-auto max-w-screen-lg text-center">
         <h1 className="text-2xl font-bold text-primary-foreground">
-          Perfil
+          Perfil do Cliente
         </h1>
       </div>
     </header>
-
   )
 
   // Main varia conforme login
   const MainContent = () => {
     if (!user) {
       return (
-        <main className="container mx-auto max-w-screen-lg text-center">
+        <main className="container mx-auto max-w-screen-lg px-4">
           <Card className="p-8 text-center">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <UserIcon className="w-8 h-8 text-zinc-400" />
@@ -108,7 +116,7 @@ export default function PerfilPage() {
     }
 
     return (
-      <main className="container mx-auto max-w-screen-lg ">
+      <main className="container mx-auto max-w-screen-lg px-4">
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -118,6 +126,7 @@ export default function PerfilPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
+                disabled={!isEditing} // Desabilitado
               />
             </div>
 
@@ -129,6 +138,7 @@ export default function PerfilPage() {
                 value={formData.whatsapp}
                 onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
                 required
+                disabled={!isEditing} // Desabilitado
               />
             </div>
 
@@ -139,6 +149,7 @@ export default function PerfilPage() {
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                disabled={!isEditing} // Desabilitado
               />
             </div>
 
@@ -149,21 +160,28 @@ export default function PerfilPage() {
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                disabled={!isEditing} // Desabilitado
               />
             </div>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? "Salvando..." : "Salvar Alterações"}
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+              {loading ? "Salvando..." : (
+                isEditing ? "Salvar Alterações" : (
+                  <>
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Editar Perfil
+                  </>
+                )
+              )}
             </Button>
           </form>
-          <div className="  mt-4">
-            <Button variant="destructive" onClick={handleLogout}>
+          <div className="mt-6 pt-4 border-t border-border">
+            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
               <LogOut className="w-4 h-4 mr-2" />
               Sair da Conta
             </Button>
           </div>
         </Card>
- 
       </main>
     )
   }

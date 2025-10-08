@@ -389,7 +389,7 @@ export default function ProfessionalAgendamento() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-2">
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
               {availableServices.length === 0 ? (
                 <p className="text-center text-muted-foreground">Nenhum serviço cadastrado para este profissional.</p>
               ) : (
@@ -421,7 +421,19 @@ export default function ProfessionalAgendamento() {
               )}
             </div>
             <div className="border-t pt-4 mt-4">
-              <Button onClick={handleCloseServicesModal} className="w-full" disabled={selectedServices.length === 0}>
+              {/* Botão Limpar */}
+              {selectedServices.length > 0 && (
+                <Button
+                  variant="ghost"
+                  className="mb-2"
+                  onClick={handleClearServices}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" /> Limpar Seleção
+                </Button>
+              )}
+
+              {/* Confirmar */}
+              <Button onClick={handleCloseServicesModal} className="w-full">
                 Confirmar Seleção ({selectedServices.length})
               </Button>
             </div>

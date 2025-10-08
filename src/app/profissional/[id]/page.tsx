@@ -228,7 +228,7 @@ export default function ProfessionalDetails() {
                 </div>
               )}
             </div>
-            <h1 className="text-xl font-bold mb-1">{professional.name}</h1> 
+            <h1 className="text-xl font-bold mb-1">{professional.name}</h1>
           </div>
         </div>
       </header>
@@ -251,7 +251,7 @@ export default function ProfessionalDetails() {
           {/* Serviços */}
           <TabsContent value="servicos">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">Selecione os serviços</h3>
+              <h2 className="font-bold text-foreground">Selecione os serviços</h2>
             </div>
             <div className="space-y-6">
               {Object.entries(groupedServices).map(([category, categoryServices]) => (
@@ -261,7 +261,7 @@ export default function ProfessionalDetails() {
                     {categoryServices.map((service) => (
                       <label
                         key={service.id}
-                        className="bg-card rounded-xl p-4 border border-border flex items-start gap-3 cursor-pointer hover:bg-accent/50"
+                        className="bg-card rounded-xl p-4 border border-border flex items-start gap-3 cursor-pointer hover:bg-primary/30"
                       >
                         <Checkbox
                           checked={selectedServices.includes(service.id)}
@@ -286,7 +286,7 @@ export default function ProfessionalDetails() {
           {/* Agenda */}
           <TabsContent value="agenda">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-foreground">Dias e horários</h3>
+              <h2 className="font-bold text-foreground">Dias e horários</h2>
             </div>
             <div className="bg-card rounded-2xl border p-5 mb-4" >
               <div className="flex justify-between items-center mb-2">
@@ -335,7 +335,7 @@ export default function ProfessionalDetails() {
             {/* Descrição */}
             {professional.description && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
-                <h3 className="font-bold text-foreground mb-3">Descrição</h3>
+                <h2 className="font-bold text-foreground mb-3">Descrição</h2>
                 <p className="text-sm text-muted-foreground leading-relaxed">{professional.description}</p>
               </div>
             )}
@@ -363,9 +363,9 @@ export default function ProfessionalDetails() {
 
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm bg-primary/20"
                     >
-                      <Instagram className="w-4 h-4" /> @{professional.social_instagram}
+                      <Instagram className="w-4 h-4" /> {professional.social_instagram}
                     </a>
                   )}
                   {professional.social_facebook && (
@@ -373,9 +373,9 @@ export default function ProfessionalDetails() {
                       href={`https://facebook.com/${professional.social_facebook}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm"
+                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm bg-primary/20"
                     >
-                      <Facebook className="w-4 h-4" /> {professional.social_facebook}
+                      <Facebook className="w-4 h-4" />{professional.social_facebook}
                     </a>
                   )}
                 </div>
@@ -397,10 +397,30 @@ export default function ProfessionalDetails() {
             {getAddress() && (
               <div className="bg-card rounded-2xl p-4 border border-border space-y-2 mb-4">
                 <h3 className="font-bold text-foreground mb-3">Endereço</h3>
-                <p className="text-sm text-muted-foreground mb-3 flex items-start gap-2">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
                   <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
                   {getAddress()}
                 </p>
+                <div className="w-full h-48 rounded-lg overflow-hidden border mt-2">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    frameBorder="0"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(getAddress())}&output=embed`}
+                    allowFullScreen
+                  ></iframe>
+                </div>
+                <div className="  text-end">
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getAddress())}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-zinc-900 font-sm font-semibold hover:underline mt-2 inline-block"
+                  >
+                    Abrir no Google Maps
+                  </a>
+                </div>
+
               </div>
             )}
           </TabsContent>

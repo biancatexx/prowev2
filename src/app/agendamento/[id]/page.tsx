@@ -349,21 +349,24 @@ export default function Agendamento() {
       {/* Serviços */}
       {showServicesModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
+            {/* Cabeçalho */}
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h2 className="font-bold text-xl">Selecionar Serviços</h2>
               <button onClick={handleCloseServicesModal} className="p-1 hover:bg-accent rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-2">
+
+            {/* Lista de serviços - rolável */}
+            <div className="flex-1 overflow-y-auto space-y-2 mb-4">
               {availableServices.map((service: any) => {
                 const isSelected = selectedServices.some((s) => s.id === service.id)
                 return (
                   <div
                     key={service.id}
                     onClick={() => toggleServiceSelection(service)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"}`}
+                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/20 border-primary" : "hover:bg-primary/10 "}`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -382,11 +385,22 @@ export default function Agendamento() {
                 )
               })}
             </div>
-            <div className="border-t pt-4 mt-4">
-              <Button onClick={handleCloseServicesModal} className="w-full">
-                Confirmar Seleção ({selectedServices.length})
+
+            {/* Botão Limpar */}
+            {selectedServices.length > 0 && (
+              <Button
+                variant="ghost"
+                className="mb-2"
+                onClick={handleClearServices}
+              >
+                <Trash2 className="w-4 h-4 mr-2" /> Limpar Seleção
               </Button>
-            </div>
+            )}
+
+            {/* Confirmar */}
+            <Button onClick={handleCloseServicesModal} className="w-full">
+              Confirmar Seleção ({selectedServices.length})
+            </Button>
           </div>
         </div>
       )}
