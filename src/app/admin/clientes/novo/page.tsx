@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { saveClient } from "@/data/mockData"
 import type { Client } from "@/data/mockData"
+import { toast } from "sonner"
 
 export default function NovoClientePage() {
     const router = useRouter()
@@ -25,33 +26,48 @@ export default function NovoClientePage() {
         status: "ativo",
     })
 
+    const [loading, setLoading] = useState(false)
+
     const handleSave = () => {
-        // pega o professionalId do usuário logado
-        const currentUserStr = typeof window !== "undefined" ? localStorage.getItem("mock_current_user") : null
-        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null
-        const professionalId = currentUser?.professionalId || "1"
-
-        const newClient: Client = {
-            id: form.whatsapp.replace(/\D/g, ""),
-            name: form.name,
-            whatsapp: form.whatsapp,
-            email: form.email,
-            birthDate: form.birthDate || undefined,
-            status: form.status,
-            totalAppointments: 0,
-            totalSpent: 0,
-            lastAppointment: new Date().toISOString().split("T")[0],
+        if (!form.name || !form.whatsapp) {
+            alert("Preencha nome e WhatsApp")
+            return
         }
 
-        // salva no storage (inclui professionalId indiretamente via ensureClientExists)
-        saveClient(newClient)
+        setLoading(true)
 
-        // opcional: força recarregar a lista de clientes na página anterior
-        if (typeof window !== "undefined") {
+        try {
+            const currentUserStr = localStorage.getItem("mock_current_user")
+            const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null
+            const professionalId = currentUser?.professionalId || "1"
+
+            const newClient: Client = {
+                id: form.whatsapp.replace(/\D/g, ""),
+                name: form.name,
+                whatsapp: form.whatsapp,
+                email: form.email || undefined,
+                birthDate: form.birthDate || undefined,
+                status: form.status,
+                totalAppointments: 0,
+                totalSpent: 0,
+                lastAppointment: new Date().toISOString().split("T")[0],
+                professionalId: professionalId,  
+            }
+
+            saveClient(newClient)
+
+            // opcional: força atualizar páginas que escutam storage
             window.dispatchEvent(new Event("storage"))
-        }
 
-        router.push("/admin/clientes")
+           
+              toast.success("Cliente salvo com sucesso!")
+            router.push("/admin/clientes")
+        } catch (error) {
+            console.error("Erro ao salvar cliente:", error)
+            toast.error("Erro ao salvar cliente. Veja o console.")
+        } finally {
+            setLoading(false)
+        }
     }
 
     const formatWhatsapp = (value: string) => {
@@ -60,7 +76,6 @@ export default function NovoClientePage() {
         if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
         return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
     }
-
 
     return (
         <div className="min-h-screen bg-background pb-8">
@@ -126,9 +141,10 @@ export default function NovoClientePage() {
                     </div>
                     <button
                         onClick={handleSave}
-                        className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-xl hover:opacity-90"
+                        disabled={loading}
+                        className="w-full bg-primary text-primary-foreground font-semibold py-3 rounded-xl hover:opacity-90 disabled:opacity-50"
                     >
-                        Salvar Cliente
+                        {loading ? "Salvando..." : "Salvar Cliente"}
                     </button>
                 </Card>
             </main>

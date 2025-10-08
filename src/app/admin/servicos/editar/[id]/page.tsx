@@ -25,7 +25,7 @@ export default function EditarServicoPage() {
   const params = useParams()
   const serviceId = params.id as string // Captura o ID do serviço da URL
   const { professional: authProfessional, isLoading } = useAuth()
-  
+
   const categories = getCategories()
 
   const [serviceData, setServiceData] = useState<Service | null>(null)
@@ -44,7 +44,7 @@ export default function EditarServicoPage() {
     }
 
     const serviceToEdit = professional.services.find(s => s.id === serviceId)
-    
+
     if (!serviceToEdit) {
       toast.error("Erro: Serviço não encontrado.")
       router.push("./servicos")
@@ -88,7 +88,7 @@ export default function EditarServicoPage() {
       if (!professional) throw new Error("Profissional não encontrado durante a edição.")
 
       // 3. Encontrar o índice e substituir o serviço
-      const updatedServices = professional.services.map(s => 
+      const updatedServices = professional.services.map(s =>
         s.id === serviceData.id ? serviceData : s
       )
 
@@ -119,7 +119,7 @@ export default function EditarServicoPage() {
       </div>
     )
   }
-  
+
   // Se o serviceData for null após a tentativa de carregamento (erro de rota)
   if (!serviceData) {
     return null // Redirecionamento já foi feito no useEffect
@@ -141,16 +141,7 @@ export default function EditarServicoPage() {
       <div className="container mx-auto max-w-screen-lg px-4">
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome do Serviço*</Label>
-              <Input
-                id="name"
-                value={serviceData.name}
-                onChange={handleInputChange}
-                required
-                placeholder="Ex: Corte Feminino, Manicure"
-              />
-            </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="category">Categoria*</Label>
@@ -166,6 +157,16 @@ export default function EditarServicoPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome do Serviço*</Label>
+              <Input
+                id="name"
+                value={serviceData.name}
+                onChange={handleInputChange}
+                required
+                placeholder="Ex: Corte Feminino, Manicure"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

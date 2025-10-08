@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -6,7 +7,8 @@ import { Search, Users, Phone } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import NavbarProfessional from "@/components/NavbarProfessional"
-import { getClientsByProfessional, type Client } from "@/data/mockData"
+ 
+import { getClientsByProfessional, type Client, initializeMocks } from "@/data/mockData" 
 import { Button } from "@/components/ui/button"
 
 export default function ClientesPage() {
@@ -17,25 +19,31 @@ export default function ClientesPage() {
   const [professionalId, setProfessionalId] = useState<string | null>(null)
 
   useEffect(() => {
+    
+    initializeMocks() 
+
     if (typeof window !== "undefined") {
       const currentUser = localStorage.getItem("mock_current_user")
+      let profId = "1" // Padrão se não houver usuário logado
       if (currentUser) {
         const user = JSON.parse(currentUser)
-        const profId = user.professionalId || "1"
-        setProfessionalId(profId)
-
-        const clientsList = getClientsByProfessional(profId)
-        setClients(clientsList)
-        setFilteredClients(clientsList)
+        profId = user.professionalId || "1" // Usa o ID do professional logado
       }
-    }
-  }, [])
+      
+      setProfessionalId(profId)
 
+      const clientsList = getClientsByProfessional(profId)
+      setClients(clientsList)
+      setFilteredClients(clientsList)
+    }
+  }, []) // Executa apenas na montagem
+
+  // Resto do código do componente...
   useEffect(() => {
     if (searchTerm) {
       const filtered = clients.filter(
         (client) =>
-          client.name.toLowerCase().includes(searchTerm.toLowerCase()) || client.whatsapp.includes(searchTerm),
+          client.name.toLowerCase().includes(searchTerm.toLowerCase()) || client.whatsapp.includes(searchTerm)
       )
       setFilteredClients(filtered)
     } else {
@@ -43,11 +51,23 @@ export default function ClientesPage() {
     }
   }, [searchTerm, clients])
 
+  useEffect(() => {
+    const handleStorage = () => {
+      if (professionalId) {
+        // Recarrega a lista do mockData sempre que um evento 'storage' é disparado
+        const clientsList = getClientsByProfessional(professionalId)
+        setClients(clientsList)
+        setFilteredClients(clientsList)
+      }
+    }
+
+    // Ouve o evento de storage disparado por saveClient e updateClient
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [professionalId])
+
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value)
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
   }
 
   const formatDate = (dateStr: string) => {
@@ -55,22 +75,8 @@ export default function ClientesPage() {
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
   }
 
-  useEffect(() => {
-    const handleStorage = () => {
-      if (professionalId) {
-        const clientsList = getClientsByProfessional(professionalId)
-        setClients(clientsList)
-        setFilteredClients(clientsList)
-      }
-    }
-
-    window.addEventListener("storage", handleStorage)
-    return () => window.removeEventListener("storage", handleStorage)
-  }, [professionalId])
-
   return (
     <div className="min-h-screen bg-background pb-20">
-
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
           <h1 className="text-2xl font-bold text-primary-foreground text-center">Clientes</h1>
@@ -88,13 +94,9 @@ export default function ClientesPage() {
               className="pl-10 bg-white"
             />
           </div>
-
-          <Button
-            onClick={() => router.push("/admin/clientes/novo")}
-              >
-            + Cadastrar Cliente
-          </Button>
+          <Button onClick={() => router.push("/admin/clientes/novo")}>+ Cadastrar Cliente</Button>
         </div>
+
         {filteredClients.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -122,8 +124,11 @@ export default function ClientesPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-lg">{client.name}</h3>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${client.status === "ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                          }`}
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          client.status === "ativo"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
                       >
                         {client.status}
                       </span>
@@ -136,7 +141,8 @@ export default function ClientesPage() {
                     )}
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-muted-foreground">
-                        {client.totalAppointments} agendamento{client.totalAppointments !== 1 ? "s" : ""}
+                        {client.totalAppointments} agendamento
+                        {client.totalAppointments !== 1 ? "s" : ""}
                       </span>
                       <span className="text-muted-foreground">•</span>
                       <span className="font-semibold text-green-600">{formatCurrency(client.totalSpent)}</span>

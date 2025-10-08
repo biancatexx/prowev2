@@ -113,40 +113,43 @@ export default function ServicosPage() {
           </div>
           <div className="space-y-3">
             {services.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">Nenhum serviço cadastrado.</p>
+              <p className="text-muted-foreground text-center py-4">Nenhum serviço cadastrado.</p>
             ) : (
-                services.map((service) => (
-                    <div
-                        key={service.id}
-                        className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow flex justify-between items-center"
-                    >
-                        {/* Informações do Serviço */}
-                        <div className="flex-1 min-w-0 pr-4">
-                            <p className="font-semibold truncate">{service.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                                {service.category} | R$ {service.price.toFixed(2)} | {service.duration}min
-                            </p>
-                        </div>
-                        
-                        {/* Ações */}
-                        <div className="flex space-x-2">
-                            <Link href={`./servicos/editar/${service.id}`} passHref>
-                                <Button variant="outline" size="icon" className="w-8 h-8">
-                                    <Edit2 className="w-4 h-4" />
-                                </Button>
-                            </Link>
-                            <Button
-                                variant="destructive"
-                                size="icon"
-                                className="w-8 h-8"
-                                onClick={() => confirmDelete(service)}
-                                disabled={services.length <= 1} // Desabilita se for o último
-                            >
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </div>
+              services.map((service) => (
+
+                <div
+                  key={service.id}
+                  className="mb-2 rounded-lg border bg-card text-card-foreground shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow flex justify-between items-center"
+                >
+                  <Link href={`./servicos/detalhes/${service.id}`} passHref>
+                    {/* Informações do Serviço */}
+                    <div className="flex-1 min-w-0 pr-4 w-full">
+                      <p className="font-semibold truncate">{service.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {service.category} | R$ {service.price.toFixed(2)} | {service.duration}min
+                      </p>
                     </div>
-                ))
+                  </Link>
+                  {/* Ações */}
+                  <div className="flex space-x-2">
+                    <Link href={`./servicos/detalhes/${service.id}`} passHref>
+                      <Button variant="outline" size="icon" className="w-8 h-8">
+                        <Edit2 className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="w-8 h-8"
+                      onClick={() => confirmDelete(service)}
+                      disabled={services.length <= 1} // Desabilita se for o último
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+              ))
             )}
           </div>
         </div>

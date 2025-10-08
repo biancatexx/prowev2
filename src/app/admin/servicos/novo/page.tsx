@@ -106,7 +106,7 @@ export default function AdicionarServicoPage() {
             saveProfessional(updatedProfessional)
 
             toast.success(`Serviço "${newService.name}" adicionado com sucesso! 🎉`)
-            router.push("./servicos/") // Redirecionar para a página de perfil
+            router.push("./") // Redirecionar para a página de perfil
         } catch (error) {
             console.error("Erro ao adicionar serviço:", error)
             toast.error("Ocorreu um erro ao salvar o serviço.")

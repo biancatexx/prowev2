@@ -1,5 +1,5 @@
 // ================================================
-//  📌 INTERFACES E TIPOS
+//  📌 INTERFACES E TIPOS
 // ================================================
 
 // --- TIPOS BASE ---
@@ -58,6 +58,7 @@ export interface Client {
   totalAppointments: number
   totalSpent: number
   lastAppointment: string
+  professionalId?: string
 }
 
 // --- PROFISSIONAIS ---
@@ -149,7 +150,7 @@ export interface MockAppointment {
 }
 
 // ================================================
-//  ⚙️ CONSTANTES E DADOS MOCK
+//  ⚙️ CONSTANTES E DADOS MOCK
 // ================================================
 const STORAGE_KEYS = {
   AVAILABILITY: "mock_professional_availability",
@@ -252,12 +253,12 @@ const initialMockAppointments: MockAppointment[] = [
   },
 ]
 // ================================================
-//  🛠️ FUNÇÕES DE ARMAZENAMENTO (UTILS)
+//  🛠️ FUNÇÕES DE ARMAZENAMENTO (UTILS)
 // ================================================
 
 /**
- * Carrega dados do localStorage de forma segura.
- */
+ * Carrega dados do localStorage de forma segura.
+ */
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback
   try {
@@ -270,8 +271,8 @@ function loadFromStorage<T>(key: string, fallback: T): T {
 }
 
 /**
- * Salva dados no localStorage de forma segura.
- */
+ * Salva dados no localStorage de forma segura.
+ */
 function saveToStorage<T>(key: string, data: T): void {
   if (typeof window === "undefined") return
   try {
@@ -281,34 +282,10 @@ function saveToStorage<T>(key: string, data: T): void {
   }
 }
 
-/**
- * Garante que os mocks iniciais estejam no localStorage.
- */
-export const initializeMocks = (): void => {
-  if (typeof window === "undefined") return
-
-  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-    saveToStorage(STORAGE_KEYS.USERS, initialMockUsers)
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.PROFESSIONALS)) {
-    saveToStorage(STORAGE_KEYS.PROFESSIONALS, initialMockProfessionals)
-  }
-
-  // Inicializa agendamentos garantindo que os clientes existam
-  if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
-    const prepared = initialMockAppointments.map((apt) => {
-      const clientId = getUserByWhatsapp(apt.clientWhatsapp)?.id
-        || ensureClientExists(apt.clientName, apt.clientWhatsapp)
-      return { ...apt, clientId }
-    })
-    saveToStorage(STORAGE_KEYS.APPOINTMENTS, prepared)
-  }
-}
-
 const cleanWhatsappNumber = (whatsapp: string): string => whatsapp.replace(/\D/g, "")
 
 // ================================================
-//  👤 FUNÇÕES DE USUÁRIOS E CLIENTES
+//  👤 FUNÇÕES DE USUÁRIOS E CLIENTES
 // ================================================
 
 export const getUsers = (): User[] => {
@@ -338,9 +315,9 @@ export const getUserById = (id: string): User | null => {
 }
 
 /**
- * Garante que um cliente exista na lista de usuários (ou o cria).
- * @returns O ID do cliente.
- */
+ * Garante que um cliente exista na lista de usuários (ou o cria).
+ * @returns O ID do cliente.
+ */
 export const ensureClientExists = (
   clientName: string,
   whatsapp?: string,
@@ -405,8 +382,35 @@ export const ensureClientExists = (
   return newId
 }
 
+/**
+ * Garante que os mocks iniciais estejam no localStorage.
+ * CORREÇÃO: Garante a chamada de ensureClientExists para vincular clientes aos agendamentos.
+ */
+export const initializeMocks = (): void => {
+  if (typeof window === "undefined") return
+
+  // 1. Garante que USUÁRIOS e PROFISSIONAIS existam.
+  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+    saveToStorage(STORAGE_KEYS.USERS, initialMockUsers)
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.PROFESSIONALS)) {
+    saveToStorage(STORAGE_KEYS.PROFESSIONALS, initialMockProfessionals)
+  }
+
+  // 2. Inicializa agendamentos garantindo que os clientes existam (necessário para a listagem funcionar)
+  if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
+    // Garante que os clientes dos agendamentos iniciais existam na lista de Users
+    initialMockAppointments.forEach(apt => {
+        ensureClientExists(apt.clientName, apt.clientWhatsapp)
+    });
+    
+    // Agora, salva os agendamentos iniciais
+    saveToStorage(STORAGE_KEYS.APPOINTMENTS, initialMockAppointments)
+  }
+}
+
 // ================================================
-//  👷 FUNÇÕES DE PROFISSIONAIS E SERVIÇOS
+//  👷 FUNÇÕES DE PROFISSIONAIS E SERVIÇOS
 // ================================================
 
 export const getProfessionals = (): Professional[] => {
@@ -446,7 +450,7 @@ export const getMockServices = (): Service[] => {
 }
 
 // ================================================
-//  ⭐️ FUNÇÕES DE FAVORITOS
+//  ⭐️ FUNÇÕES DE FAVORITOS
 // ================================================
 
 // Favorites são armazenados por WhatsApp do usuário
@@ -487,7 +491,7 @@ export const isFavorite = (userWhatsapp: string, professionalId: string): boolea
 }
 
 // ================================================
-//  🏷️ FUNÇÕES DE CATEGORIAS
+//  🏷️ FUNÇÕES DE CATEGORIAS
 // ================================================
 
 export const getCategories = (): ServiceCategory[] => {
@@ -503,7 +507,7 @@ export const saveCategory = (category: ServiceCategory): void => {
 }
 
 // ================================================
-//  🗓️ FUNÇÕES DE DISPONIBILIDADE (AVAILABILITY)
+//  🗓️ FUNÇÕES DE DISPONIBILIDADE (AVAILABILITY)
 // ================================================
 
 // Availability é armazenada por ID do profissional
@@ -523,8 +527,8 @@ export const saveProfessionalAvailability = (availability: ProfessionalAvailabil
 }
 
 /**
- * Cria a disponibilidade padrão com base nos dados do Professional.
- */
+ * Cria a disponibilidade padrão com base nos dados do Professional.
+ */
 export const getDefaultAvailability = (professionalId: string): ProfessionalAvailability => {
   const professional = getProfessionalById(professionalId)
 
@@ -570,7 +574,7 @@ export const getDefaultAvailability = (professionalId: string): ProfessionalAvai
 
 
 // ================================================
-//  📅 FUNÇÕES DE AGENDAMENTOS E SLOTS
+//  📅 FUNÇÕES DE AGENDAMENTOS E SLOTS
 // ================================================
 
 export const getStoredAppointments = (): MockAppointment[] => {
@@ -614,8 +618,8 @@ const isTimeSlotBooked = (professionalId: string, date: string, time: string): b
 }
 
 /**
- * Gera os slots de horário disponíveis para um profissional em uma data específica.
- */
+ * Gera os slots de horário disponíveis para um profissional em uma data específica.
+ */
 export const generateTimeSlots = (professionalId: string, date: Date): TimeSlot[] => {
   const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
   const dateStr = date.toISOString().split("T")[0]
@@ -693,79 +697,120 @@ export const getUnavailableReason = (professionalId: string, date: Date): string
 }
 
 // ================================================
-//  👥 FUNÇÕES DE GESTÃO DE CLIENTES
+//  👥 FUNÇÕES DE GESTÃO DE CLIENTES
 // ================================================
 
 export const getClientsByProfessional = (professionalId: string): Client[] => {
   const appointments = getAppointmentsByProfessional(professionalId)
   const clientsMap = new Map<string, Client>()
 
+  // --- Clientes a partir de agendamentos ---
   appointments.forEach((apt) => {
-    // Usa o whatsapp limpo como chave, ou um ID de fallback
-    const whatsappKey = cleanWhatsappNumber(apt.clientWhatsapp)
-    const clientId = whatsappKey || `no-whatsapp-${apt.clientName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`
+    // Usamos o ID de usuário do cliente do mock, se disponível, para garantir a unicidade
+    const clientUser = getUserById(apt.clientId)
+    const key = clientUser ? clientUser.id : cleanWhatsappNumber(apt.clientWhatsapp) 
+    
+    if (!key) return; // Não processa agendamentos sem ID de cliente/whatsapp
 
-    if (clientsMap.has(clientId)) {
-      const client = clientsMap.get(clientId)!
+    if (clientsMap.has(key)) {
+      const client = clientsMap.get(key)!
       client.totalAppointments++
       if (apt.status === "concluido") client.totalSpent += apt.totalPrice
-      // Usa a data do agendamento para a última visita
+
       const aptDateTime = new Date(`${apt.date}T${apt.time}:00`)
       const lastAptDateTime = new Date(client.lastAppointment)
       if (aptDateTime > lastAptDateTime) {
-        client.lastAppointment = apt.date // Mantém apenas a data
+        client.lastAppointment = apt.date
       }
     } else {
-      clientsMap.set(clientId, {
-        id: clientId,
+      clientsMap.set(key, {
+        id: key, 
         name: apt.clientName,
         whatsapp: apt.clientWhatsapp,
-        email: initialMockUsers.find(u => u.type === 'client' && cleanWhatsappNumber(u.whatsapp) === whatsappKey)?.email,
-        birthDate: initialMockUsers.find(u => u.type === 'client' && cleanWhatsappNumber(u.whatsapp) === whatsappKey)?.birthDate,
+        email: clientUser?.email,
+        birthDate: clientUser?.birthDate,
         status: "ativo",
         totalAppointments: 1,
         totalSpent: apt.status === "concluido" ? apt.totalPrice : 0,
         lastAppointment: apt.date,
+        professionalId, // importante para manter referência
       })
     }
   })
 
-  // Adiciona clientes cadastrados manualmente
+  // --- Clientes manuais do storage (STORAGE_KEYS.CLIENTS) ---
   const storedClients = loadFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, [])
   storedClients.forEach((client) => {
-    const key = cleanWhatsappNumber(client.whatsapp) || client.id
-    if (!clientsMap.has(key)) {
-      clientsMap.set(key, client)
+    // adiciona apenas se o professionalId bater
+    if (client.professionalId === professionalId) {
+      // Usa o ID do cliente manual para a chave
+      const key = client.id
+      if (!clientsMap.has(key)) {
+        clientsMap.set(key, {
+          ...client,
+          totalAppointments: client.totalAppointments || 0,
+          totalSpent: client.totalSpent || 0,
+          lastAppointment:
+            client.lastAppointment || new Date().toISOString().split("T")[0],
+        })
+      }
     }
   })
 
   return Array.from(clientsMap.values()).sort(
-    (a, b) => new Date(b.lastAppointment).getTime() - new Date(a.lastAppointment).getTime()
+    (a, b) =>
+      new Date(b.lastAppointment).getTime() - new Date(a.lastAppointment).getTime()
   )
 }
+
 
 export const getClientById = (professionalId: string, clientId: string): Client | null => {
   const clients = getClientsByProfessional(professionalId)
   return clients.find((c) => c.id === clientId) || null
 }
 
-export const saveClient = (updatedClient: Client): void => {
+export const saveClient = (client: Client) => {
+  if (typeof window === "undefined") return
+  if (!client.professionalId) client.professionalId = "1"
+
   const clients = loadFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, [])
-  const existingIndex = clients.findIndex((c) => c.id === updatedClient.id)
-  if (existingIndex >= 0) clients[existingIndex] = updatedClient
-  else clients.push(updatedClient)
+  clients.push(client)
   saveToStorage(STORAGE_KEYS.CLIENTS, clients)
 
-  // Atualiza o registro correspondente em 'Users'
-  const users = getUsers()
-  const existingUser = users.find(
-    (u) => u.type === "client" && cleanWhatsappNumber(u.whatsapp) === cleanWhatsappNumber(updatedClient.whatsapp)
+  // dispara evento storage para atualizar lista automaticamente
+  window.dispatchEvent(new Event("storage"))
+}
+
+/**
+ * ATUALIZA UM CLIENTE EXISTENTE (Manual ou do Agendamento)
+ */
+export const updateClient = (client: Client): void => {
+  if (typeof window === "undefined") return
+
+  // Garante o professionalId, seguindo a lógica do saveClient
+  if (!client.professionalId) client.professionalId = "1"
+
+  const clients = loadFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, [])
+
+  // A busca precisa ser por ID e Professional ID para ser segura
+  const existingIndex = clients.findIndex(
+    (c) => c.professionalId === client.professionalId && c.id === client.id
   )
-  if (existingUser) {
-    existingUser.name = updatedClient.name
-    existingUser.email = updatedClient.email
-    existingUser.birthDate = updatedClient.birthDate
-    saveUser(existingUser) // Reutiliza saveUser para salvar no storage de users
+
+  if (existingIndex >= 0) {
+    // Substitui o cliente existente pelo atualizado
+    clients[existingIndex] = client
+    saveToStorage(STORAGE_KEYS.CLIENTS, clients)
+
+    // Dispara evento storage para atualizar lista automaticamente
+    window.dispatchEvent(new Event("storage"))
+  } else {
+    console.warn(
+      `Cliente com ID ${client.id} não encontrado no STORAGE_KEYS.CLIENTS para o Professional ID ${client.professionalId}. Nenhuma atualização realizada.`
+    )
+    // Se não encontrou no storage de CLIENTS, pode ser um cliente puramente de agendamento 
+    // que só pode ser atualizado via ensureClientExists (como um User)
+    // Para o mock, focamos apenas em atualizar clientes salvos manualmente aqui.
   }
 }
 
