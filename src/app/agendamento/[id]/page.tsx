@@ -162,6 +162,8 @@ export default function Agendamento() {
         id: `apt-${Date.now()}`,
         professionalId: String(professional.id),
         professionalName: String(professional.name),
+        clientId: 'temp-client-id',
+
         clientName: String(cliente),
         clientWhatsapp: String(cleanWhatsapp || "N/A"),
         services: selectedServices.map((s) => ({
@@ -176,6 +178,7 @@ export default function Agendamento() {
         totalDuration: Number(totalDuration),
         status: "agendado" as const,
         createdAt: new Date().toISOString(),
+
       }
 
       saveAppointment(newAppointment)
@@ -215,7 +218,7 @@ export default function Agendamento() {
       {/* Estabelecimento */}
       {!isProfessionalView && professional && (
         <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
-          <h2 className="text-lg font-semibold mb-2"><House className="inline"/> Estabelecimento</h2>
+          <h2 className="text-lg font-semibold mb-2"><House className="inline" /> Estabelecimento</h2>
           <p className="font-medium">{professional.name}</p>
           <p className="text-sm text-muted-foreground flex items-center gap-2">
             <MapPin className="w-4 h-4" />
@@ -227,7 +230,7 @@ export default function Agendamento() {
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold"> <LayoutGrid className="inline"/> Serviços</h2>
+          <h2 className="text-lg font-semibold"> <LayoutGrid className="inline" /> Serviços</h2>
           <div className="flex gap-2">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
@@ -266,7 +269,7 @@ export default function Agendamento() {
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
         <div className="flex justify-between items-center mb-2">
 
-          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline"/> Data e horário</h2>
+          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline" /> Data e horário</h2>
           <hr className="border-t" />
           {(date || selectedTime) && (
             <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
@@ -295,6 +298,7 @@ export default function Agendamento() {
                 selectedDate={date}
                 selectedTime={selectedTime}
                 onTimeSelect={setSelectedTime}
+                totalDuration={0}
               /></Card>
           </div>
         </div>

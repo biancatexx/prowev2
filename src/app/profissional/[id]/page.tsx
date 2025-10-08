@@ -312,7 +312,7 @@ export default function ProfessionalDetails() {
                       professionalId={id}
                       selectedDate={selectedDate}
                       selectedTime={selectedTime}
-                      onTimeSelect={setSelectedTime}
+                      onTimeSelect={setSelectedTime} totalDuration={0}
                     /></Card>
                 </div>
               </div>
@@ -326,6 +326,7 @@ export default function ProfessionalDetails() {
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
                 onTimeSelect={setSelectedTime}
+                totalDuration={0}
               />
             </div>
           </TabsContent>
