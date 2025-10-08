@@ -17,44 +17,52 @@ export default function LoginPageTabbed() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header simplificado, mantendo a navegação de volta */}
-      <header className="p-6">
-        <div className="container mx-auto max-w-md">
-          <Link href="/" className="flex items-center text-center gap-2 text-foreground hover:opacity-80">
-            <ArrowLeft className="h-5 w-5" />
-            <span className="font-semibold">Voltar para a Home</span>
-          </Link>
-        </div>
-      </header>
+
 
       {/* Conteúdo principal com Tabs centralizadas */}
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md rounded-xl p-6 shadow-xl">
-          <CardContent className="p-0">
-            
-            {/* Componente Tabs do shadcn/ui */}
-            <Tabs defaultValue="cliente" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 h-10">
-                <TabsTrigger value="cliente">Cliente</TabsTrigger>
-                <TabsTrigger value="profissional">Profissional</TabsTrigger>
-              </TabsList>
-              
-              {/* Conteúdo da aba Cliente */}
-              <TabsContent value="cliente" className="mt-6">
-                <LoginCliente />
-              </TabsContent>
-              
-              {/* Conteúdo da aba Profissional */}
-              <TabsContent value="profissional" className="mt-6">
-                <LoginProfissional />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+
+      <main className="flex-1 flex items-center justify-center px-4 pt-12">
+        <div className="container mx-auto max-w-md text-center">
+          <div className="">
+            <Card className="w-full max-w-md rounded-xl p-6 shadow-xl">
+              <CardContent className="p-0">
+
+                {/* Componente Tabs do shadcn/ui */}
+                <Tabs defaultValue="cliente" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 h-10">
+                    <TabsTrigger value="cliente">Cliente</TabsTrigger>
+                    <TabsTrigger value="profissional">Profissional</TabsTrigger>
+                  </TabsList>
+
+                  {/* Conteúdo da aba Cliente */}
+                  <TabsContent value="cliente" className="mt-6">
+                    <LoginCliente />
+                  </TabsContent>
+
+                  {/* Conteúdo da aba Profissional */}
+                  <TabsContent value="profissional" className="mt-6">
+                    <LoginProfissional />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+            <div className="flex justify-center text-center py-4">
+              <Link href="/" className="flex items-center text-center gap-2 text-foreground hover:opacity-80">
+                <ArrowLeft className="h-5 w-5" />
+                <span className="font-semibold">Voltar</span>
+              </Link>
+            </div>
+
+          </div>
+        </div>
+
+
       </main>
-      
+
+
       {/* Footer opcional */}
       <footer className="p-4 text-center text-sm text-muted-foreground">
-        &copy; {new Date().getFullYear()} Seu Aplicativo
+        &copy; {new Date().getFullYear()} Prowe
       </footer>
     </div>
   )

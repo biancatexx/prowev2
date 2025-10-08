@@ -64,8 +64,36 @@ const MainContent = ({ user, formData, isEditing, loading, handleSubmit, handleI
 
   return (
     <main className="container mx-auto max-w-screen-lg px-4">
-      <Card className="p-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="text-end">
+          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+            {loading ? "Salvando..." : (
+              isEditing ? (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Alterações
+                </>
+              ) : (
+                <>
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  Editar Perfil
+                </>
+              )
+            )}
+          </Button>
+        </div>
+        {/* Imagem de Perfil */}
+        <div className="text-center flex justify-center -mb-4">
+          <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white z-10">
+
+            <span>{formData.name ? formData.name.charAt(0).toUpperCase() : 'P'}</span>
+
+          </div>
+        </div>
+        <Card className="p-6 pt-16 -mt-12">
+
+
           <div className="space-y-2">
             <Label htmlFor="name">Nome completo *</Label>
             <Input
@@ -115,29 +143,14 @@ const MainContent = ({ user, formData, isEditing, loading, handleSubmit, handleI
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-            {loading ? "Salvando..." : (
-              isEditing ? (
-                <>
-                  <Save className="w-4 h-4 mr-2" />
-                  Salvar Alterações
-                </>
-              ) : (
-                <>
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Editar Perfil
-                </>
-              )
-            )}
-          </Button>
-        </form>
-        <div className="mt-6 pt-4 border-t border-border">
-          <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair da Conta
-          </Button>
-        </div>
-      </Card>
+        </Card>
+      </form>
+      <div className="mt-6 pt-4 border-t border-border text-end">
+        <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
+          <LogOut className="w-4 h-4 mr-2" />
+          Sair da Conta
+        </Button>
+      </div>
     </main>
   )
 }

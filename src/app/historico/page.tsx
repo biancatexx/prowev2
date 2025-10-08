@@ -238,18 +238,18 @@ export default function HistoricoPage() {
         return (
             <main className="container mx-auto max-w-screen-lg text-center px-4">
                 <p className=" text-zinc-600">Olá, {user.name.split(" ")[0]}! Seu histórico completo.</p>
-                <div className="space-y-4 mt-4">
+                <div className="space-y-4 ">
                     {appointments.length === 0 ? (
-                        <Card className="p-6 text-center">
+                         <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm mt-8">
                             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <Calendar className="w-8 h-8 text-zinc-400" />
                             </div>
                             <h2 className="text-xl font-bold mb-2">Nenhum Agendamento</h2>
                             <p className="text-sm text-muted-foreground">Você ainda não possui agendamentos no seu histórico.</p>
-                            <Button onClick={() => router.push("/")} className="w-full mt-4">
+                            <Button onClick={() => router.push("/")} className="mt-4">
                                 Agendar Agora
                             </Button>
-                        </Card>
+                        </div>
                     ) : (
                         appointments.map((appointment) => {
                             const statusConfig = getStatusConfig(appointment.status)

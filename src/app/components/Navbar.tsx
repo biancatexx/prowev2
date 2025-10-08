@@ -72,7 +72,7 @@ const Navbar = () => {
                 );
               })}
               <div className="pt-2">
-                <Button variant="hero" size="lg" className="w-full" asChild>
+                <Button variant="hero" size="lg"   asChild>
                   <Link href="/explorar" onClick={() => setIsOpen(false)}>
                     Agendar Agora
                   </Link>
