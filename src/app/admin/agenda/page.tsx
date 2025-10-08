@@ -14,12 +14,8 @@ export default function Agenda() {
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [tab, setTab] = useState<"hora" | "dia">("hora")
   const [appointments, setAppointments] = useState<any[]>([])
-
-  useEffect(() => {
-    loadAppointments()
-  }, [])
-
   const [professionalId, setProfessionalId] = useState<string | null>(null)
+  const [currentTime, setCurrentTime] = useState(new Date())
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -29,16 +25,24 @@ export default function Agenda() {
         setProfessionalId(user.professionalId)
       }
     }
+    loadAppointments()
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000)
+    return () => clearInterval(interval)
   }, [])
 
   const loadAppointments = () => {
     const stored = getStoredAppointments()
     const formatted = stored.map((apt) => ({
       id: apt.id,
+      clientId: apt.clientId, // 🔥 adicionamos o clientId para link correto
       date: apt.date,
       time: apt.time,
       duration: apt.totalDuration,
       client: apt.clientName,
+      clientWhatsapp: apt.clientWhatsapp,
       service: apt.services.map((s) => s.name).join(", "),
       status: apt.status,
     }))
@@ -46,7 +50,6 @@ export default function Agenda() {
   }
 
   const appointmentDates = appointments.map((apt) => apt.date)
-
   const formatDate = (d: Date) => d.toISOString().split("T")[0]
   const filteredAppointments = date ? appointments.filter((a) => a.date === formatDate(date)) : appointments
 
@@ -66,13 +69,6 @@ export default function Agenda() {
 
   const timeSlots = generateTimeSlots()
   const slotHeight = 60
-
-  const [currentTime, setCurrentTime] = useState(new Date())
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 60000)
-    return () => clearInterval(interval)
-  }, [])
-
   const currentHour = currentTime.getHours()
   const currentMinute = currentTime.getMinutes()
   const currentPosition = ((currentHour - 8) * 2 + currentMinute / 30) * slotHeight
@@ -102,91 +98,64 @@ export default function Agenda() {
         </div>
       </header>
 
-      {/* Calendário */}
+      {/* Conteúdo principal */}
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
-
-        {/* Buttons das tabs */}
+        {/* Tabs */}
         <div className="flex justify-center gap-2">
-          <div className="inline-flex h-10 items-center justify-center text-muted-foreground w-full bg-card border border-border rounded-xl p-1 mb-6">
+          <div className="inline-flex h-10 items-center justify-center w-full bg-card border border-border rounded-xl p-1 mb-6">
             <button
               onClick={() => setTab("hora")}
-              className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-primary data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 rounded-lg 
-                 ${tab === "dia" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === "hora" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
             >
-              <List className="mr-2 w-3 h-3" /> Visão diária
+              <List className="inline w-3 h-3 mr-2" /> Visão diária
             </button>
             <button
               onClick={() => setTab("dia")}
-              className={`inline-flex items-center justify-center whitespace-nowrap px-3 py-1.5 text-sm font-medium ring-offset-background transition-all data-[state=active]:bg-primary data-[state=active]:text-foreground data-[state=active]:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 flex-1 rounded-lg
-                 ${tab === "hora" ? "bg-white text-primary" : "bg-muted text-muted-foreground"}`}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === "dia" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
             >
-              <Rows3 className="mr-2 w-3 h-3" /> Visão mensal
+              <Rows3 className="inline w-3 h-3 mr-2" /> Visão mensal
             </button>
           </div>
-
         </div>
 
-        {/* Conteúdo das tabs */}
+        {/* Visão Diária */}
         {tab === "hora" && (
           <>
-
             <Card className="border shadow-sm h-full flex justify-center items-center p-4">
               <div className="flex flex-col lg:flex-row gap-4">
-                <div className="">
-
-                  <CustomCalendar
-                    selected={date}
-                    onSelect={setDate}
-                    appointmentDates={appointmentDates}
-                    className="rounded-md border"
-                  />
-                </div>
+                <CustomCalendar
+                  selected={date}
+                  onSelect={setDate}
+                  appointmentDates={appointmentDates}
+                  className="rounded-md border"
+                />
               </div>
               <div className="flex-1 text-center p-4">
-                <div>
-                  <h2 className="text-lg text-primary font-bold mb-2">
-
-                    {date
-                      ? date.toLocaleDateString("pt-BR", {
-                        weekday: "long",
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                      })
-                      : "Selecione um dia"}
-                  </h2>
-                  <p className="text-lg text-zinc-900">
-                    {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-
-              </div>
-
-            </Card>
-            <h2 className="text-lg font-bold text-primary mb-2">
-              {date ? (
-                <p> Dia
-                  {`${date.toLocaleDateString("pt-BR", { day: "2-digit", })}`}
-
-
+                <h2 className="text-lg text-primary font-bold mb-2">
+                  {date
+                    ? date.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" })
+                    : "Selecione um dia"}
+                </h2>
+                <p className="text-lg text-zinc-900">
+                  {filteredAppointments.length} agendamento{filteredAppointments.length !== 1 ? "s" : ""}
                 </p>
-              ) : (
-                "Selecione um dia"
-              )}
-            </h2>
+              </div>
+            </Card>
 
-            <div className="relative flex">
+            {/* Grade de horários */}
+            <div className="relative flex mt-4">
+              {/* Coluna das horas */}
               <div className="w-14 flex flex-col relative">
                 {timeSlots.map((time, i) => (
-                  <div
-                    key={i}
-                    className="h-[60px] flex relative -top-2 justify-end pr-2 text-sm text-primary font-medium"
-                  >
+                  <div key={i} className="h-[60px] flex relative -top-2 justify-end pr-2 text-sm text-primary font-medium">
                     {time}
                   </div>
                 ))}
               </div>
+
+              {/* Área de agendamentos */}
               <div className="flex-1 relative">
+                {/* Linha do horário atual */}
                 <div
                   className="absolute left-0 right-0 border-t-2 border-red-500 z-20"
                   style={{ top: `${currentPosition}px` }}
@@ -196,10 +165,12 @@ export default function Agenda() {
                   </span>
                 </div>
 
+                {/* Linhas de grade */}
                 {timeSlots.map((_, i) => (
                   <div key={i} className="h-[60px] border-t border-muted-foreground/20" />
                 ))}
 
+                {/* Cards dos agendamentos */}
                 {filteredAppointments.map((a) => {
                   const startMinutes = timeToMinutes(a.time)
                   const offsetMinutes = startMinutes - 8 * 60
@@ -207,13 +178,9 @@ export default function Agenda() {
                   const height = (a.duration / 30) * slotHeight - 4
 
                   return (
-                    <div
-                      key={a.id}
-                      className="absolute left-2 right-2"
-                      style={{ top: `${top}px`, height: `${height}px` }}
-                    >
-                      <Link href={`/admin/clientes/${a.id}`}>
-                        <Card className="border shadow-sm h-full">
+                    <div key={a.id} className="absolute left-2 right-2" style={{ top: `${top}px`, height: `${height}px` }}>
+                      <Link href={`/admin/clientes/${a.clientId}`}>
+                        <Card className="border shadow-sm h-full hover:border-primary transition">
                           <CardContent className="p-3">
                             <div className="flex justify-between items-start">
                               <div>
@@ -223,7 +190,6 @@ export default function Agenda() {
                                 </div>
                                 <p className="text-sm text-muted-foreground">{a.service}</p>
                               </div>
-
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon">
@@ -246,19 +212,17 @@ export default function Agenda() {
             </div>
           </>
         )}
+
+        {/* Visão Mensal */}
         {tab === "dia" && (
           <>
             <Card className="border shadow-sm h-full p-4">
-              <h2 className="text-lg text-primary mb-2"> Visão do mês de
-                {date
-                  ? date.toLocaleDateString("pt-BR", {
-
-                    month: "long",
-                    year: "numeric",
-                  })
-                  : "Selecione um dia"}
+              <h2 className="text-lg text-primary mb-2">
+                Visão do mês de{" "}
+                {date ? date.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : "Selecione um dia"}
               </h2>
             </Card>
+
             {(() => {
               const currentMonthDate = date ?? new Date()
               const currentMonthNumber = currentMonthDate.getMonth()
@@ -293,37 +257,40 @@ export default function Agenda() {
                             </div>
                             <div className="h-px flex-1 bg-muted-foreground/20" />
                             <p className="text-xs text-muted-foreground">
-                              {appointmentsOfDay.length} agendamento{appointmentsOfDay.length !== 1 ? "s" : ""}
+                              {appointmentsOfDay.length} agendamento
+                              {appointmentsOfDay.length !== 1 ? "s" : ""}
                             </p>
                           </div>
 
                           <div className="space-y-3">
                             {appointmentsOfDay.map((a: any) => (
-                              <Card key={a.id} className="border shadow-sm">
-                                <CardContent className="p-3">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <p className="font-semibold">{a.client}</p>
-                                        <p className="text-sm text-primary font-medium">{a.time}</p>
+                              <Link href={`/admin/clientes/${a.clientId}`} key={a.id}>
+                                <Card className="border shadow-sm hover:border-primary transition">
+                                  <CardContent className="p-3">
+                                    <div className="flex justify-between items-start">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <p className="font-semibold">{a.client}</p>
+                                          <p className="text-sm text-primary font-medium">{a.time}</p>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{a.service}</p>
                                       </div>
-                                      <p className="text-sm text-muted-foreground">{a.service}</p>
-                                    </div>
 
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                          <MoreVertical className="h-5 w-5" />
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem>Remarcar</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-red-500">Cancelar</DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </div>
-                                </CardContent>
-                              </Card>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <Button variant="ghost" size="icon">
+                                            <MoreVertical className="h-5 w-5" />
+                                          </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem>Remarcar</DropdownMenuItem>
+                                          <DropdownMenuItem className="text-red-500">Cancelar</DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </Link>
                             ))}
                           </div>
                         </div>
@@ -333,15 +300,11 @@ export default function Agenda() {
                 </div>
               )
             })()}
-
           </>
-
         )}
       </div>
 
-
-
-      {/* Botão flutuante */}
+      {/* Botões flutuantes */}
       <Link href={`/admin/agenda/ajustes`}>
         <Button className="fixed bottom-44 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           <Cog className="w-10 h-10 text-zinc-900" />
@@ -349,7 +312,7 @@ export default function Agenda() {
       </Link>
 
       <Link href={`/admin/agendamento/`}>
-        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg zinc-900" size="icon">
+        <Button className="fixed bottom-24 right-6 rounded-full w-14 h-14 shadow-lg" size="icon">
           <Plus className="w-10 h-10 text-zinc-900" />
         </Button>
       </Link>

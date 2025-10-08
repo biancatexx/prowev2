@@ -21,7 +21,7 @@ export default function Perfil() {
     id: '',
     name: '',
     description: '',
-    address: { street: '' },
+    address: { street: '', number: '', city: '', state: '',  neighborhood: '', zipCode: '', country: '' },
     phone: '',
     email: '',
     profileImage: ''
@@ -45,7 +45,7 @@ export default function Perfil() {
   // A partir daqui, professionalData tem certeza de ter dados válidos do profissional.
   const services = getMockServices().filter((s) => s.professionalId === professionalData.id)
 
-  
+
 
   const handleSave = () => {
     // Lógica para salvar os dados (usando professionalData)
@@ -103,6 +103,27 @@ export default function Perfil() {
               <Label>Endereço</Label>
               <Input value={professionalData.address?.street} disabled={!isEditing} />
             </div>
+
+
+            <div>
+              <Label>Número</Label>
+              <Input value={professionalData.address?.number} disabled={!isEditing} />
+            </div>
+
+
+            <div>
+              <Label>Bairro</Label>
+              <Input value={professionalData.address?.neighborhood} disabled={!isEditing} />
+            </div>
+            <div>
+              <Label>Cidade</Label>
+              <Input value={professionalData.address?.city} disabled={!isEditing} />
+            </div>
+            <div>
+              <Label>CEP</Label>
+              <Input value={professionalData.address?.zipCode} disabled={!isEditing} />
+            </div>
+
             <div>
               <Label>Telefone</Label>
               <Input value={professionalData.phone} disabled={!isEditing} />

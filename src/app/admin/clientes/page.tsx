@@ -54,6 +54,19 @@ export default function ClientesPage() {
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
   }
 
+  useEffect(() => {
+  const handleStorage = () => {
+    if (professionalId) {
+      const clientsList = getClientsByProfessional(professionalId)
+      setClients(clientsList)
+      setFilteredClients(clientsList)
+    }
+  }
+
+  window.addEventListener("storage", handleStorage)
+  return () => window.removeEventListener("storage", handleStorage)
+}, [professionalId])
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
@@ -64,19 +77,28 @@ export default function ClientesPage() {
               {clients.length} {clients.length === 1 ? "cliente cadastrado" : "clientes cadastrados"}
             </p>
           </div>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              type="text"
-              placeholder="Buscar por nome ou WhatsApp..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white"
-            />
+
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="Buscar por nome ou WhatsApp..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-white"
+              />
+            </div>
+
+            <button
+              onClick={() => router.push("/admin/clientes/novo")}
+              className="bg-white text-primary font-semibold px-4 py-2 rounded-xl shadow hover:bg-primary/10 transition"
+            >
+              + Cadastrar Cliente
+            </button>
           </div>
         </div>
       </header>
-
       <main className="container mx-auto max-w-screen-lg px-4">
         {filteredClients.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
@@ -105,9 +127,8 @@ export default function ClientesPage() {
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-bold text-lg">{client.name}</h3>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          client.status === "ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                        }`}
+                        className={`text-xs px-2 py-0.5 rounded-full ${client.status === "ativo" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                          }`}
                       >
                         {client.status}
                       </span>
@@ -127,7 +148,7 @@ export default function ClientesPage() {
                     </div>
                   </div>
                   <div className="text-right text-xs text-muted-foreground">
-                    Último: {formatDate(client.lastAppointment)}
+                    Última alteração em: <span className="italic">{formatDate(client.lastAppointment)}</span>
                   </div>
                 </div>
               </Card>
