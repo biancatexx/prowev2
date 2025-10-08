@@ -2,11 +2,11 @@
 
 import type React from "react"
 import { useState, useRef, useEffect, useMemo } from "react"
-import { useRouter } from "next/navigation" 
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CustomCalendar } from "@/components/CustomCalendar"
 import { TimeSlotPicker } from "@/components/TimeSlotPicker"
-import { toast } from "sonner"
+import { toast } from "sonner" // Importação de toast para sonner
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Edit2, Plus, X, Trash2 } from "lucide-react"
@@ -16,25 +16,27 @@ import {
   getLastClientNameByWhatsapp,
   isDateAvailable,
   getProfessionalById,
-  getProfessionals, 
-  Professional, 
+  getProfessionals,
+  Professional,
+  ensureClientExists,
 } from "@/data/mockData"
 
 // --- FUNÇÃO DE AJUDA ---
 // Lê o ID do localStorage (apenas para client-side)
 const readProfessionalIdFromStorage = (): string | null => {
-  if (typeof window === "undefined") return null 
+  if (typeof window === "undefined") return null
   return localStorage.getItem("mock_logged_professional_id")
 }
 
 // --- COMPONENTE PRINCIPAL ---
 export default function ProfessionalAgendamento() {
   const router = useRouter()
-  
+
   // 1. CHAME TODOS OS HOOKS INCONDICIONALMENTE NO TOPO
-  // O ID é inicializado como null. Ele será populado no useEffect.
   const [loggedProfessionalId, setLoggedProfessionalId] = useState<string | null>(null);
-  
+
+
+
   // Estados
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedTime, setSelectedTime] = useState("")
@@ -45,7 +47,7 @@ export default function ProfessionalAgendamento() {
   const [showServicesModal, setShowServicesModal] = useState(false)
   const [selectedServices, setSelectedServices] = useState<any[]>([])
   const [suggestedName, setSuggestedName] = useState<string | null>(null)
-  const [bookingData, setBookingData] = useState<any>(null) 
+  const [bookingData, setBookingData] = useState<any>(null)
 
   // Referências (Hooks useRef)
   const whatsappRef = useRef<HTMLInputElement>(null)
@@ -53,14 +55,12 @@ export default function ProfessionalAgendamento() {
   const calendarRef = useRef<HTMLDivElement>(null)
   const timesRef = useRef<HTMLDivElement>(null)
 
-  // Hook useEffect (deve ser chamado incondicionalmente)
+  // Hook useEffect para carregar o ID do localStorage e bookingData
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // 1. Carrega o ID logado do localStorage
-      const storedId = readProfessionalIdFromStorage();
+      const storedId = readProfessionalIdFromStorage()
       setLoggedProfessionalId(storedId);
 
-      // 2. Carrega bookingData (se vier de outra tela)
       const storedBooking = localStorage.getItem("booking_data")
       if (storedBooking) {
         const data = JSON.parse(storedBooking)
@@ -71,75 +71,63 @@ export default function ProfessionalAgendamento() {
         localStorage.removeItem("booking_data")
       }
     }
-  }, [])
-  
-  // Hook useMemo (deve ser chamado incondicionalmente)
+  }, []) // Dependência vazia para rodar apenas uma vez na montagem
+
+
   const professional: Professional | undefined = useMemo(() => {
-    if (!loggedProfessionalId) {
-        return undefined; // Não tenta buscar se o ID ainda não foi carregado
-    }
-    
-    // 1. Tenta usar o profissional do estado temporário (bookingData)
-    let foundProfessional = bookingData?.professional;
-    
-    // 2. Se não encontrou no estado, busca pelo ID Logado
-    if (!foundProfessional) {
-        foundProfessional = getProfessionalById(loggedProfessionalId);
-    }
-    
-    // 3. Fallback para um ID de teste se o ID Logado não retornar um profissional válido
-    if (!foundProfessional && getProfessionals().length > 0) {
-        const firstMockId = getProfessionals()[0].id;
-        if (firstMockId !== loggedProfessionalId) {
-             console.warn(`[MOCK INFO] ID "${loggedProfessionalId}" não encontrado. Revertendo temporariamente para o primeiro ID: "${firstMockId}".`);
-             foundProfessional = getProfessionals()[0];
-        }
+    if (!loggedProfessionalId) return undefined;
+
+    const foundProfessional = getProfessionalById(loggedProfessionalId) ?? undefined; // <--- converte null para undefined
+    if (!foundProfessional && getProfessionals().length > 0 && process.env.NODE_ENV === 'development') {
+      console.warn(`[MOCK INFO] Profissional com ID "${loggedProfessionalId}" não encontrado. Usando primeiro mock.`);
+      return getProfessionals()[0];
     }
 
     return foundProfessional;
-  }, [bookingData, loggedProfessionalId]) as Professional | undefined;
+  }, [loggedProfessionalId]);
 
-
-  // Hook useMemo (deve ser chamado incondicionalmente)
+  // Hook useMemo para serviços disponíveis (sempre depende de `professional`)
   const availableServices = useMemo(() => {
-    // Retorna o array de serviços se o professional existir, ou um array vazio.
-    return professional ? professional.services : []; 
+    return professional ? professional.services : []
   }, [professional])
-
 
   // ----------------------------------------------------
   // --- A PARTIR DAQUI, COMEÇA A LÓGICA CONDICIONAL ---
   // ----------------------------------------------------
 
-  // Verifica a existência do ID lido
-  if (!loggedProfessionalId) {
-    // Isso é importante, pois o `useMemo` acima pode retornar `undefined` se o ID for `null`.
-    // Mas esta verificação garante que a mensagem de "Aguardando Login" apareça antes de qualquer erro.
+
+  if (loggedProfessionalId === null) {
+
     return (
-        <div className="container mx-auto max-w-md px-4 py-6 text-center">
-             <h1 className="text-2xl font-bold text-yellow-600">Aguardando Login</h1>
-             <p className="mt-4 text-muted-foreground">O ID do profissional logado está sendo carregado...</p>
-             <p className="mt-2 text-sm">Se esta mensagem persistir, o ID não foi definido no `localStorage`.</p>
-             <Button className="mt-4" onClick={() => router.push("/admin/login")}>Ir para Login</Button>
-        </div>
-    );
+      <div className="container mx-auto max-w-md px-4 py-6 text-center">
+        <h1 className="text-2xl font-bold text-red-600">ID não encontrado</h1>
+        <p className="mt-4 text-muted-foreground">
+          O ID do profissional não está definido no `localStorage`. Faça login novamente.
+        </p>
+        <Button className="mt-4" onClick={() => router.push("/login")}>Ir para Login</Button>
+      </div>
+    )
   }
 
-  // Verifica se o profissional foi encontrado com o ID lido
+  // Verifica se o profissional foi encontrado após o ID ser carregado
   if (!professional) {
     return (
-        <div className="container mx-auto max-w-md px-4 py-6 text-center">
-             <h1 className="text-2xl font-bold text-destructive">❌ Profissional Não Encontrado</h1>
-             <p className="mt-4 text-muted-foreground">O sistema buscou o ID: **{loggedProfessionalId}**, mas ele não existe na sua lista de mocks (`mockData.ts`).</p>
-             <p className="mt-2 text-sm">Verifique se o ID está sendo escrito corretamente pela página de **Perfil** no `localStorage`.</p>
-             <Button className="mt-4" onClick={() => router.push("/admin/login")}>Ir para Login / Corrigir ID</Button>
-        </div>
-    );
+      <div className="container mx-auto max-w-md px-4 py-6 text-center">
+        <h1 className="text-2xl font-bold text-destructive">❌ Profissional Não Encontrado</h1>
+        <p className="mt-4 text-muted-foreground">
+          O sistema buscou o ID: <b>{loggedProfessionalId}</b>, mas ele não existe na sua lista de mocks (`mockData.ts`).
+        </p>
+        <p className="mt-2 text-sm">
+          Verifique se o ID está sendo escrito corretamente pela página de **Login/Perfil** no `localStorage` ou se o mock está configurado.
+        </p>
+        <Button className="mt-4" onClick={() => router.push("/admin/login")}>Ir para Login / Corrigir ID</Button>
+      </div>
+    )
   }
-  
-  // Se chegarmos aqui, `professional` está definido e o componente pode renderizar a UI.
 
-  // Cálculos
+  // Se chegarmos aqui, `professional` está definitivamente definido e o componente pode renderizar a UI.
+
+  // Cálculos (dependem de `professional` estar definido)
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
 
@@ -162,7 +150,7 @@ export default function ProfessionalAgendamento() {
       const lastClientName = getLastClientNameByWhatsapp(value)
       if (lastClientName) {
         setSuggestedName(lastClientName)
-        setCliente(lastClientName) 
+        setCliente(lastClientName) // Preenche o nome do cliente automaticamente
       } else {
         setSuggestedName(null)
       }
@@ -228,23 +216,27 @@ export default function ProfessionalAgendamento() {
 
       const cleanWhatsapp = whatsapp.replace(/\D/g, "")
 
+      // Garante que o cliente existe no mockData.ts
+      const clientId = ensureClientExists(cliente, cleanWhatsapp)
+
       const newAppointment = {
         id: `apt-${Date.now()}`,
-        professionalId: String(professional.id),
-        professionalName: String(professional.name),
-        clientName: String(cliente),
-        clientWhatsapp: String(cleanWhatsapp || "N/A"),
+        professionalId: professional.id, // ID do profissional logado
+        professionalName: professional.name,
+        clientId, // ID do cliente (garantido pela ensureClientExists)
+        clientName: cliente,
+        clientWhatsapp: cleanWhatsapp, // WhatsApp limpo
         services: selectedServices.map((s) => ({
-          id: String(s.id),
-          name: String(s.name),
-          price: Number(s.price),
-          duration: Number(s.duration),
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          duration: s.duration,
         })),
         date: date.toISOString().split("T")[0],
-        time: String(selectedTime),
-        totalPrice: Number(totalPrice),
-        totalDuration: Number(totalDuration),
-        status: "agendado" as const,
+        time: selectedTime,
+        totalPrice: totalPrice,
+        totalDuration: totalDuration,
+        status: "agendado" as const, // Força o tipo
         createdAt: new Date().toISOString(),
       }
 
@@ -252,7 +244,7 @@ export default function ProfessionalAgendamento() {
       toast.success("Agendamento criado com sucesso!")
 
       setTimeout(() => {
-        router.push("/admin/agenda") 
+        router.push("/admin/agenda") // Redireciona para a página de agenda
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
@@ -336,10 +328,11 @@ export default function ProfessionalAgendamento() {
         <div className="mt-3" ref={timesRef}>
           <h2 className="text-lg font-semibold">Selecione o Horário</h2>
           <TimeSlotPicker
-            professionalId={professional.id}
+            professionalId={professional.id} // agora profissional já existe
             selectedDate={date}
             selectedTime={selectedTime}
             onTimeSelect={setSelectedTime}
+            totalDuration={totalDuration}
           />
         </div>
       </div>
@@ -406,14 +399,13 @@ export default function ProfessionalAgendamento() {
                     <div
                       key={service.id}
                       onClick={() => toggleServiceSelection(service)}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                        isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
-                      }`}
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-4 h-4" />
+                            <input type="checkbox" checked={isSelected} onChange={() => { }} className="w-4 h-4" />
                             <h3 className="font-semibold">{service.name}</h3>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">{service.category}</p>

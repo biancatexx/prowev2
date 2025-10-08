@@ -1,18 +1,14 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-// ArrowLeft e o useAuth e toast serão resolvidos no componente pai, ou você pode reimportá-los. 
-// Para simplificar, vou assumir que você moveu apenas a lógica do formulário.
-
 import { useAuth } from "@/contexts/AuthContext"
-import { toast } from "sonner" // ou useToast, dependendo de qual você usa
+import { toast } from "sonner"
 
 export function LoginProfissional() {
   const router = useRouter()
@@ -26,22 +22,27 @@ export function LoginProfissional() {
     setLoading(true)
 
     try {
-      const success = await login(email, password)
+      // login agora retorna o objeto completo do profissional
+      const professional = await login(email, password)
 
-      if (success) {
+      if (professional) {
+        // salva o ID no localStorage para usar na página de agendamento
+        localStorage.setItem("mock_logged_professional_id", professional.id)
         toast.success("Login realizado com sucesso!")
+
+        // redireciona para o dashboard ou página de agendamento
         router.push("/admin/dashboard")
       } else {
         toast.error("Email ou senha incorretos")
       }
     } catch (error) {
+      console.error("[Login Error]", error)
       toast.error("Erro ao fazer login")
     } finally {
       setLoading(false)
     }
   }
 
-  // RETORNE APENAS O CONTEÚDO QUE SERÁ EXIBIDO DENTRO DA ABA
   return (
     <div className="w-full space-y-8 p-0">
       <div className="text-center">
@@ -109,7 +110,6 @@ export function LoginProfissional() {
                 <p className="text-xs text-muted-foreground">Email: studio@exemplo.com</p>
                 <p className="text-xs text-muted-foreground">Senha: 123456</p>
               </div>
-
             </div>
           </div>
         </div>

@@ -39,12 +39,30 @@ export default function ProfessionalDetails() {
 
   if (!professional) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Profissional não encontrado</p>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-center">
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold mb-2">Profissional não encontrado 😥</h1>
+          <p className="text-muted-foreground">
+            Parece que este profissional não está cadastrado ou o link está incorreto.
+          </p>
+        </div>
+        {/* Novo Botão de Cadastro/Login de Profissional */}
+        <Button
+          onClick={() => router.push("/login-cadastro-profissional")} // Ajuste o caminho se necessário
+          className="w-full max-w-sm"
+        >
+          Sou Profissional? Login/Cadastro
+        </Button>
+        <Button
+          onClick={() => router.back()}
+          variant="outline"
+          className="w-full max-w-sm mt-4"
+        >
+          Voltar para a busca
+        </Button>
       </div>
     )
   }
-
   const services = professional.services
 
   const toggleService = (serviceId: string) => {

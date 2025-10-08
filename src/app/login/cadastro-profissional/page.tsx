@@ -17,12 +17,14 @@ import {
   type Professional,
   type Service,
   type User,
+  type WorkingHoursMap,
+  type DayOfWeek, // Importar DayOfWeek
 } from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { Card } from "@/components/ui/card"
 
-const DAYS_OF_WEEK = [
+const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [ // Usar DayOfWeek aqui
   { key: "monday", label: "Segunda-feira" },
   { key: "tuesday", label: "Terça-feira" },
   { key: "wednesday", label: "Quarta-feira" },
@@ -31,6 +33,13 @@ const DAYS_OF_WEEK = [
   { key: "saturday", label: "Sábado" },
   { key: "sunday", label: "Domingo" },
 ]
+
+// ✅ Tipagem segura para garantir intervals sempre definido
+type SafeWorkingHoursMap = {
+  [K in DayOfWeek]: WorkingHoursMap[K] & { // Usar DayOfWeek aqui
+    intervals: { start: string; end: string }[]
+  }
+}
 
 export default function CadastroProfissionalPage() {
   const router = useRouter()
@@ -69,9 +78,7 @@ export default function CadastroProfissionalPage() {
   })
 
   // Step 4: Working Hours
-  const [workingHours, setWorkingHours] = useState<{
-    [key: string]: { enabled: boolean; start: string; end: string; intervals: { start: string; end: string }[] }
-  }>({
+  const [workingHours, setWorkingHours] = useState<SafeWorkingHoursMap>({
     monday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     tuesday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     wednesday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
@@ -80,7 +87,6 @@ export default function CadastroProfissionalPage() {
     saturday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
     sunday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
   })
-
   const categories = getCategories()
 
   const handleAddService = () => {
@@ -103,13 +109,7 @@ export default function CadastroProfissionalPage() {
     }
 
     setServices([...services, newService])
-    setCurrentService({
-      category: "",
-      name: "",
-      duration: "",
-      price: "",
-      description: "",
-    })
+    setCurrentService({ category: "", name: "", duration: "", price: "", description: "" })
 
     toast({
       title: "Serviço adicionado!",
@@ -121,76 +121,54 @@ export default function CadastroProfissionalPage() {
     setServices(services.filter((s) => s.id !== id))
   }
 
-  const handleAddInterval = (day: string) => {
-    setWorkingHours({
-      ...workingHours,
+  const handleAddInterval = (day: DayOfWeek) => { // Usar DayOfWeek aqui
+    setWorkingHours((prevWorkingHours) => ({
+      ...prevWorkingHours,
       [day]: {
-        ...workingHours[day],
-        intervals: [...workingHours[day].intervals, { start: "12:00", end: "13:00" }],
+        ...prevWorkingHours[day],
+        intervals: [...prevWorkingHours[day].intervals, { start: "12:00", end: "13:00" }],
       },
-    })
+    }))
   }
 
-  const handleRemoveInterval = (day: string, index: number) => {
-    const newIntervals = [...workingHours[day].intervals]
-    newIntervals.splice(index, 1)
-    setWorkingHours({
-      ...workingHours,
-      [day]: {
-        ...workingHours[day],
-        intervals: newIntervals,
-      },
-    })
-  }
+  const handleRemoveInterval = (day: DayOfWeek, index: number) => { // Usar DayOfWeek aqui
+    setWorkingHours((prevWorkingHours) => {
+      const newIntervals = [...prevWorkingHours[day].intervals];
+      newIntervals.splice(index, 1);
+      return {
+        ...prevWorkingHours,
+        [day]: { ...prevWorkingHours[day], intervals: newIntervals },
+      };
+    });
+  };
 
-  const handleUpdateInterval = (day: string, index: number, field: "start" | "end", value: string) => {
-    const newIntervals = [...workingHours[day].intervals]
-    newIntervals[index][field] = value
-    setWorkingHours({
-      ...workingHours,
-      [day]: {
-        ...workingHours[day],
-        intervals: newIntervals,
-      },
-    })
-  }
+  const handleUpdateInterval = (day: DayOfWeek, index: number, field: "start" | "end", value: string) => { // Usar DayOfWeek aqui
+    setWorkingHours((prevWorkingHours) => {
+      const newIntervals = [...prevWorkingHours[day].intervals];
+      newIntervals[index][field] = value;
+      return {
+        ...prevWorkingHours,
+        [day]: { ...prevWorkingHours[day], intervals: newIntervals },
+      };
+    });
+  };
+
 
   const validateStep1 = () => {
     if (!basicInfo.name || !basicInfo.whatsapp || !basicInfo.email || !basicInfo.password) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos.",
-        variant: "destructive",
-      })
+      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos.", variant: "destructive" })
       return false
     }
-
     if (basicInfo.password !== basicInfo.confirmPassword) {
-      toast({
-        title: "Senhas não conferem",
-        description: "As senhas devem ser iguais.",
-        variant: "destructive",
-      })
+      toast({ title: "Senhas não conferem", description: "As senhas devem ser iguais.", variant: "destructive" })
       return false
     }
-
     return true
   }
 
   const validateStep2 = () => {
-    if (
-      !address.street ||
-      !address.number ||
-      !address.neighborhood ||
-      !address.city ||
-      !address.state ||
-      !address.zipCode
-    ) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos do endereço.",
-        variant: "destructive",
-      })
+    if (!address.street || !address.number || !address.neighborhood || !address.city || !address.state || !address.zipCode) {
+      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos do endereço.", variant: "destructive" })
       return false
     }
     return true
@@ -198,31 +176,23 @@ export default function CadastroProfissionalPage() {
 
   const validateStep3 = () => {
     if (services.length === 0) {
-      toast({
-        title: "Adicione pelo menos um serviço",
-        description: "É necessário cadastrar pelo menos um serviço.",
-        variant: "destructive",
-      })
+      toast({ title: "Adicione pelo menos um serviço", description: "É necessário cadastrar pelo menos um serviço.", variant: "destructive" })
       return false
     }
     return true
   }
 
   const handleNext = () => {
-    if (step === 1 && !validateStep1()) return
-    if (step === 2 && !validateStep2()) return
-    if (step === 3 && !validateStep3()) return
+    if ((step === 1 && !validateStep1()) || (step === 2 && !validateStep2()) || (step === 3 && !validateStep3())) return
     setStep(step + 1)
   }
 
   const handleSubmit = async () => {
     setLoading(true)
-
     try {
       const professionalId = Date.now().toString()
       const userId = `user-${professionalId}`
 
-      // Create user
       const newUser: User = {
         id: userId,
         name: basicInfo.name,
@@ -234,66 +204,63 @@ export default function CadastroProfissionalPage() {
       }
       saveUser(newUser)
 
-      // Create professional
       const newProfessional: Professional = {
-          id: professionalId,
-          userId: userId,
-          name: basicInfo.name,
-          whatsapp: basicInfo.whatsapp.replace(/\D/g, ""),
-          email: basicInfo.email,
-          password: basicInfo.password,
-          address: address,
-          services: services,
-          workingHours: workingHours,
-          createdAt: new Date().toISOString(),
-          status: "active",
-          specialty: undefined,
-          description: undefined,
-          experience_years: undefined,
-          social_instagram: undefined,
-          social_facebook: undefined,
-          phone: undefined
+        id: professionalId,
+        userId,
+        name: basicInfo.name,
+        whatsapp: basicInfo.whatsapp.replace(/\D/g, ""),
+        email: basicInfo.email,
+        password: basicInfo.password,
+        address,
+        services,
+        // Garante que workingHours tenha o tipo WorkingHoursMap esperado pelo mockData
+        workingHours: Object.fromEntries(
+          Object.entries(workingHours).map(([day, data]) => [
+            day,
+            {
+              enabled: data.enabled,
+              start: data.start,
+              end: data.end,
+              intervals: data.intervals, // Inclui intervals
+            },
+          ])
+        ) as WorkingHoursMap, // Faz o cast para WorkingHoursMap
+        createdAt: new Date().toISOString(),
+        status: "active",
+        specialty: "Geral", // Exemplo, pode ser um campo no Step 1
+        description: "Profissional de beleza e bem-estar", // Exemplo
+        experience_years: 0, // Exemplo
+        social_instagram: "",
+        social_facebook: "",
+        phone: basicInfo.whatsapp.replace(/\D/g, ""),
       }
       saveProfessional(newProfessional)
 
-      // Create default availability based on working hours
       const availability = getDefaultAvailability(professionalId)
-      availability.workingDays = {
-        monday: workingHours.monday.enabled,
-        tuesday: workingHours.tuesday.enabled,
-        wednesday: workingHours.wednesday.enabled,
-        thursday: workingHours.thursday.enabled,
-        friday: workingHours.friday.enabled,
-        saturday: workingHours.saturday.enabled,
-        sunday: workingHours.sunday.enabled,
-      }
+      availability.workingDays = Object.fromEntries(
+        DAYS_OF_WEEK.map((day) => [day.key, workingHours[day.key].enabled]) // Mapeia corretamente DayOfWeek
+      ) as { [key in DayOfWeek]: boolean };
 
-      // Use the first enabled day's hours as default
-      const firstEnabledDay = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)
-      if (firstEnabledDay) {
+
+      const firstEnabledDayKey = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)?.key;
+
+      if (firstEnabledDayKey) {
         availability.workingHours = {
-          start: workingHours[firstEnabledDay.key].start,
-          end: workingHours[firstEnabledDay.key].end,
-        }
+          start: workingHours[firstEnabledDayKey].start,
+          end: workingHours[firstEnabledDayKey].end,
+        };
+      } else {
+        // Se nenhum dia estiver habilitado, defina um valor padrão ou lance um erro
+        availability.workingHours = { start: "09:00", end: "18:00" };
       }
-
       saveProfessionalAvailability(availability)
 
-      // Login
       await login(basicInfo.email, basicInfo.password)
-
-      toast({
-        title: "Cadastro realizado!",
-        description: "Bem-vindo ao sistema.",
-      })
-
+      toast({ title: "Cadastro realizado!", description: "Bem-vindo ao sistema." })
       router.push("/admin/dashboard")
     } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível realizar o cadastro.",
-        variant: "destructive",
-      })
+      console.error("Erro no cadastro:", error);
+      toast({ title: "Erro", description: "Não foi possível realizar o cadastro.", variant: "destructive" })
     } finally {
       setLoading(false)
     }
@@ -311,18 +278,14 @@ export default function CadastroProfissionalPage() {
       </header>
 
       <main className="container mx-auto max-w-2xl px-4 py-8">
-        {/* Progress Steps */}
+        {/* Etapas de progresso */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1">
                 <div
                   className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    s < step
-                      ? "bg-green-500 text-white"
-                      : s === step
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
+                    s < step ? "bg-green-500 text-white" : s === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}
                 >
                   {s < step ? <Check className="w-5 h-5" /> : s}
@@ -340,78 +303,52 @@ export default function CadastroProfissionalPage() {
         </div>
 
         <Card className="p-6">
-          {/* Step 1: Basic Info */}
+          {/* Passos (Steps) */}
+          {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Dados Básicos</h2>
                 <p className="text-muted-foreground">Informações principais do profissional</p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome completo *</Label>
-                <Input
-                  id="name"
-                  value={basicInfo.name}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
-                  placeholder="Seu nome"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="whatsapp">WhatsApp *</Label>
-                <Input
-                  id="whatsapp"
-                  type="tel"
-                  value={basicInfo.whatsapp}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, whatsapp: e.target.value })}
-                  placeholder="(11) 98765-4321"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">E-mail *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={basicInfo.email}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, email: e.target.value })}
-                  placeholder="seu@email.com"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Senha *</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={basicInfo.password}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, password: e.target.value })}
-                  placeholder="••••••••"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmar senha *</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={basicInfo.confirmPassword}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, confirmPassword: e.target.value })}
-                  placeholder="••••••••"
-                />
-              </div>
+              {["name", "whatsapp", "email", "password", "confirmPassword"].map((field) => {
+                const labels: Record<string, string> = {
+                  name: "Nome completo *",
+                  whatsapp: "WhatsApp *",
+                  email: "E-mail *",
+                  password: "Senha *",
+                  confirmPassword: "Confirmar senha *",
+                }
+                const placeholders: Record<string, string> = {
+                  name: "Seu nome",
+                  whatsapp: "(11) 98765-4321",
+                  email: "seu@email.com",
+                  password: "••••••••",
+                  confirmPassword: "••••••••",
+                }
+                return (
+                  <div key={field} className="space-y-2">
+                    <Label htmlFor={field}>{labels[field]}</Label>
+                    <Input
+                      id={field}
+                      type={field.includes("password") ? "password" : field === "email" ? "email" : field === "whatsapp" ? "tel" : "text"}
+                      value={basicInfo[field as keyof typeof basicInfo]}
+                      onChange={(e) => setBasicInfo({ ...basicInfo, [field]: e.target.value })}
+                      placeholder={placeholders[field]}
+                    />
+                  </div>
+                )
+              })}
             </div>
           )}
 
-          {/* Step 2: Address */}
+          {/* Step 2 */}
           {step === 2 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Endereço</h2>
                 <p className="text-muted-foreground">Onde você atende seus clientes</p>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="zipCode">CEP *</Label>
                 <Input
@@ -421,7 +358,6 @@ export default function CadastroProfissionalPage() {
                   placeholder="00000-000"
                 />
               </div>
-
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="street">Rua *</Label>
@@ -432,7 +368,6 @@ export default function CadastroProfissionalPage() {
                     placeholder="Nome da rua"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="number">Número *</Label>
                   <Input
@@ -443,7 +378,6 @@ export default function CadastroProfissionalPage() {
                   />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="neighborhood">Bairro *</Label>
                 <Input
@@ -453,7 +387,6 @@ export default function CadastroProfissionalPage() {
                   placeholder="Nome do bairro"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="city">Cidade *</Label>
@@ -464,7 +397,6 @@ export default function CadastroProfissionalPage() {
                     placeholder="Cidade"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="state">Estado *</Label>
                   <Input
@@ -479,15 +411,13 @@ export default function CadastroProfissionalPage() {
             </div>
           )}
 
-          {/* Step 3: Services */}
+          {/* Step 3 */}
           {step === 3 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Serviços</h2>
                 <p className="text-muted-foreground">Adicione pelo menos um serviço</p>
               </div>
-
-              {/* Service Form */}
               <div className="space-y-4 p-4 bg-muted rounded-lg">
                 <div className="space-y-2">
                   <Label htmlFor="category">Categoria *</Label>
@@ -505,7 +435,6 @@ export default function CadastroProfissionalPage() {
                     ))}
                   </select>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="serviceName">Nome do serviço *</Label>
                   <Input
@@ -515,7 +444,6 @@ export default function CadastroProfissionalPage() {
                     placeholder="Ex: Corte feminino"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="duration">Duração (min) *</Label>
@@ -527,7 +455,6 @@ export default function CadastroProfissionalPage() {
                       placeholder="60"
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="price">Preço (R$) *</Label>
                     <Input
@@ -540,7 +467,6 @@ export default function CadastroProfissionalPage() {
                     />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="description">Observação</Label>
                   <Input
@@ -550,14 +476,10 @@ export default function CadastroProfissionalPage() {
                     placeholder="Informações adicionais"
                   />
                 </div>
-
                 <Button onClick={handleAddService} className="w-full">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Serviço
+                  <Plus className="w-4 h-4 mr-2" /> Adicionar Serviço
                 </Button>
               </div>
-
-              {/* Services List */}
               {services.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-semibold">Serviços adicionados ({services.length})</h3>
@@ -566,11 +488,16 @@ export default function CadastroProfissionalPage() {
                       <div>
                         <p className="font-semibold">{service.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {service.category} • {service.duration} min • R$ {service.price.toFixed(2)}
+                          {service.category} • {service.duration} min • R$ {Number(service.price).toFixed(2)}
                         </p>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleRemoveService(service.id)}>
-                        <Trash2 className="w-4 h-4 text-red-500" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveService(service.id)}
+                        className="text-destructive"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   ))}
@@ -579,132 +506,121 @@ export default function CadastroProfissionalPage() {
             </div>
           )}
 
-          {/* Step 4: Working Hours */}
+          {/* Step 4 */}
           {step === 4 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2">Horário de Funcionamento</h2>
-                <p className="text-muted-foreground">Configure seus dias e horários de atendimento</p>
+                <h2 className="text-2xl font-bold mb-2">Horários de Atendimento</h2>
+                <p className="text-muted-foreground">Configure seus horários de trabalho</p>
               </div>
 
               <div className="space-y-4">
-                {DAYS_OF_WEEK.map((day) => (
-                  <div key={day.key} className="border rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          checked={workingHours[day.key].enabled}
-                          onCheckedChange={(checked) =>
-                            setWorkingHours({
-                              ...workingHours,
-                              [day.key]: { ...workingHours[day.key], enabled: !!checked },
-                            })
-                          }
-                        />
-                        <Label className="font-semibold">{day.label}</Label>
-                      </div>
-                    </div>
-
-                    {workingHours[day.key].enabled && (
-                      <div className="space-y-3 ml-8">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Início</Label>
-                            <Input
-                              type="time"
-                              value={workingHours[day.key].start}
-                              onChange={(e) =>
-                                setWorkingHours({
-                                  ...workingHours,
-                                  [day.key]: { ...workingHours[day.key], start: e.target.value },
-                                })
-                              }
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Fim</Label>
-                            <Input
-                              type="time"
-                              value={workingHours[day.key].end}
-                              onChange={(e) =>
-                                setWorkingHours({
-                                  ...workingHours,
-                                  [day.key]: { ...workingHours[day.key], end: e.target.value },
-                                })
-                              }
-                            />
-                          </div>
+                {DAYS_OF_WEEK.map((day) => {
+                  const dayHours = workingHours[day.key]
+                  return (
+                    <div key={day.key} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <Checkbox
+                            checked={dayHours.enabled}
+                            onCheckedChange={(checked) =>
+                              setWorkingHours((prevWorkingHours) => ({
+                                ...prevWorkingHours,
+                                [day.key]: { ...dayHours, enabled: checked as boolean },
+                              }))
+                            }
+                          />
+                          <span className="font-medium">{day.label}</span>
                         </div>
+                        {dayHours.enabled && (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={dayHours.start}
+                              onChange={(e) =>
+                                setWorkingHours((prevWorkingHours) => ({
+                                  ...prevWorkingHours,
+                                  [day.key]: { ...dayHours, start: e.target.value },
+                                }))
+                              }
+                              className="w-28"
+                            />
+                            <span>até</span>
+                            <Input
+                              type="time"
+                              value={dayHours.end}
+                              onChange={(e) =>
+                                setWorkingHours((prevWorkingHours) => ({
+                                  ...prevWorkingHours,
+                                  [day.key]: { ...dayHours, end: e.target.value },
+                                }))
+                              }
+                              className="w-28"
+                            />
+                          </div>
+                        )}
+                      </div>
 
-                        {/* Intervals */}
-                        {workingHours[day.key].intervals.map((interval, index) => (
-                          <div key={index} className="grid grid-cols-2 gap-4 items-end">
-                            <div className="space-y-2">
-                              <Label>Intervalo início</Label>
+                      {dayHours.enabled && (
+                        <div className="ml-6 space-y-3">
+                          {dayHours.intervals.map((interval, index) => ( // Removido 'any'
+                            <div key={index} className="flex items-center gap-2">
                               <Input
                                 type="time"
                                 value={interval.start}
                                 onChange={(e) => handleUpdateInterval(day.key, index, "start", e.target.value)}
+                                className="w-28"
                               />
+                              <span>até</span>
+                              <Input
+                                type="time"
+                                value={interval.end}
+                                onChange={(e) => handleUpdateInterval(day.key, index, "end", e.target.value)}
+                                className="w-28"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleRemoveInterval(day.key, index)}
+                              >
+                                <Trash2 className="w-4 h-4 text-destructive" />
+                              </Button>
                             </div>
-                            <div className="space-y-2">
-                              <Label>Intervalo fim</Label>
-                              <div className="flex gap-2">
-                                <Input
-                                  type="time"
-                                  value={interval.end}
-                                  onChange={(e) => handleUpdateInterval(day.key, index, "end", e.target.value)}
-                                />
-                                <Button variant="ghost" size="sm" onClick={() => handleRemoveInterval(day.key, index)}>
-                                  <Trash2 className="w-4 h-4 text-red-500" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleAddInterval(day.key)}
-                          className="w-full"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Adicionar Intervalo
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleAddInterval(day.key)}
+                          >
+                            <Plus className="w-4 h-4 mr-2" /> Adicionar Intervalo
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-4 mt-8">
+          {/* Botões de navegação */}
+          <div className="flex justify-between mt-8">
             {step > 1 && (
-              <Button variant="outline" onClick={() => setStep(step - 1)} className="flex-1">
+              <Button variant="outline" onClick={() => setStep(step - 1)}>
                 Voltar
               </Button>
             )}
             {step < 4 ? (
-              <Button onClick={handleNext} className="flex-1">
-                Próximo
-              </Button>
+              <Button onClick={handleNext}>Próximo</Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={loading} className="flex-1">
-                {loading ? "Finalizando..." : "Finalizar Cadastro"}
+              <Button onClick={handleSubmit} disabled={loading}>
+                {loading ? "Cadastrando..." : "Finalizar Cadastro"}
               </Button>
             )}
           </div>
         </Card>
-
-        <div className="text-center mt-6 text-sm text-muted-foreground">
-          Já tem uma conta?{" "}
-          <Link href="/login" className="text-primary font-semibold hover:underline">
-            Fazer login
-          </Link>
-        </div>
       </main>
     </div>
   )
