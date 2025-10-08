@@ -103,10 +103,13 @@ export function LoginProfissional() {
 
           <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-3">
             <p className="font-semibold text-base">Dados para teste:</p>
-            <div className="p-2 bg-background rounded">
-              <p className="font-medium">Studio Beleza Premium</p>
-              <p className="text-xs text-muted-foreground">Email: profissional@teste.com</p>
-              <p className="text-xs text-muted-foreground">Senha: 123456</p>
+            <div className="space-y-2">
+              <div className="p-2 bg-background rounded">
+                <p className="font-medium">Studio Beleza Premium</p>
+                <p className="text-xs text-muted-foreground">Email: studio@exemplo.com</p>
+                <p className="text-xs text-muted-foreground">Senha: 123456</p>
+              </div>
+
             </div>
           </div>
         </div>
