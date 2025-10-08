@@ -21,7 +21,7 @@ export default function Perfil() {
     id: '',
     name: '',
     description: '',
-    address: { street: '', number: '', city: '', state: '',  neighborhood: '', zipCode: '', country: '' },
+    address: { street: '', number: '', city: '', state: '', neighborhood: '', zipCode: '', country: '' },
     phone: '',
     email: '',
     profileImage: ''
@@ -57,36 +57,43 @@ export default function Perfil() {
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-bold text-primary-foreground">Perfil</h1>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-              className="text-primary-foreground"
-            >
-              {isEditing ? <Save className="w-5 h-5" /> : <Edit2 className="w-5 h-5" />}
-            </Button>
-          </div>
-          <div className="text-center">
-            {/* CORRIGIDO: Agora usa professionalData e sabe que ele existe */}
-            {professionalData.profileImage ? (
-              <img
-                src={professionalData.profileImage}
-                alt={professionalData.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              // Garantia de que professionalData.name existe antes de usar charAt
-              <div className="w-24 h-24 mx-auto rounded-full bg-primary/20 text-primary flex items-center justify-center text-4xl font-bold">
-                <span>{professionalData.name ? professionalData.name.charAt(0).toUpperCase() : 'P'}</span>
-              </div>
-            )}
-          </div>
+          <h1 className="text-2xl font-bold text-primary-foreground text-center">Perfil</h1>
         </div>
       </header>
-
+      {/* Butão editar */}
       <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
+        <div className="text-end">
+          <Button
+            size="sm"
+            onClick={() => (isEditing ? handleSave() : setIsEditing(true))}>
+            {isEditing ? (
+              <>
+                <Save className="w-5 h-5" /> Salvar
+              </>
+            ) : (
+              <>
+                <Edit2 className="w-5 h-5" /> Editar
+              </>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Formulário */}
+      <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
+        <div className="text-center flex -mb-4">
+          {professionalData.profileImage ? (
+            <img
+              src={professionalData.profileImage}
+              alt={professionalData.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-24 h-24 mx-auto rounded-full bg-primary text-zinc-900 flex items-center justify-center text-4xl font-bold">
+              <span>{professionalData.name ? professionalData.name.charAt(0).toUpperCase() : 'P'}</span>
+            </div>
+          )}
+        </div>
         <Card className="p-6">
           <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
           <div className="space-y-4">

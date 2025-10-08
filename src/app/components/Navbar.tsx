@@ -35,11 +35,9 @@ const Navbar = () => {
           {/* CTA Button Desktop */}
 
           <div className="flex gap-3">
-
             <Link href={"/login"}>
-              <Button variant="outline">    <Briefcase className="w-5 h-5 text-primary" /> Entrar</Button>
+              <Button>  <Briefcase className="w-5 h-5" /> Entrar</Button>
             </Link>
-
           </div>
 
           <div className="hidden" id="v-mobile">

@@ -93,17 +93,15 @@ export default function ServicosPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
-      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
-          <h1 className="text-2xl font-bold text-primary-foreground">
-            Meus Serviços
-          </h1>
+          <h1 className="text-2xl font-bold text-primary-foreground text-center">Serviços</h1>
         </div>
       </header>
 
       {/* Conteúdo Principal */}
       <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
-        <Card className="p-6">
+        <div className="">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-bold">Lista de Serviços ({services.length})</h2>
             <Link href="./servicos/novo" passHref>
@@ -120,7 +118,7 @@ export default function ServicosPage() {
                 services.map((service) => (
                     <div
                         key={service.id}
-                        className="border rounded-lg p-3 shadow-sm hover:bg-muted/50 transition-colors flex justify-between items-center"
+                        className="rounded-lg border bg-card text-card-foreground shadow-sm p-4 cursor-pointer hover:shadow-md transition-shadow flex justify-between items-center"
                     >
                         {/* Informações do Serviço */}
                         <div className="flex-1 min-w-0 pr-4">
@@ -151,7 +149,7 @@ export default function ServicosPage() {
                 ))
             )}
           </div>
-        </Card>
+        </div>
       </div>
 
       <NavbarProfessional />

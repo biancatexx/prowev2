@@ -30,7 +30,7 @@ export function LoginCliente() {
           title: "Login realizado!",
           description: "Bem-vindo de volta.",
         })
-        router.push("/")
+        router.push("/perfil")
       } else {
         toast({
           title: "WhatsApp não encontrado",
@@ -73,7 +73,7 @@ export function LoginCliente() {
         <h1 className="text-xl font-bold mb-1">Login do Cliente</h1>
         <p className="text-muted-foreground text-sm">Digite seu WhatsApp para continuar</p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="whatsapp">WhatsApp</Label>
           <Input
@@ -91,12 +91,24 @@ export function LoginCliente() {
           {loading ? "Entrando..." : "Entrar"}
         </Button>
         <div className="text-center text-sm text-muted-foreground">
-          Ainda não tem uma conta? 
+          Ainda não tem uma conta?
           <Link href="/cadastro-cliente" className="text-primary font-semibold hover:underline">
             Cadastre-se aqui
           </Link>
         </div>
+
+        <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-3 text-center">
+          <p className="font-semibold text-base">Dados para teste:</p>
+          <div className="space-y-2 ">
+            <div className="p-2 bg-background rounded">
+              <p className="font-medium">Bianca Teixeira da Silva</p>  
+              <p className="text-xs text-muted-foreground">Whatsapp: 85987412626</p>
+            </div>
+
+          </div>
+        </div>
       </form>
+
     </div>
   )
 }

@@ -7,18 +7,17 @@ import { Card } from "@/components/ui/card"
 import { Calendar, Clock, CreditCard, Check, UserIcon } from "lucide-react"
 import { getAppointments } from "@/data/mockData"
 import NavbarApp from "@/components/NavbarApp"
-import { useAuth } from "@/contexts/AuthContext" // Importação adicionada
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function HistoricoPage() {
   const router = useRouter()
-  const { user } = useAuth() // Usa o contexto de autenticação
+  const { user } = useAuth()
   const [appointments, setAppointments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     if (user?.whatsapp) {
       setLoading(true)
-      // Filtra agendamentos pelo WhatsApp do usuário logado
       const allAppointments = getAppointments()
       const userWhatsappClean = user.whatsapp.replace(/\D/g, "")
       const filtered = allAppointments.filter(
@@ -27,7 +26,6 @@ export default function HistoricoPage() {
       setAppointments(filtered)
       setLoading(false)
     } else if (user === null) {
-      // Usuário não logado
       setLoading(false)
     }
   }, [user])
@@ -47,68 +45,52 @@ export default function HistoricoPage() {
     }
   }
 
-  // Se ainda estiver carregando, mostra um estado de carregamento simples
-  if (loading && user !== null) {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-          <div className="container text-center mx-auto max-w-md">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-1">Meus Agendamentos</h1>
-            <p className="text-muted-foreground">Aguarde, carregando histórico...</p>
-          </div>
-        </header>
-        <main className="container mx-auto max-w-screen-lg px-4 py-6 text-center">
-          <p className="mt-8">Carregando...</p>
-        </main>
-        <NavbarApp />
+  // Header sempre visível
+  const Header = () => (
+    <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+      <div className="container mx-auto max-w-screen-lg text-center">
+        <h1 className="text-2xl font-bold text-primary-foreground">
+          Agendamentos
+        </h1>
       </div>
-    )
-  }
+    </header>
+  )
 
-  // Tela de Login/Acesso se o usuário NÃO estiver logado
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-          <div className="container mx-auto max-w-md text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meus Agendamentos</h1>
-          </div>
-        </header>
+  // Main dependendo do estado de autenticação
+  const MainContent = () => {
+    if (loading && user !== null) {
+      return (
+        <main className="container mx-auto max-w-screen-lg text-center">
+          <p className="mt-8">Aguarde, carregando histórico...</p>
+        </main>
+      )
+    }
 
-        <main className="container mx-auto max-w-md px-4 mt-8">
+    if (!user) {
+      return (
+        <main className="container mx-auto max-w-screen-lg text-center">
           <Card className="p-8 text-center">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <UserIcon className="w-8 h-8 text-zinc-400" />
             </div>
             <h2 className="text-xl font-bold mb-2">Acesso Restrito</h2>
-            <p className="text-sm text-muted-foreground mb-6">Entre na sua conta para visualizar seu histórico de agendamentos</p>
-            <Button onClick={() => router.push("/login")} className="w-full">
+            <p className="text-sm text-muted-foreground mb-6">
+              Entre na sua conta para visualizar seu histórico de agendamentos
+            </p>
+            <Button onClick={() => router.push("/login")}  >
               Fazer Login
             </Button>
           </Card>
         </main>
+      )
+    }
 
-        <NavbarApp />
-      </div>
-    )
-  }
-
-  // Tela de Histórico se o usuário ESTIVER logado
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-        <div className="container text-center mx-auto max-w-md">
-          <h1 className="text-3xl font-bold text-zinc-900 mb-1">Meus Agendamentos</h1>
-          <p className="text-sm text-zinc-600">Olá, {user.name.split(" ")[0]}! Seu histórico completo.</p>
-        </div>
-      </header>
-
-      <main className="container mx-auto max-w-md px-4 py-6">
-        {/* Lista de Agendamentos */}
-        <div className="space-y-4">
+    return (
+      <main className="container mx-auto max-w-screen-lg text-center">
+        <p className=" text-zinc-600">Olá, {user.name.split(" ")[0]}! Seu histórico completo.</p>
+        <div className="space-y-4 mt-4">
           {appointments.length === 0 ? (
-            <Card className="p-6 text-center mt-4">
+            <Card className="p-6 text-center">
               <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Calendar className="w-8 h-8 text-zinc-400" />
               </div>
@@ -148,9 +130,7 @@ export default function HistoricoPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-zinc-900" />
-                      <span>
-                        {appointment.time} ({appointment.totalDuration || appointment.duration} min)
-                      </span>
+                      <span>{appointment.time} ({appointment.totalDuration || appointment.duration} min)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="font-semibold text-base text-zinc-900">
@@ -183,6 +163,13 @@ export default function HistoricoPage() {
           )}
         </div>
       </main>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <Header />
+      <MainContent />
       <NavbarApp />
     </div>
   )

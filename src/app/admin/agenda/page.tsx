@@ -85,19 +85,11 @@ export default function Agenda() {
   return (
     <div className="min-h-screen bg-background pb-20 relative">
       {/* Header */}
-      <header className="bg-gradient-to-br from-primary via-primary to-accent sticky top-0 z-50">
-        <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-primary-foreground">Agenda</h1>
-            <Link href="/admin/configuracoes-agenda">
-              <Button variant="ghost" size="icon" className="text-primary-foreground">
-                <Settings className="w-5 h-5" />
-              </Button>
-            </Link>
-          </div>
+        <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+        <div className="container mx-auto max-w-screen-lg">
+          <h1 className="text-2xl font-bold text-primary-foreground text-center">Agenda</h1>
         </div>
       </header>
-
       {/* Conteúdo principal */}
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
         {/* Tabs */}

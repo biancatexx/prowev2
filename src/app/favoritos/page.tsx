@@ -6,7 +6,6 @@ import { MapPin, Heart, Trash2, ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getFavorites, removeFavorite, type Favorite } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
-import Navbar from "@/components/Navbar"
 import NavbarApp from "@/components/NavbarApp"
 
 export default function Favoritos() {
@@ -52,30 +51,31 @@ export default function Favoritos() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Carregando...</p>
+  // Header sempre visível
+  const Header = () => (
+    <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+      <div className="container mx-auto max-w-screen-lg text-center">
+        <h1 className="text-2xl font-bold text-primary-foreground">
+          Agendamentos
+        </h1>
       </div>
-    )
-  }
+    </header>
 
-  if (!userWhatsapp) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-          <div className="container mx-auto max-w-md">
-            <button
-              onClick={() => router.back()}
-              className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-3xl font-bold text-zinc-900 mb-2 text-center">Meus Favoritos</h1>
-          </div>
-        </header>
+  )
 
-        <main className="container mx-auto max-w-md px-4 mt-8">
+  // Main variando conforme login/WhatsApp
+  const MainContent = () => {
+    if (loading) {
+      return (
+          <main className="container mx-auto max-w-screen-lg px-4 text-center">
+          <p>Carregando...</p>
+        </main>
+      )
+    }
+
+    if (!userWhatsapp) {
+      return (
+          <main className="container mx-auto max-w-screen-lg px-4">
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-zinc-400" />
@@ -87,29 +87,10 @@ export default function Favoritos() {
             <Button onClick={() => router.push("/perfil")}>Ir para o Perfil</Button>
           </div>
         </main>
-      </div>
-    )
-  }
+      )
+    }
 
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-        <div className="container mx-auto max-w-md">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meus Favoritos</h1>
-            <p className="text-sm text-zinc-600">
-              {favorites.length} {favorites.length === 1 ? "profissional salvo" : "profissionais salvos"}
-            </p>
-          </div>
-        </div>
-      </header>
-
+    return (
       <main className="container mx-auto max-w-screen-lg px-4">
         {favorites.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm mt-8">
@@ -180,8 +161,14 @@ export default function Favoritos() {
           </section>
         )}
       </main>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <Header />
+      <MainContent />
       <NavbarApp />
-      
     </div>
   )
 }

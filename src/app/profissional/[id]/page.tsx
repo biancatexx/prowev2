@@ -197,15 +197,19 @@ export default function ProfessionalDetails() {
           </div>
 
           <div className="flex flex-col items-center text-center">
-            {professional.profileImage ? (
-              <img
-                src={professional.profileImage}
-                alt={professional.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{professional.name.charAt(0).toUpperCase()}</span>
-            )}
+            <div className="text-center flex mb-4">
+              {professional.profileImage ? (
+                <img
+                  src={professional.profileImage}
+                  alt={professional.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-24 h-24 mx-auto rounded-full bg-zinc-900 text-white flex items-center justify-center text-4xl font-bold">
+                  <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
+                </div>
+              )}
+            </div>
             <h1 className="text-xl font-bold mb-1">{professional.name}</h1>
             <p className="text-sm text-muted-foreground">{professional.specialty}</p>
           </div>
@@ -272,7 +276,7 @@ export default function ProfessionalDetails() {
 
                 <h2 className="text-lg font-semibold"> <CalendarCheck className="inline" /> Data e horário</h2>
                 <hr className="border-t" />
-                
+
               </div>
 
               <div className="flex flex-col lg:flex-row gap-4">

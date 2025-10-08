@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -40,10 +39,8 @@ export default function PerfilPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
-
     try {
       if (!user) return
-
       const updatedUser: User = {
         ...user,
         name: formData.name,
@@ -51,10 +48,8 @@ export default function PerfilPage() {
         email: formData.email,
         birthDate: formData.birthDate,
       }
-
       saveUser(updatedUser)
       updateUser(updatedUser)
-
       toast({
         title: "Perfil atualizado!",
         description: "Suas informações foram salvas com sucesso.",
@@ -79,51 +74,41 @@ export default function PerfilPage() {
     router.push("/")
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-          <div className="container mx-auto max-w-md text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meu Perfil</h1>
-          </div>
-        </header>
+  // Header fixo para todos os estados
+  const Header = () => (
+    <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+      <div className="container mx-auto max-w-screen-lg text-center">
+        <h1 className="text-2xl font-bold text-primary-foreground">
+          Perfil
+        </h1>
+      </div>
+    </header>
 
-        <main className="container mx-auto max-w-md px-4 mt-8">
+  )
+
+  // Main varia conforme login
+  const MainContent = () => {
+    if (!user) {
+      return (
+        <main className="container mx-auto max-w-screen-lg text-center">
           <Card className="p-8 text-center">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <UserIcon className="w-8 h-8 text-zinc-400" />
             </div>
             <h2 className="text-xl font-bold mb-2">Faça login</h2>
-            <p className="text-sm text-muted-foreground mb-6">Entre na sua conta para acessar seu perfil</p>
-            <Button onClick={() => router.push("/login")} className="w-full">
+            <p className="text-sm text-muted-foreground mb-6">
+              Entre na sua conta para acessar seu perfil
+            </p>
+            <Button onClick={() => router.push("/login")}>
               Fazer Login
             </Button>
           </Card>
         </main>
+      )
+    }
 
-        <NavbarApp />
-      </div>
-    )
-  }
-
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="bg-gradient-to-br from-purple-300 via-purple-200 to-purple-100 rounded-b-3xl pb-6 pt-12 px-4">
-        <div className="container mx-auto max-w-md">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </button>
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-zinc-900 mb-2">Meu Perfil</h1>
-            <p className="text-sm text-zinc-600">Gerencie suas informações pessoais</p>
-          </div>
-        </div>
-      </header>
-
-      <main className="container mx-auto max-w-md px-4 mt-6">
+    return (
+      <main className="container mx-auto max-w-screen-lg ">
         <Card className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -167,20 +152,26 @@ export default function PerfilPage() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" disabled={loading}>
               {loading ? "Salvando..." : "Salvar Alterações"}
             </Button>
           </form>
         </Card>
 
         <Card className="p-6 mt-4">
-          <Button variant="destructive" className="w-full" onClick={handleLogout}>
+          <Button variant="destructive" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
             Sair da Conta
           </Button>
         </Card>
       </main>
+    )
+  }
 
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <Header />
+      <MainContent />
       <NavbarApp />
     </div>
   )

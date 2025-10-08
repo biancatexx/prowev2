@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { getClientsByProfessional, type Client } from "@/data/mockData"
+import { Button } from "@/components/ui/button"
 
 export default function ClientesPage() {
   const router = useRouter()
@@ -55,51 +56,45 @@ export default function ClientesPage() {
   }
 
   useEffect(() => {
-  const handleStorage = () => {
-    if (professionalId) {
-      const clientsList = getClientsByProfessional(professionalId)
-      setClients(clientsList)
-      setFilteredClients(clientsList)
+    const handleStorage = () => {
+      if (professionalId) {
+        const clientsList = getClientsByProfessional(professionalId)
+        setClients(clientsList)
+        setFilteredClients(clientsList)
+      }
     }
-  }
 
-  window.addEventListener("storage", handleStorage)
-  return () => window.removeEventListener("storage", handleStorage)
-}, [professionalId])
+    window.addEventListener("storage", handleStorage)
+    return () => window.removeEventListener("storage", handleStorage)
+  }, [professionalId])
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
+
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg">
-          <div className="text-center mb-4">
-            <h1 className="text-2xl font-bold text-primary-foreground">Clientes</h1>
-            <p className="text-sm text-primary-foreground/80">
-              {clients.length} {clients.length === 1 ? "cliente cadastrado" : "clientes cadastrados"}
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input
-                type="text"
-                placeholder="Buscar por nome ou WhatsApp..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-white"
-              />
-            </div>
-
-            <button
-              onClick={() => router.push("/admin/clientes/novo")}
-              className="bg-white text-primary font-semibold px-4 py-2 rounded-xl shadow hover:bg-primary/10 transition"
-            >
-              + Cadastrar Cliente
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-primary-foreground text-center">Clientes</h1>
         </div>
       </header>
       <main className="container mx-auto max-w-screen-lg px-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-center mb-4">
+          <div className="relative flex-1 w-full">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Buscar por nome ou WhatsApp..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white"
+            />
+          </div>
+
+          <Button
+            onClick={() => router.push("/admin/clientes/novo")}
+              >
+            + Cadastrar Cliente
+          </Button>
+        </div>
         {filteredClients.length === 0 ? (
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
