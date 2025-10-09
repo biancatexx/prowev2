@@ -7,33 +7,34 @@ import { Button } from "@/components/ui/button"
 import { getFavorites, removeFavorite, type Favorite } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
 import NavbarApp from "@/components/NavbarApp"
+import { useAuth } from "@/contexts/AuthContext" // Importado useAuth
 
 export default function Favoritos() {
   const router = useRouter()
   const { toast } = useToast()
+  // 🔑 Usa o contexto de autenticação para obter o usuário
+  const { user } = useAuth() 
   const [favorites, setFavorites] = useState<Favorite[]>([])
-  const [userWhatsapp, setUserWhatsapp] = useState<string>("")
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const currentUser = localStorage.getItem("mock_current_user")
-      if (currentUser) {
-        const user = JSON.parse(currentUser)
-        const whatsapp = user.whatsapp || ""
-        setUserWhatsapp(whatsapp)
-
-        if (whatsapp) {
-          const userFavorites = getFavorites(whatsapp)
-          setFavorites(userFavorites)
-        }
-      }
-      setLoading(false)
+    setLoading(true)
+    // 🔑 Usa o user do AuthContext
+    if (user && user.whatsapp) {
+      const whatsapp = user.whatsapp.replace(/\D/g, "")
+      
+      const userFavorites = getFavorites(whatsapp)
+      setFavorites(userFavorites)
+    } else {
+      setFavorites([]) // Limpa se o usuário não estiver logado
     }
-  }, [])
+    setLoading(false)
+  }, [user]) // Depende do user do AuthContext
 
   const handleRemoveFavorite = (professionalId: string) => {
-    if (!userWhatsapp) return
+    if (!user || !user.whatsapp) return
+
+    const userWhatsapp = user.whatsapp.replace(/\D/g, "")
 
     try {
       removeFavorite(userWhatsapp, professionalId)
@@ -56,11 +57,10 @@ export default function Favoritos() {
     <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
       <div className="container mx-auto max-w-screen-lg text-center">
         <h1 className="text-2xl font-bold text-primary-foreground">
-          Agendamentos
+          Favoritos
         </h1>
       </div>
     </header>
-
   )
 
   // Main variando conforme login/WhatsApp
@@ -73,21 +73,40 @@ export default function Favoritos() {
       )
     }
 
-    if (!userWhatsapp) {
+    // 🔑 Agora verifica se o user está logado no AuthContext
+    if (!user) {
       return (
           <main className="container mx-auto max-w-screen-lg px-4">
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-zinc-400" />
             </div>
-            <h2 className="text-xl font-bold mb-2">WhatsApp necessário</h2>
+            <h2 className="text-xl font-bold mb-2">Faça login para ver</h2>
             <p className="text-sm text-muted-foreground mb-6">
-              Para salvar favoritos, você precisa cadastrar seu WhatsApp no perfil.
+              Entre na sua conta para acessar seus profissionais favoritos.
             </p>
-            <Button onClick={() => router.push("/perfil")}>Ir para o Perfil</Button>
+            <Button onClick={() => router.push("/login")}>Fazer Login</Button>
           </div>
         </main>
       )
+    }
+    
+    // Se logado mas sem WhatsApp (caso improvável, mas para segurança)
+    if (!user.whatsapp) {
+        return (
+            <main className="container mx-auto max-w-screen-lg px-4">
+            <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
+              <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Heart className="w-8 h-8 text-zinc-400" />
+              </div>
+              <h2 className="text-xl font-bold mb-2">WhatsApp pendente</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                Complete seu perfil com o WhatsApp para salvar e acessar seus favoritos.
+              </p>
+              <Button onClick={() => router.push("/perfil")}>Ir para o Perfil</Button>
+            </div>
+          </main>
+        )
     }
 
     return (

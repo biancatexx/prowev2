@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react" 
 import { useParams, useRouter, usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CustomCalendar } from "@/components/CustomCalendar"
@@ -9,15 +9,36 @@ import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2, CalendarCheck, House, LayoutGrid } from "lucide-react"
+import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2, CalendarCheck, House, LayoutGrid, Loader2, LogOut, AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/card"
-import { saveAppointment, getMockProfessionals, getMockServices, isDateAvailable } from "@/data/mockData"
+import { 
+  saveAppointment, 
+  getMockProfessionals, 
+  getMockServices, 
+  isDateAvailable, 
+  getUserByWhatsapp,         
+  getLastClientNameByWhatsapp,
+  ensureClientExists, 
+  User 
+} from "@/data/mockData" 
+import { useAuth } from "@/contexts/AuthContext" 
 
-export default function Agendamento() {
+const LOCAL_STORAGE_KEY = 'agendamento_whatsapp';
+
+// Interface para o modal de logout
+interface LogoutModalState {
+    show: boolean;
+    newWhatsapp: string;
+    newClientName: string;
+}
+
+export default function AgendamentoPage() {
   const params = useParams()
   const router = useRouter()
   const pathname = usePathname()
   const id = params?.id as string
+  
+  const { user, loginClient, logout } = useAuth(); 
 
   const isProfessionalView = pathname.includes("/admin/")
 
@@ -26,13 +47,18 @@ export default function Agendamento() {
   // Estados do agendamento
   const [date, setDate] = useState<Date | undefined>(new Date())
   const [selectedTime, setSelectedTime] = useState("")
-  const [whatsapp, setWhatsapp] = useState("")
+  // 🔑 Inicializa o WhatsApp vazio; o valor persistido será carregado no useEffect
+  const [whatsapp, setWhatsapp] = useState("") 
   const [cliente, setCliente] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showServicesModal, setShowServicesModal] = useState(false)
   const [selectedServices, setSelectedServices] = useState<any[]>([])
   const [redirectToBack, setRedirectToBack] = useState(false)
+  
+  const [foundUser, setFoundUser] = useState<User | null>(null); 
+  // 🔑 Estado corrigido para o modal de deslogar
+  const [showLogoutModal, setShowLogoutModal] = useState<LogoutModalState>({ show: false, newWhatsapp: '', newClientName: '' }); 
 
   // Refs para scroll/foco
   const whatsappRef = useRef<HTMLInputElement>(null)
@@ -40,7 +66,31 @@ export default function Agendamento() {
   const calendarRef = useRef<HTMLDivElement>(null)
   const timesRef = useRef<HTMLDivElement>(null)
 
-  // Carregar dados do localStorage no cliente
+  // 🔑 EFEITO 1: Carregar valor persistido e dados do AuthContext
+  useEffect(() => {
+    // 1. Carregar valor do Local Storage ao montar
+    const savedWhatsapp = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (savedWhatsapp) {
+      setWhatsapp(formatWhatsapp(savedWhatsapp));
+    }
+
+    // 2. Se o usuário ESTIVER logado via AuthContext, sobrescreve e preenche os campos
+    if (user && user.whatsapp) {
+      setFoundUser(user);
+      let rawValue = user.whatsapp.replace(/\D/g, "")
+      setWhatsapp(formatWhatsapp(rawValue))
+      const lastName = getLastClientNameByWhatsapp(user.whatsapp);
+      setCliente(lastName || user.name);
+      toast.success(`Bem-vindo(a), ${user.name.split(' ')[0]}! Informações preenchidas.`);
+    } else {
+        // 3. Se deslogado, limpa foundUser, mas mantém whatsapp do localStorage
+        setFoundUser(null);
+        if(!savedWhatsapp) setWhatsapp("");
+        setCliente("");
+    }
+  }, [user]); 
+
+  // Efeito para carregar dados do bookingData (restante do fluxo)
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("booking_data")
@@ -55,9 +105,10 @@ export default function Agendamento() {
     }
   }, [isProfessionalView])
 
-  const professional = bookingData?.professional || getMockProfessionals().find((p) => p.id === id)
 
-  // Redireciona no cliente se o profissional não existir
+  const professional = bookingData?.professional || getMockProfessionals().find((p) => p.id === id)
+  
+  // Efeito de redirecionamento se profissional não existe
   useEffect(() => {
     if (!professional) {
       toast.error("Profissional não encontrado")
@@ -82,13 +133,95 @@ export default function Agendamento() {
     return `${h > 0 ? `${h}h ` : ""}${m}min`
   }
 
-  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "")
-    if (value.length > 11) value = value.slice(0, 11)
-    value = value.replace(/^(\d{2})(\d)/g, "($1) $2")
-    value = value.replace(/(\d{5})(\d)/, "$1-$2")
-    setWhatsapp(value)
+  // Função para formatar o whatsapp
+  const formatWhatsapp = (rawValue: string) => {
+    let formattedValue = rawValue;
+    formattedValue = formattedValue.replace(/^(\d{2})(\d)/g, "($1) $2")
+    formattedValue = formattedValue.replace(/(\d{5})(\d)/, "$1-$2")
+    return formattedValue;
   }
+
+  // 🔑 FUNÇÃO: Lida com a mudança no Input e SALVA NO LOCAL STORAGE
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let rawValue = e.target.value.replace(/\D/g, "")
+    if (rawValue.length > 11) rawValue = rawValue.slice(0, 11)
+    
+    const formattedValue = formatWhatsapp(rawValue);
+    setWhatsapp(formattedValue);
+    
+    // 🔑 Salva o valor puro (sem formatação) para facilitar a busca/login
+    localStorage.setItem(LOCAL_STORAGE_KEY, rawValue); 
+  }
+
+  // 🔑 FUNÇÃO: Verifica o usuário ao sair do campo (onBlur)
+  const handleWhatsappBlur = async () => {
+    if (isProfessionalView) return
+
+    const cleanWhatsappValue = whatsapp.replace(/\D/g, "")
+
+    if (cleanWhatsappValue.length >= 10) {
+        const found = getUserByWhatsapp(cleanWhatsappValue);
+        
+        // 1. Usuário logado e digitou um WhatsApp DIFERENTE
+        if (user && user.whatsapp.replace(/\D/g, "") !== cleanWhatsappValue) {
+            setShowLogoutModal({
+                show: true,
+                newWhatsapp: cleanWhatsappValue,
+                newClientName: found ? (getLastClientNameByWhatsapp(found.whatsapp) || found.name) : cliente,
+            });
+            return;
+        }
+
+        // 2. Usuário DESLOGADO: tenta forçar o login
+        if (!user) {
+            const loginSuccess = await loginClient(cleanWhatsappValue);
+            
+            if (loginSuccess) {
+                const loggedUser = getUserByWhatsapp(cleanWhatsappValue);
+                if (loggedUser) {
+                    setFoundUser(loggedUser);
+                    const lastName = getLastClientNameByWhatsapp(loggedUser.whatsapp); 
+                    setCliente(lastName || loggedUser.name || ""); 
+                    toast.success(`${loggedUser.name.split(' ')[0] || 'Cliente'} logado. Confirme os dados.`);
+                }
+            } else {
+                 setFoundUser(null);
+                 setCliente("");
+            }
+        }
+        
+        clienteRef.current?.focus(); 
+    } else {
+        // WhatsApp incompleto, limpa estados (mantém user logado se estava)
+        setFoundUser(user || null);
+        setCliente(user?.name || "");
+    }
+  }
+
+  // 🔑 FUNÇÃO: Lidar com Desconexão
+  const handleLogoutAndSwitch = async () => {
+      // 1. Desloga o usuário atual
+      logout();
+      toast.info("Sessão encerrada.");
+      
+      // 2. O useEffect já cuidou de setar o novo WhatsApp no campo (via localStorage)
+      setCliente(showLogoutModal.newClientName);
+      
+      // 3. Tenta logar com o novo WhatsApp 
+      await loginClient(showLogoutModal.newWhatsapp);
+      
+      // 4. Fecha o modal
+      setShowLogoutModal({ show: false, newWhatsapp: '', newClientName: '' });
+  }
+  
+  // 🔑 Função para Deslogar pelo Botão
+  const handleButtonLogout = () => {
+      logout();
+      // O whatsapp digitado é mantido pelo localStorage/state
+      toast.info("Você foi desconectado. Preencha seus dados para agendar.");
+  }
+
+  // ... (Funções de toggleServiceSelection, handleClearServices, handleClearDateTime inalteradas) ...
 
   const toggleServiceSelection = (service: any) => {
     setSelectedServices((prev) => {
@@ -113,12 +246,20 @@ export default function Agendamento() {
   const handleCloseServicesModal = () => setShowServicesModal(false)
 
   const handleConfirm = () => {
-    if (!isProfessionalView && !whatsapp) {
+    // ... (Validações inalteradas) ...
+    if (!isProfessionalView && !whatsapp.replace(/\D/g, "")) {
       toast.error("Preencha o WhatsApp")
       whatsappRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
       whatsappRef.current?.focus()
       return
     }
+    if (!isProfessionalView && whatsapp.replace(/\D/g, "").length < 8) {
+      toast.error("Preencha um WhatsApp válido (mínimo 8 dígitos).")
+      whatsappRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      whatsappRef.current?.focus()
+      return
+    }
+
     if (!cliente) {
       toast.error("Preencha o nome do cliente")
       clienteRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
@@ -142,6 +283,7 @@ export default function Agendamento() {
     setShowModal(true)
   }
 
+  // FUNÇÃO FINALIZAR
   const handleFinish = async () => {
     setLoading(true)
     try {
@@ -150,20 +292,32 @@ export default function Agendamento() {
         setLoading(false)
         return
       }
-      if (!isProfessionalView && !whatsapp) {
-        toast.error("Preencha o WhatsApp")
+
+      const cleanWhatsapp = whatsapp.replace(/\D/g, "")
+      if (!isProfessionalView && cleanWhatsapp.length === 0) {
+        toast.error("O WhatsApp é obrigatório para o cliente.")
         setLoading(false)
         return
       }
-
-      const cleanWhatsapp = whatsapp.replace(/\D/g, "")
-
+      
+      const clientIdFromEnsure = ensureClientExists(
+        String(cliente),
+        cleanWhatsapp,
+        foundUser?.email || user?.email, 
+        foundUser?.birthDate || user?.birthDate
+      );
+      
+      if (!isProfessionalView && !user) {
+         await loginClient(cleanWhatsapp);
+      }
+      
+      const finalClientId = user?.id || clientIdFromEnsure; 
+      
       const newAppointment = {
         id: `apt-${Date.now()}`,
         professionalId: String(professional.id),
         professionalName: String(professional.name),
-        clientId: 'temp-client-id',
-
+        clientId: String(finalClientId), 
         clientName: String(cliente),
         clientWhatsapp: String(cleanWhatsapp || "N/A"),
         services: selectedServices.map((s) => ({
@@ -178,15 +332,17 @@ export default function Agendamento() {
         totalDuration: Number(totalDuration),
         status: "agendado" as const,
         createdAt: new Date().toISOString(),
-
       }
 
       saveAppointment(newAppointment)
       toast.success("Agendamento criado com sucesso!")
 
+      // Limpa o whatsapp do localStorage após o sucesso (para não preencher o próximo)
+      localStorage.removeItem(LOCAL_STORAGE_KEY); 
+
       setTimeout(() => {
         if (isProfessionalView) router.push("/admin/agenda")
-        else router.push(`/agendamento/${professional.id}/sucesso`)
+        else router.push(`/agendamento/${professional.id}/sucesso`) 
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
@@ -202,6 +358,15 @@ export default function Agendamento() {
     return "available" as const
   }
 
+  if (!professional && !redirectToBack) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="mt-4 text-lg">Carregando dados do profissional...</p>
+        </div>
+    )
+  }
+
   return (
     <div className="container mx-auto max-w-screen-lg pb-20">
       {/* Header */}
@@ -211,7 +376,14 @@ export default function Agendamento() {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <h1 className="text-lg font-semibold">Novo Agendamento</h1>
-          <div className="w-10" />
+          {/* 🔑 Botão de deslogar na visão do cliente */}
+          {user && !isProfessionalView ? (
+              <Button onClick={handleButtonLogout} variant="destructive" size="sm" className="flex items-center">
+                  <LogOut className="w-4 h-4 mr-1" /> Sair
+              </Button>
+          ) : (
+              <div className="w-10" />
+          )}
         </div>
       </div>
 
@@ -257,10 +429,10 @@ export default function Agendamento() {
             {selectedServices.map((s, i) => (
               <div key={i} className="flex justify-between py-1">
                 <span>{s.name}</span>
-                <span>R$ {s.price}</span>
+                <span>R$ {s.price.toFixed(2)}</span>
               </div>
             ))}
-            <div className="border-t mt-2 pt-2 font-bold">Total: R$ {totalPrice}</div>
+            <div className="border-t mt-2 pt-2 font-bold">Total: R$ {totalPrice.toFixed(2)}</div>
           </>
         )}
       </div>
@@ -307,26 +479,32 @@ export default function Agendamento() {
       {/* Cliente */}
       <div className="bg-card rounded-2xl border p-5 mb-4">
         <h2 className="text-lg font-semibold mb-2">Cliente</h2>
-        <div className="space-y-3">
-          <div>
+        {/* 🔑 Layout Responsivo: flex-col por padrão, lg:flex-row para telas grandes */}
+        <div className="space-y-3 lg:flex lg:gap-4 lg:space-y-0">
+          <div className="flex-1">
             <Label>WhatsApp {!isProfessionalView && <span className="text-destructive">*</span>}</Label>
             <Input
               type="tel"
               value={whatsapp}
-              onChange={handleWhatsappChange}
+              onChange={handleWhatsappChange} 
+              onBlur={handleWhatsappBlur}
               placeholder="(00) 00000-0000"
               ref={whatsappRef}
+              className={user ? "bg-primary/10 font-medium" : ""} 
             />
           </div>
-          <div>
+          <div className="flex-1">
             <Label>
               Nome <span className="text-destructive">*</span>
+              {user && <span className="text-xs text-primary ml-2">(Logado)</span>}
+              {foundUser && !user && <span className="text-xs text-primary ml-2">(Auto)</span>}
             </Label>
             <Input
               value={cliente}
               onChange={(e) => setCliente(e.target.value)}
               ref={clienteRef}
               placeholder="Nome completo do cliente"
+              className={foundUser ? "bg-primary/10 font-medium" : ""} 
             />
           </div>
         </div>
@@ -336,29 +514,26 @@ export default function Agendamento() {
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
         <div className="container mx-auto max-w-screen-lg">
           <Button
-            className="w-full bg-zinc-900 hover:bg-zinc-900 text-zinc-50"
+            className="w-full bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
             onClick={handleConfirm}
             disabled={loading}
           >
+            {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
             Confirmar Agendamento
           </Button>
         </div>
       </div>
 
-      {/* Modais */}
-      {/* Serviços */}
+      {/* Serviços Modal (Inalterado) */}
       {showServicesModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
-            {/* Cabeçalho */}
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h2 className="font-bold text-xl">Selecionar Serviços</h2>
               <button onClick={handleCloseServicesModal} className="p-1 hover:bg-accent rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Lista de serviços - rolável */}
             <div className="flex-1 overflow-y-auto space-y-2 mb-4">
               {availableServices.map((service: any) => {
                 const isSelected = selectedServices.some((s) => s.id === service.id)
@@ -376,7 +551,7 @@ export default function Agendamento() {
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">{service.category}</p>
                         <div className="flex items-center gap-3 mt-2">
-                          <span className="text-sm font-medium text-primary">R$ {service.price}</span>
+                          <span className="text-sm font-medium text-primary">R$ {service.price.toFixed(2)}</span>
                           <span className="text-sm text-muted-foreground">{formatDuration(service.duration)}</span>
                         </div>
                       </div>
@@ -386,7 +561,6 @@ export default function Agendamento() {
               })}
             </div>
 
-            {/* Botão Limpar */}
             {selectedServices.length > 0 && (
               <Button
                 variant="ghost"
@@ -397,7 +571,6 @@ export default function Agendamento() {
               </Button>
             )}
 
-            {/* Confirmar */}
             <Button onClick={handleCloseServicesModal} className="w-full">
               Confirmar Seleção ({selectedServices.length})
             </Button>
@@ -405,7 +578,7 @@ export default function Agendamento() {
         </div>
       )}
 
-      {/* Confirmação */}
+      {/* Confirmação Modal (Inalterado) */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md space-y-3">
@@ -413,34 +586,67 @@ export default function Agendamento() {
               <h2 className="font-bold text-xl">Confirmar Agendamento</h2>
             </div>
             {!isProfessionalView && professional && (
-              <>
-                <div>
-                  <p> <House /> Estabelecimento:</p> {professional.name}
-                </div>
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <div className="border-b pb-3">
+                <div className="font-medium text-lg"> <House className="inline mr-2" /> {professional.name}</div>
+                <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
                   <MapPin className="w-4 h-4" />
                   {`${professional.address.street}, ${professional.address.number} - ${professional.address.city}`}
                 </p>
-              </>
+              </div>
             )}
-            <p><p>Serviços:</p></p>
-            <ul className="list-disc pl-5">
+            
+            <div className="space-y-2">
+              <p className="font-semibold">Cliente: <span className="font-normal">{cliente}</span></p>
+              {whatsapp && <p className="font-semibold">WhatsApp: <span className="font-normal">{whatsapp}</span></p>}
+              <p className="font-semibold">Data: <span className="font-normal">{date?.toLocaleDateString("pt-BR")} às {selectedTime}</span></p>
+            </div>
+            
+            <p className="font-semibold border-t pt-3">Serviços:</p>
+            <ul className="list-disc pl-5 text-sm space-y-1">
               {selectedServices.map((s, i) => (
-                <li key={i}>{s.name} - R$ {s.price}</li>
+                <li key={i}>{s.name} - R$ {s.price.toFixed(2)}</li>
               ))}
             </ul>
-            <p><p>Duração:</p> {formatDuration(totalDuration)}</p>
-            <p><p>Total:</p> R$ {totalPrice}</p>
-            <p><p>Cliente:</p> {cliente}</p>
-            {whatsapp && <p><p>WhatsApp:</p> {whatsapp}</p>}
-            <p><p>Data:</p> {date?.toLocaleDateString("pt-BR")} às {selectedTime}</p>
+            <div className="font-bold text-lg border-t pt-3 flex justify-between">
+              <span>Total ({formatDuration(totalDuration)}):</span>
+              <span>R$ {totalPrice.toFixed(2)}</span>
+            </div>
 
-            <div className="flex gap-2 justify-center border-t pt-3">
+            <div className="flex gap-2 justify-end border-t pt-3">
               <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>
-                Cancelar
+                Voltar e Editar
               </Button>
               <Button onClick={handleFinish} disabled={loading}>
-                {loading ? "Salvando..." : "Confirmar"}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirmar Agendamento"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 🔑 NOVO MODAL: Confirmação de Troca de Usuário */}
+      {showLogoutModal.show && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-card rounded-xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+            <div className="flex items-center text-red-500 border-b pb-3">
+              <AlertTriangle className="w-6 h-6 mr-3" />
+              <h2 className="font-bold text-xl">Troca de Usuário</h2>
+            </div>
+            
+            <p className="text-sm text-foreground">
+              Você está logado como <span className="font-semibold text-primary">{user?.name}</span>. 
+              O WhatsApp digitado (<span className="font-semibold">{formatWhatsapp(showLogoutModal.newWhatsapp)}</span>) é diferente.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Deseja sair da conta atual para agendar como este novo usuário (ou cliente)?
+            </p>
+
+            <div className="flex gap-3 justify-end pt-3">
+              <Button variant="outline" onClick={() => setShowLogoutModal({ show: false, newWhatsapp: '', newClientName: '' })}>
+                Manter {user?.name.split(' ')[0]}
+              </Button>
+              <Button variant="destructive" onClick={handleLogoutAndSwitch}>
+                Sair e Continuar
               </Button>
             </div>
           </div>

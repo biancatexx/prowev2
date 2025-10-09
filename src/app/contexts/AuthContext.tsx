@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfessional(null)
     localStorage.removeItem("mock_current_user")
     localStorage.removeItem("mock_current_professional")
-    router.push("/")
+  
   }
 
   const updateUser = (updatedUser: User) => {

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { UserIcon, LogOut, Edit2, Save } from "lucide-react" // Importado Save
-import { useAuth } from "@/contexts/AuthContext"
+import { useAuth } from "@/contexts/AuthContext" // Assumindo que seu caminho do AuthContext é este
 import { saveUser, type User } from "@/data/mockData"
 import NavbarApp from "@/components/NavbarApp"
 import { toast } from "sonner"

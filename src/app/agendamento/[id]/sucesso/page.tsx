@@ -8,6 +8,9 @@ import { CheckCircle } from "lucide-react"
 export default function AgendamentoSucesso() {
   const router = useRouter()
 
+  // 🔑 Removemos a lógica de passar o WhatsApp na query string, pois o
+  // login já foi feito no passo anterior e a sessão está ativa no AuthContext.
+  
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full p-8 text-center">
@@ -22,6 +25,8 @@ export default function AgendamentoSucesso() {
           <Button onClick={() => router.push("/")} className="w-full">
             Voltar para Início
           </Button>
+          {/* O clique redireciona para o histórico. Como o usuário está logado,
+              o histórico carrega automaticamente os agendamentos dele. */}
           <Button onClick={() => router.push("/historico")} variant="outline" className="w-full">
             Ver Meus Agendamentos
           </Button>
