@@ -20,6 +20,8 @@ import {
 
 export default function AjustesAgenda() {
   const router = useRouter()
+
+  // HOOKS sempre no topo
   const [professionalId, setProfessionalId] = useState<string | null>(null)
   const [availability, setAvailability] = useState<ProfessionalAvailability | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>()
@@ -28,26 +30,44 @@ export default function AjustesAgenda() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const currentUser = localStorage.getItem("mock_current_user")
-        if (currentUser) {
-          const user = JSON.parse(currentUser)
-          const profId = user.professionalId as string
-          setProfessionalId(profId)
-          const stored = getProfessionalAvailability(profId)
-          setAvailability(stored || getDefaultAvailability(profId))
-        } else {
-          toast.error("Usuário profissional não encontrado.")
-        }
-      } catch (error) {
-        console.error("Erro ao carregar dados do usuário:", error)
-        toast.error("Erro ao carregar dados. Verifique o console.")
-      } finally {
-        setIsLoading(false)
+    if (typeof window === "undefined") return
+
+    try {
+      const currentUser = localStorage.getItem("mock_current_user")
+      let profId = "prof_1" // fallback
+      if (currentUser) {
+        const user = JSON.parse(currentUser)
+        if (user?.professionalId) profId = user.professionalId
       }
+      setProfessionalId(profId)
+
+      const stored = getProfessionalAvailability(profId)
+      setAvailability(stored || getDefaultAvailability(profId))
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error)
+      toast.error("Erro ao carregar dados. Usando configuração padrão.")
+      setProfessionalId("prof_1")
+      setAvailability(getDefaultAvailability("prof_1"))
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Carregando...</p>
+      </div>
+    )
+  }
+
+  if (!availability || !professionalId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p>Erro ao carregar dados do profissional.</p>
+      </div>
+    )
+  }
 
   const dayNamesMap: Record<DayOfWeek, string> = {
     monday: "Segunda-feira",
@@ -131,17 +151,17 @@ export default function AjustesAgenda() {
     setAvailability(prev => {
       if (!prev) return null
       const customSlots = prev.customSlots || []
-      const existingCustomSlotIndex = customSlots.findIndex(cs => cs.date === dateStr)
-      if (existingCustomSlotIndex !== -1) {
-        const existingSlot = customSlots[existingCustomSlotIndex]
-        if (existingSlot.slots.includes(customTime)) {
+      const existingIndex = customSlots.findIndex(cs => cs.date === dateStr)
+      if (existingIndex !== -1) {
+        const existing = customSlots[existingIndex]
+        if (existing.slots.includes(customTime)) {
           toast.error("Horário já adicionado")
           return prev
         }
         const updatedSlots = [...customSlots]
-        updatedSlots[existingCustomSlotIndex] = {
-          ...existingSlot,
-          slots: [...existingSlot.slots, customTime].sort()
+        updatedSlots[existingIndex] = {
+          ...existing,
+          slots: [...existing.slots, customTime].sort()
         }
         toast.success("Horário personalizado adicionado")
         return { ...prev, customSlots: updatedSlots }
@@ -186,6 +206,7 @@ export default function AjustesAgenda() {
       </header>
 
       <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
+        {/* Dias de Atendimento */}
         <Card>
           <CardHeader>
             <CardTitle>Dias de Atendimento</CardTitle>
@@ -200,6 +221,7 @@ export default function AjustesAgenda() {
           </CardContent>
         </Card>
 
+        {/* Horário Padrão */}
         <Card>
           <CardHeader>
             <CardTitle>Horário de Atendimento Padrão</CardTitle>
@@ -228,8 +250,8 @@ export default function AjustesAgenda() {
               <Label>Intervalo entre horários (minutos)</Label>
               <Input
                 type="number"
-                min="15"
-                step="5"
+                min={15}
+                step={5}
                 value={availability.slotInterval}
                 onChange={e => handleIntervalChange(e.target.value)}
               />
@@ -237,6 +259,7 @@ export default function AjustesAgenda() {
           </CardContent>
         </Card>
 
+        {/* Datas Específicas */}
         <Card>
           <CardHeader>
             <CardTitle>Gerenciar Datas Específicas</CardTitle>
@@ -249,11 +272,7 @@ export default function AjustesAgenda() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">
-                      {selectedDate.toLocaleDateString("pt-BR", {
-                        weekday: "long",
-                        day: "2-digit",
-                        month: "long"
-                      })}
+                      {selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {isSelectedDateClosed ? "Data fechada" : "Data disponível"}
@@ -268,51 +287,49 @@ export default function AjustesAgenda() {
                 </div>
 
                 {!isSelectedDateClosed && (
-                  <>
-                    <div className="border-t pt-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <Label>Horários Personalizados</Label>
-                        <Button variant="ghost" size="sm" onClick={() => setShowCustomSlots(!showCustomSlots)}>
-                          {showCustomSlots ? "Ocultar" : "Mostrar"}
-                        </Button>
-                      </div>
-
-                      {showCustomSlots && (
-                        <>
-                          <div className="flex gap-2 mb-3">
-                            <Input
-                              type="time"
-                              value={customTime}
-                              onChange={e => setCustomTime(e.target.value)}
-                              placeholder="00:00"
-                            />
-                            <Button onClick={addCustomSlot}>
-                              <Plus className="w-4 h-4 mr-1" />
-                              Adicionar
-                            </Button>
-                          </div>
-
-                          {customSlotsForSelectedDate.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm text-muted-foreground">Horários personalizados para este dia:</p>
-                              {customSlotsForSelectedDate.map(time => (
-                                <div key={time} className="flex items-center justify-between bg-accent p-2 rounded-lg">
-                                  <span>{time}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeCustomSlot(selectedDateStr!, time)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </>
-                      )}
+                  <div className="border-t pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <Label>Horários Personalizados</Label>
+                      <Button variant="ghost" size="sm" onClick={() => setShowCustomSlots(!showCustomSlots)}>
+                        {showCustomSlots ? "Ocultar" : "Mostrar"}
+                      </Button>
                     </div>
-                  </>
+
+                    {showCustomSlots && (
+                      <>
+                        <div className="flex gap-2 mb-3">
+                          <Input
+                            type="time"
+                            value={customTime}
+                            onChange={e => setCustomTime(e.target.value)}
+                            placeholder="00:00"
+                          />
+                          <Button onClick={addCustomSlot}>
+                            <Plus className="w-4 h-4 mr-1" />
+                            Adicionar
+                          </Button>
+                        </div>
+
+                        {customSlotsForSelectedDate.length > 0 && (
+                          <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">Horários personalizados para este dia:</p>
+                            {customSlotsForSelectedDate.map(time => (
+                              <div key={time} className="flex items-center justify-between bg-accent p-2 rounded-lg">
+                                <span>{time}</span>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeCustomSlot(selectedDateStr!, time)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             )}
