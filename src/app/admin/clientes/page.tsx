@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -7,38 +6,36 @@ import { Search, Users, Phone } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import NavbarProfessional from "@/components/NavbarProfessional"
- 
-import { getClientsByProfessional, type Client, initializeMocks } from "@/data/mockData" 
+import Link from "next/link" // Adicionado para o botão de login
+import { getClientsByProfessional, type Client, initializeMocks } from "@/data/mockData"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext" // Importado useAuth
 
 export default function ClientesPage() {
   const router = useRouter()
+  // Usando useAuth para obter o estado de autenticação e carregamento
+  const { professional: authProfessional, isLoading, logout } = useAuth()
+  
   const [clients, setClients] = useState<Client[]>([])
   const [filteredClients, setFilteredClients] = useState<Client[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [professionalId, setProfessionalId] = useState<string | null>(null)
+  // O professionalId não é mais necessário no estado local, pois usaremos authProfessional.id
 
+  // Lógica de carregamento de dados
   useEffect(() => {
-    
-    initializeMocks() 
+    // Se o carregamento terminou e há um profissional autenticado
+    if (!isLoading && authProfessional) {
+      // Nota: Mantive initializeMocks() por consistência com o código original
+      initializeMocks()
 
-    if (typeof window !== "undefined") {
-      const currentUser = localStorage.getItem("mock_current_user")
-      let profId = "1" // Padrão se não houver usuário logado
-      if (currentUser) {
-        const user = JSON.parse(currentUser)
-        profId = user.professionalId || "1" // Usa o ID do professional logado
-      }
-      
-      setProfessionalId(profId)
-
+      const profId = authProfessional.id
       const clientsList = getClientsByProfessional(profId)
       setClients(clientsList)
       setFilteredClients(clientsList)
     }
-  }, []) // Executa apenas na montagem
+  }, [isLoading, authProfessional]) // Dependências atualizadas
 
-  // Resto do código do componente...
+  // Lógica de filtro (mantida inalterada)
   useEffect(() => {
     if (searchTerm) {
       const filtered = clients.filter(
@@ -51,20 +48,20 @@ export default function ClientesPage() {
     }
   }, [searchTerm, clients])
 
+  // Lógica de storage (atualizada para usar authProfessional.id)
   useEffect(() => {
     const handleStorage = () => {
-      if (professionalId) {
+      if (authProfessional) {
         // Recarrega a lista do mockData sempre que um evento 'storage' é disparado
-        const clientsList = getClientsByProfessional(professionalId)
+        const clientsList = getClientsByProfessional(authProfessional.id)
         setClients(clientsList)
         setFilteredClients(clientsList)
       }
     }
 
-    // Ouve o evento de storage disparado por saveClient e updateClient
     window.addEventListener("storage", handleStorage)
     return () => window.removeEventListener("storage", handleStorage)
-  }, [professionalId])
+  }, [authProfessional])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
@@ -73,6 +70,30 @@ export default function ClientesPage() {
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr + "T00:00:00")
     return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })
+  }
+
+  // Bloco de Carregamento
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Carregando clientes...</p>
+        <NavbarProfessional />
+      </div>
+    )
+  }
+
+  // Bloco de Acesso Negado (Padrão solicitado)
+  if (!authProfessional) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-center p-4">
+        <Card className="p-6 rounded-xl">
+          <p className="text-xl font-bold mb-4">Acesso Negado</p>
+          <p className="text-muted-foreground mb-6">Por favor, faça login como profissional para acessar esta página.</p>
+          <Link href='/login'><Button onClick={() => logout()}>Ir para Login</Button></Link>
+        </Card>
+        <NavbarProfessional />
+      </div>
+    )
   }
 
   return (

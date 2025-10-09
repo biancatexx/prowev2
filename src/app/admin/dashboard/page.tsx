@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,126 +7,66 @@ import { Calendar, Users, DollarSign, Clock, Share2, TrendingUp, SquareArrowOutU
 import { getStoredAppointments } from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
 import NavbarProfessional from "@/components/NavbarProfessional"
-
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts"
 import { toast } from "sonner"
 
 export default function Dashboard() {
-  const { professional } = useAuth()
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [stats, setStats] = useState({
-    todayAppointments: 0,
-    totalClients: 0,
-    monthRevenue: 0,
-    pendingAppointments: 0,
-  })
-
+  // Alterado para incluir isLoading e logout
+  const { professional, isLoading, logout } = useAuth()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [stats, setStats] = useState({ todayAppointments: 0, totalClients: 0, monthRevenue: 0, pendingAppointments: 0 })
   const [weeklyRevenue, setWeeklyRevenue] = useState<{ day: string; value: number }[]>([])
-  const [appointmentStats, setAppointmentStats] = useState({
-    agendados: 0,
-    confirmados: 0,
-    concluidos: 0,
-    cancelados: 0,
-  })
+  const [appointmentStats, setAppointmentStats] = useState({ agendados: 0, confirmados: 0, concluidos: 0, cancelados: 0 })
   const [workHours, setWorkHours] = useState<{ day: string; hours: number }[]>([])
 
   useEffect(() => {
     if (!professional) return
-
-    const appointments = getStoredAppointments().filter((a) => a.professionalId === professional.id)
+    const appointments = getStoredAppointments().filter(a => a.professionalId === professional.id)
     const today = new Date().toISOString().split("T")[0]
     const thisMonth = new Date().toISOString().slice(0, 7)
+    const todayAppts = appointments.filter(a => a.date === today)
+    const monthAppts = appointments.filter(a => a.date.startsWith(thisMonth))
+    const uniqueClients = new Set(appointments.map(a => a.clientWhatsapp))
+    const monthRevenue = monthAppts.filter(a => a.status === "concluido").reduce((sum, a) => sum + a.totalPrice, 0)
+    setStats({ todayAppointments: todayAppts.length, totalClients: uniqueClients.size, monthRevenue, pendingAppointments: appointments.filter(a => a.status === "agendado").length })
 
-    const todayAppts = appointments.filter((a) => a.date === today)
-    const monthAppts = appointments.filter((a) => a.date.startsWith(thisMonth))
-    const uniqueClients = new Set(appointments.map((a) => a.clientWhatsapp))
-    const monthRevenue = monthAppts.filter((a) => a.status === "concluido").reduce((sum, a) => sum + a.totalPrice, 0)
+    const last7Days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - (6 - i)); return d })
+    setWeeklyRevenue(last7Days.map(date => { const dateStr = date.toISOString().split("T")[0]; const dayRevenue = appointments.filter(a => a.date === dateStr && a.status === "concluido").reduce((sum, a) => sum + a.totalPrice, 0); const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]; return { day: dayNames[date.getDay()], value: dayRevenue } }))
 
-    setStats({
-      todayAppointments: todayAppts.length,
-      totalClients: uniqueClients.size,
-      monthRevenue,
-      pendingAppointments: appointments.filter((a) => a.status === "agendado").length,
-    })
+    setAppointmentStats({ agendados: appointments.filter(a => a.status === "agendado").length, confirmados: appointments.filter(a => a.status === "confirmado").length, concluidos: appointments.filter(a => a.status === "concluido").length, cancelados: appointments.filter(a => a.status === "cancelado").length })
 
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date()
-      date.setDate(date.getDate() - (6 - i))
-      return date
-    })
-
-    const weeklyData = last7Days.map((date) => {
-      const dateStr = date.toISOString().split("T")[0]
-      const dayRevenue = appointments
-        .filter((a) => a.date === dateStr && a.status === "concluido")
-        .reduce((sum, a) => sum + a.totalPrice, 0)
-
-      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-      return {
-        day: dayNames[date.getDay()],
-        value: dayRevenue,
-      }
-    })
-    setWeeklyRevenue(weeklyData)
-
-    const statusCounts = {
-      agendados: appointments.filter((a) => a.status === "agendado").length,
-      confirmados: appointments.filter((a) => a.status === "confirmado").length,
-      concluidos: appointments.filter((a) => a.status === "concluido").length,
-      cancelados: appointments.filter((a) => a.status === "cancelado").length,
-    }
-    setAppointmentStats(statusCounts)
-
-    const workHoursData = last7Days.map((date) => {
-      const dateStr = date.toISOString().split("T")[0]
-      const dayMinutes = appointments
-        .filter((a) => a.date === dateStr && a.status === "concluido")
-        .reduce((sum, a) => sum + a.totalDuration, 0)
-
-      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-      return {
-        day: dayNames[date.getDay()],
-        hours: Math.round((dayMinutes / 60) * 10) / 10, // Convert to hours with 1 decimal
-      }
-    })
-    setWorkHours(workHoursData)
+    setWorkHours(last7Days.map(date => { const dateStr = date.toISOString().split("T")[0]; const dayMinutes = appointments.filter(a => a.date === dateStr && a.status === "concluido").reduce((sum, a) => sum + a.totalDuration, 0); const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]; return { day: dayNames[date.getDay()], hours: Math.round((dayMinutes / 60) * 10) / 10 } }))
   }, [professional])
 
   const totalWeeklyRevenue = weeklyRevenue.reduce((acc, curr) => acc + curr.value, 0)
+  const pieData = [{ name: "Concluídos", value: appointmentStats.concluidos, color: "#2563eb" }, { name: "Confirmados", value: appointmentStats.confirmados, color: "#16a34a" }, { name: "Agendados", value: appointmentStats.agendados, color: "#facc15" }, { name: "Cancelados", value: appointmentStats.cancelados, color: "#dc2626" }].filter(item => item.value > 0)
 
-  const pieData = [
-    { name: "Concluídos", value: appointmentStats.concluidos, color: "#2563eb" },
-    { name: "Confirmados", value: appointmentStats.confirmados, color: "#16a34a" },
-    { name: "Agendados", value: appointmentStats.agendados, color: "#facc15" },
-    { name: "Cancelados", value: appointmentStats.cancelados, color: "#dc2626" },
-  ].filter((item) => item.value > 0) // Only show non-zero values
-
-
-  if (!professional) {
+  // 1. Bloco de Carregamento
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Carregando...</p>
+        <NavbarProfessional />
       </div>
     )
   }
-  const handleCopyLink = () => {
-    if (inputRef.current) {
-      navigator.clipboard.writeText(inputRef.current.value);
-      toast.success("Link copiado para a área de transferência!");
-    }
-  };
+
+  // 2. Bloco de Acesso Negado (o padrão solicitado)
+  if (!professional) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-center p-4">
+        <Card className="p-6 rounded-xl">
+          <p className="text-xl font-bold mb-4">Acesso Negado</p>
+          <p className="text-muted-foreground mb-6">Por favor, faça login como profissional para acessar esta página.</p>
+          <Link href='/login'><Button onClick={() => logout()}>Ir para Login</Button></Link>
+        </Card>
+        <NavbarProfessional />
+      </div>
+    )
+  }
+
+  const handleCopyLink = () => { if (inputRef.current) { navigator.clipboard.writeText(inputRef.current.value); toast.success("Link copiado para a área de transferência!") } }
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
@@ -135,7 +74,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-primary-foreground text-center">Dashboard</h1>
         </div>
       </header>
-
       <div className="container mx-auto max-w-screen-lg px-4">
         <div className="grid grid-cols-2 gap-4 mb-6 px-4">
           <Card className="p-4">
@@ -149,7 +87,6 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
-
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center">
@@ -161,7 +98,6 @@ export default function Dashboard() {
               </div>
             </div>
           </Card>
-
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-green-500/10 rounded-full flex items-center justify-center">
@@ -169,11 +105,10 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Mês</p>
-                <p className="text-2xl font-bold">R$ {stats.monthRevenue}</p>
+                <p className="text-2xl font-bold">R$ {stats.monthRevenue.toFixed(2)}</p>
               </div>
             </div>
           </Card>
-
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-orange-500/10 rounded-full flex items-center justify-center">
@@ -191,44 +126,24 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" /> Link do Perfil
-              </CardTitle>
+                <Share2 className="h-5 w-5" /> Link do Perfil</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-wrap gap-2 items-center">
-                <input
-                  type="text"
-                  value={`/profissional/${professional.id}`}
-                  readOnly
-                  name="url"
-                  ref={inputRef}
-                  className="flex-1 min-w-[200px] px-3 py-2 bg-muted rounded-lg text-sm"
-                />
-
+                <input type="text" value={`/profissional/${professional.id}`} readOnly name="url" ref={inputRef} className="flex-1 min-w-[200px] px-3 py-2 bg-muted rounded-lg text-sm" />
                 <div className="flex gap-2 w-full sm:w-auto">
-                  <Button size="sm" onClick={handleCopyLink} className="flex-1 sm:flex-none">
-                    Copiar
-                  </Button>
-
-                  <Link
-                    href={`/profissional/${professional.id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center text-sm text-primary bg-zinc-900 px-3 rounded-lg flex-1 sm:flex-none"
-                  >
-                    Acessar
-                    <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
+                  <Button size="sm" onClick={handleCopyLink} className="flex-1 sm:flex-none">Copiar</Button>
+                  <Link href={`/profissional/${professional.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-sm text-primary bg-zinc-900 px-3 rounded-lg flex-1 sm:flex-none">Acessar <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
                   </Link>
                 </div>
               </div>
             </CardContent>
-
           </Card>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" /> Faturamento Semanal
-              </CardTitle>
+                <DollarSign className="h-5 w-5" /> Faturamento Semanal</CardTitle>
               <p className="text-2xl font-bold text-primary">R$ {totalWeeklyRevenue.toFixed(2)}</p>
             </CardHeader>
             <CardContent className="h-64">
@@ -237,7 +152,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="day" />
                   <YAxis />
-                  <Tooltip formatter={(value) => `R$ ${value}`} />
+                  <Tooltip formatter={value => `R$ ${value}`} />
                   <Bar dataKey="value" fill="#A78BFA" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -247,35 +162,24 @@ export default function Dashboard() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" /> Agendamentos
-              </CardTitle>
+                <Calendar className="h-5 w-5" /> Agendamentos</CardTitle>
             </CardHeader>
-            <CardContent className="h-64">
-              {pieData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value, name) => [`${value}`, `${name}`]} />
-                    <Legend verticalAlign="bottom" height={36} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">Nenhum agendamento registrado</p>
-                </div>
-              )}
-            </CardContent>
+            <CardContent className="h-64">{pieData.length > 0 ? <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>{pieData.map((entry, index) =>
+                  <Cell key={`cell-${index}`} fill={entry.color} />)}</Pie>
+                <Tooltip formatter={(value, name) => [`${value}`, `${name}`]} />
+                <Legend verticalAlign="bottom" height={36} />
+              </PieChart>
+            </ResponsiveContainer> : <div className="flex items-center justify-center h-full">
+              <p className="text-muted-foreground">Nenhum agendamento registrado</p>
+            </div>}</CardContent>
           </Card>
 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" /> Horas Trabalhadas
-              </CardTitle>
+                <Clock className="h-5 w-5" /> Horas Trabalhadas</CardTitle>
             </CardHeader>
             <CardContent className="h-64">
               <ResponsiveContainer width="100%" height="100%">
@@ -283,7 +187,7 @@ export default function Dashboard() {
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis type="number" />
                   <YAxis dataKey="day" type="category" />
-                  <Tooltip formatter={(value) => `${value}h`} />
+                  <Tooltip formatter={value => `${value}h`} />
                   <Bar dataKey="hours" fill="#DECBFA" radius={[4, 4, 4, 4]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -308,15 +212,15 @@ export default function Dashboard() {
               </Card>
             </Link>
           </div>
+
+          <Card className="p-6">
+            <h2 className="text-lg font-bold mb-4">Próximos Agendamentos</h2>
+            <p className="text-muted-foreground text-center py-8">Nenhum agendamento próximo</p>
+          </Card>
         </div>
 
-        <Card className="p-6">
-          <h2 className="text-lg font-bold mb-4">Próximos Agendamentos</h2>
-          <p className="text-muted-foreground text-center py-8">Nenhum agendamento próximo</p>
-        </Card>
+        <NavbarProfessional />
       </div>
-
-      <NavbarProfessional />
     </div>
   )
 }

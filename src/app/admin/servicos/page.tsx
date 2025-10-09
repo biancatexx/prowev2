@@ -27,7 +27,8 @@ import {
 // Componente da Página de Serviços
 export default function ServicosPage() {
   const router = useRouter()
-  const { professional: authProfessional, isLoading } = useAuth()
+  // Adicionado 'logout' para ser usado na tela de Acesso Negado
+  const { professional: authProfessional, isLoading, logout } = useAuth() 
   const [professional, setProfessional] = useState<Professional | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [serviceToDelete, setServiceToDelete] = useState<Service | null>(null)
@@ -80,10 +81,26 @@ export default function ServicosPage() {
     }
   }
 
-  if (isLoading || !authProfessional || !professional) {
+  // Novo bloco de Acesso Negado
+  if (!isLoading && !authProfessional) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center text-center p-4">
+        <Card className="p-6 rounded-xl">
+          <p className="text-xl font-bold mb-4">Acesso Negado</p>
+          <p className="text-muted-foreground mb-6">Por favor, faça login como profissional para acessar esta página.</p>
+          {/* O Link e o onClick={() => logout()} são opcionais, mas seguem o padrão da página de Perfil */}
+          <Link href='/login'><Button onClick={() => logout()}>Ir para Login</Button></Link>
+        </Card>
+        <NavbarProfessional />
+      </div>
+    )
+  }
+  // Bloco de Carregamento
+  if (isLoading || !professional) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Carregando serviços...</p>
+        <NavbarProfessional />
       </div>
     )
   }

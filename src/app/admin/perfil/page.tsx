@@ -11,6 +11,7 @@ import { getMockServices, saveProfessional, type Professional } from "@/data/moc
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
+import Link from "next/link"
 
 // Tipagem para o estado do formulário (mantida inalterada)
 interface ProfessionalForm extends Omit<Professional, 'address'> {
@@ -86,11 +87,12 @@ export default function Perfil() {
   if (!authProfessional) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center text-center p-4">
-        <Card className="p-6">
+        <Card className="p-6 rounded-xl">
           <p className="text-xl font-bold mb-4">Acesso Negado</p>
           <p className="text-muted-foreground mb-6">Por favor, faça login como profissional para acessar esta página.</p>
-          <Button onClick={() => logout()}>Ir para Login</Button>
+          <Link href='/login'><Button onClick={() => logout()}>Ir para Login</Button></Link>
         </Card>
+           <NavbarProfessional />
       </div>
     )
   }
