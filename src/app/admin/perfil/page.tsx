@@ -1,3 +1,5 @@
+
+
 "use client"
 
 import { useEffect, useState } from "react"
@@ -7,14 +9,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit2, Save, LogOut } from "lucide-react"
-import { getMockServices, saveProfessional, type Professional } from "@/data/mockData"
+// Importando os tipos e funções corretas do mockData
+import { getMockServices, saveProfessional, type Professional, type WorkingHoursMap, type DayOfWeek } from "@/data/mockData" 
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import Link from "next/link"
+import { Switch } from "@/components/ui/switch" // Componente Shadcn/ui ou similar presumido
 
-// Tipagem para o estado do formulário (mantida inalterada)
+// ===============================================
+// 📌 TIPAGEM DO FORMULÁRIO
+// ===============================================
+
+// Adaptação da tipagem Professional para o estado do formulário
 interface ProfessionalForm extends Omit<Professional, 'address'> {
+  // Endereço adaptado (já estava correto)
   address: {
     street: string;
     number: string;
@@ -22,9 +31,24 @@ interface ProfessionalForm extends Omit<Professional, 'address'> {
     state: string;
     neighborhood: string;
     zipCode: string;
-    country: string
+    country: string; // Adicionado para conformidade
   };
 }
+
+// Mapeamento de nomes de dias para exibição
+const dayNames: { [key in DayOfWeek]: string } = {
+  monday: 'Segunda-feira',
+  tuesday: 'Terça-feira',
+  wednesday: 'Quarta-feira',
+  thursday: 'Quinta-feira',
+  friday: 'Sexta-feira',
+  saturday: 'Sábado',
+  sunday: 'Domingo',
+};
+
+// ===============================================
+// ⚙️ COMPONENTE PERFIL
+// ===============================================
 
 export default function Perfil() {
   const { professional: authProfessional, isLoading, updateProfessional, logout } = useAuth()
@@ -33,8 +57,17 @@ export default function Perfil() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // CORREÇÃO: Removida a propriedade 'category' para resolver o erro
-  // "Object literal may only specify known properties".
+  // Dados de horário padrão para inicialização (usando um padrão seguro)
+  const defaultWorkingHours: WorkingHoursMap = {
+    sunday: { enabled: false, start: "00:00", end: "00:00" },
+    monday: { enabled: true, start: "09:00", end: "18:00" },
+    tuesday: { enabled: true, start: "09:00", end: "18:00" },
+    wednesday: { enabled: true, start: "09:00", end: "18:00" },
+    thursday: { enabled: true, start: "09:00", end: "18:00" },
+    friday: { enabled: true, start: "09:00", end: "18:00" },
+    saturday: { enabled: true, start: "09:00", end: "13:00" },
+  };
+  
   const initialProfessionalData: ProfessionalForm = {
     id: '',
     name: '',
@@ -46,7 +79,7 @@ export default function Perfil() {
     status: 'active',
     whatsapp: '',
     userId: '',
-    workingHours: {} as any,
+    workingHours: defaultWorkingHours, // Inicializa com o padrão
     address: { street: '', number: '', city: '', state: '', neighborhood: '', zipCode: '', country: '' },
     createdAt: "",
     experience_years: 0,
@@ -54,14 +87,16 @@ export default function Perfil() {
   }
 
   const [formData, setFormData] = useState<ProfessionalForm>(authProfessional ? {
-
     ...authProfessional,
-
     address: {
       ...initialProfessionalData.address,
-      ...(authProfessional.address || {}) // Sobrescreve com os dados do profissional
-    } as ProfessionalForm['address']
-  } as ProfessionalForm : initialProfessionalData); // Adicionado type assertion para garantir conformidade
+      ...(authProfessional.address || {}) 
+    } as ProfessionalForm['address'],
+    workingHours: {
+      ...defaultWorkingHours, // Garante que todos os dias existam
+      ...(authProfessional.workingHours || {}) // Sobrescreve com os dados do profissional
+    } as ProfessionalForm['workingHours']
+  } as ProfessionalForm : initialProfessionalData); 
 
   // Inicializa/Atualiza o estado do formulário quando os dados do contexto mudam
   useEffect(() => {
@@ -71,8 +106,12 @@ export default function Perfil() {
         address: {
           ...initialProfessionalData.address,
           ...(authProfessional.address || {})
-        } as ProfessionalForm['address']
-      } as ProfessionalForm); // Adicionado type assertion aqui também
+        } as ProfessionalForm['address'],
+        workingHours: {
+          ...defaultWorkingHours,
+          ...(authProfessional.workingHours || {})
+        } as ProfessionalForm['workingHours']
+      } as ProfessionalForm); 
     }
   }, [authProfessional]);
 
@@ -118,21 +157,54 @@ export default function Perfil() {
     }));
   };
 
+  /**
+   * Função para lidar com a mudança nos horários de trabalho (start ou end)
+   */
+  const handleWorkingHoursChange = (day: DayOfWeek, field: 'start' | 'end', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      workingHours: {
+        ...prev.workingHours,
+        [day]: {
+          ...prev.workingHours[day],
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  /**
+   * Função para alternar entre Habilitado/Desabilitado (enabled)
+   */
+  const handleToggleDay = (day: DayOfWeek, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      workingHours: {
+        ...prev.workingHours,
+        [day]: {
+          ...prev.workingHours[day],
+          enabled: checked, // Usa o valor do Switch (true/false)
+        },
+      },
+    }));
+  };
+
   const handleSave = () => {
     if (loading) return;
     setLoading(true);
 
     try {
-      // Omitindo campos que não são editáveis pelo formulário (se necessário),
-      // mas passando o objeto completo para o saveProfessional.
+      // Salva o objeto formData (que está conforme a interface Professional)
       saveProfessional(formData as Professional);
 
+      // Atualiza o contexto (AuthContext)
       updateProfessional(formData as Professional);
 
       toast.success('Perfil atualizado!')
       setIsEditing(false)
     } catch (error) {
-      toast.success('Erro ao salvar, tente mais tarde.')
+      // Use toast.error para melhor feedback
+      toast.error('Erro ao salvar, tente mais tarde.') 
     } finally {
       setLoading(false);
     }
@@ -155,8 +227,6 @@ export default function Perfil() {
       <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
         {/* Botões de Ação */}
         <div className="flex justify-end items-center">
-
-
           <Button
             size="sm"
             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
@@ -182,6 +252,7 @@ export default function Perfil() {
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.onerror = null;
+                  // Fallback para as iniciais
                   target.src = `https://placehold.co/96x96/25555d/fff?text=${formData.name.charAt(0)}`;
                 }}
               />
@@ -191,7 +262,7 @@ export default function Perfil() {
           </div>
         </div>
 
-        {/* Formulário */}
+        {/* Formulário: Informações do Negócio e Contato */}
         <Card className="p-6 pt-16 -mt-12">
           <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
           <div className="space-y-4">
@@ -308,9 +379,77 @@ export default function Perfil() {
                   onChange={handleAddressChange}
                 />
               </div>
+              {/* Adicionado País para conformidade */}
+              <div>
+                <Label htmlFor="country">País</Label>
+                <Input
+                  id="country"
+                  value={formData.address.country}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
+                />
+              </div>
             </div>
           </div>
         </Card>
+
+        {/* 🆕 Seção Horário de Funcionamento (Implementação Completa) */}
+        <Card className="p-6">
+          <h2 className="text-lg font-bold mb-4">Horário de Funcionamento</h2>
+          <div className="space-y-4">
+            {/* O Object.keys() retorna as chaves na ordem que foram definidas no objeto */}
+            {Object.keys(dayNames).map((dayKey) => {
+              const day = dayKey as DayOfWeek;
+              const schedule = formData.workingHours[day];
+
+              return (
+                <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 pb-3 pt-1">
+                  <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
+                  
+                  <div className="flex items-center space-x-4 w-full sm:w-auto">
+                    {/* Botão de Habilita/Desabilita */}
+                    <div className="flex items-center space-x-2 w-[80px] justify-start">
+                      <Label htmlFor={`switch-${day}`}>Aberto</Label>
+                      <Switch
+                        id={`switch-${day}`}
+                        checked={schedule.enabled}
+                        onCheckedChange={(checked) => handleToggleDay(day, checked)}
+                        disabled={!isEditing}
+                      />
+                    </div>
+                    
+                    {/* Horário de Início */}
+                    <Input
+                      type="time"
+                      value={schedule.start}
+                      disabled={!isEditing || !schedule.enabled}
+                      onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
+                      className="w-24 text-center"
+                    />
+
+                    <span className="text-muted-foreground">até</span>
+                    
+                    {/* Horário de Fim */}
+                    <Input
+                      type="time"
+                      value={schedule.end}
+                      disabled={!isEditing || !schedule.enabled}
+                      onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
+                      className="w-24 text-center"
+                    />
+                  </div>
+                  {/* Mensagem "Fechado" para visualização */}
+                  {!schedule.enabled && (
+                      <span className="text-sm text-red-500 sm:w-24 sm:text-right mt-2 sm:mt-0">
+                          FECHADO
+                      </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+        {/* Fim da Seção Horário de Funcionamento */}
 
         <div className="mt-6 pt-4 border-t border-border text-end">
           <Button variant="destructive" size="sm" onClick={handleLogout} className="w-full sm:w-auto">
