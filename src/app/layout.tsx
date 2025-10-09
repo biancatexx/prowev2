@@ -6,12 +6,13 @@ import { Toaster } from "sonner"
 import { Suspense } from "react"
 import "./globals.css"
 import { AuthProvider } from "./contexts/AuthContext"
+import LayoutContent from "@/components/LayoutContent" 
 
 const poppins = Poppins({
   weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-poppins",
-  display: "swap", // garante renderização estável da fonte
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -52,14 +53,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
-      {/* Adicionado suppressHydrationWarning para evitar erro de mismatch da fonte */}
       <body
         className={`${poppins.variable} font-sans`}
         suppressHydrationWarning
       >
         <Suspense fallback={<div />}>
           <AuthProvider>
-            {children}
+            <LayoutContent>{children}</LayoutContent>
             <Toaster position="top-center" richColors />
           </AuthProvider>
         </Suspense>
