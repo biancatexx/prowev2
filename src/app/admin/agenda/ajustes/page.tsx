@@ -1,346 +1,180 @@
-"use client"
+'use client'
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Clock, Ban, CalendarDays, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Plus, Trash2, Save } from "lucide-react"
-import { toast } from "sonner"
-import { CustomCalendar } from "@/components/CustomCalendar"
-import {
-  getProfessionalAvailability,
-  saveProfessionalAvailability,
-  getDefaultAvailability,
-  type ProfessionalAvailability,
-  DayOfWeek
-} from "@/data/mockData"
+import { useAuth } from '@/contexts/AuthContext';
+import { CustomCalendar } from '@/components/CustomCalendar';
+import NavbarProfessional from '@/components/NavbarProfessional';
+import { cn } from '@/lib/utils';
+import { getProfessionalAvailability, saveProfessionalAvailability, getDefaultAvailability, DayOfWeek, ProfessionalAvailability } from '@/data/mockData';
 
-export default function AjustesAgenda() {
-  const router = useRouter()
+const dayNames: { [key in DayOfWeek]: string } = { monday: 'Segunda-feira', tuesday: 'Terça-feira', wednesday: 'Quarta-feira', thursday: 'Quinta-feira', friday: 'Sexta-feira', saturday: 'Sábado', sunday: 'Domingo' };
+const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-  // HOOKS sempre no topo
-  const [professionalId, setProfessionalId] = useState<string | null>(null)
-  const [availability, setAvailability] = useState<ProfessionalAvailability | null>(null)
-  const [selectedDate, setSelectedDate] = useState<Date>()
-  const [customTime, setCustomTime] = useState("")
-  const [showCustomSlots, setShowCustomSlots] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+export default function AjustesPage() {
+  const { professional: authProfessional, isLoading } = useAuth();
+  const [availability, setAvailability] = useState<ProfessionalAvailability | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return
+    if (!authProfessional || isLoading) return;
+    const professionalId = authProfessional.id;
+    const stored = getProfessionalAvailability(professionalId);
+    let defaultAvail = getDefaultAvailability(professionalId);
+    if (!stored) defaultAvail.workingHours = { start: authProfessional.workingHours.monday.start, end: authProfessional.workingHours.monday.end };
+    if (!stored) dayKeys.forEach(day => { defaultAvail.workingDays[day] = authProfessional.workingHours[day].enabled });
+    setAvailability(stored || defaultAvail);
+  }, [authProfessional, isLoading]);
 
+  if (isLoading || !authProfessional) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Carregando configurações...</p></div>;
+  if (!availability) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Inicializando agenda...</p></div>;
+
+  const currentAvailability = availability as ProfessionalAvailability;
+  const formatDateString = (date: Date) => date.toISOString().split("T")[0];
+
+  const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (value >= 5 && value <= 120) setAvailability(prev => prev ? ({ ...prev, slotInterval: value }) : null);
+    else if (e.target.value === "") setAvailability(prev => prev ? ({ ...prev, slotInterval: 0 }) : null);
+  };
+  const handleWorkingHourChange = (field: 'start' | 'end', value: string) => setAvailability(prev => prev ? ({ ...prev, workingHours: { ...prev.workingHours, [field]: value } }) : null);
+  const handleToggleDay = (day: DayOfWeek, checked: boolean) => setAvailability(prev => prev ? ({ ...prev, workingDays: { ...prev.workingDays, [day]: checked } }) : null);
+
+  const handleSaveHours = async () => {
+    if (isSaving || !currentAvailability) return;
+    setIsSaving(true);
     try {
-      const currentUser = localStorage.getItem("mock_current_user")
-      let profId = "prof_1" // fallback
-      if (currentUser) {
-        const user = JSON.parse(currentUser)
-        if (user?.professionalId) profId = user.professionalId
-      }
-      setProfessionalId(profId)
+      if (currentAvailability.slotInterval < 5 || currentAvailability.slotInterval > 120) { toast.error("O intervalo de minutos deve ser entre 5 e 120."); return; }
+      saveProfessionalAvailability(currentAvailability);
+      toast.success("Horários e parâmetros de agendamento salvos com sucesso!");
+    } catch { toast.error("Erro ao salvar configurações."); } finally { setIsSaving(false); }
+  };
 
-      const stored = getProfessionalAvailability(profId)
-      setAvailability(stored || getDefaultAvailability(profId))
-    } catch (error) {
-      console.error("Erro ao carregar dados do usuário:", error)
-      toast.error("Erro ao carregar dados. Usando configuração padrão.")
-      setProfessionalId("prof_1")
-      setAvailability(getDefaultAvailability("prof_1"))
-    } finally {
-      setIsLoading(false)
-    }
-  }, [])
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) { setSelectedDate(undefined); return; }
+    const dateStr = formatDateString(date);
+    if (currentAvailability.closedDates.includes(dateStr)) setSelectedDate(undefined);
+    else setSelectedDate(date);
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Carregando...</p>
-      </div>
-    )
-  }
+  const handleBlockDate = () => { if (!selectedDate) return; setShowBlockModal(true); }
+  const confirmBlockDate = () => {
+    if (!selectedDate || !currentAvailability) return;
+    const dateStr = formatDateString(selectedDate);
+    const newClosedDates = [...currentAvailability.closedDates, dateStr].sort();
+    try {
+      const updatedAvailability = { ...currentAvailability, closedDates: newClosedDates };
+      saveProfessionalAvailability(updatedAvailability);
+      setAvailability(updatedAvailability);
+      toast.success(`Data ${dateStr} bloqueada com sucesso!`);
+    } catch { toast.error("Erro ao bloquear data."); } finally { setShowBlockModal(false); setSelectedDate(undefined); }
+  };
 
-  if (!availability || !professionalId) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Erro ao carregar dados do profissional.</p>
-      </div>
-    )
-  }
+  const handleUnblockDate = (dateToUnblock: string) => {
+    if (!currentAvailability) return;
+    const newClosedDates = currentAvailability.closedDates.filter(d => d !== dateToUnblock);
+    try { const updatedAvailability = { ...currentAvailability, closedDates: newClosedDates }; saveProfessionalAvailability(updatedAvailability); setAvailability(updatedAvailability); toast.success(`Data ${dateToUnblock} desbloqueada com sucesso.`); }
+    catch { toast.error("Erro ao desbloquear data."); }
+  };
 
-  const dayNamesMap: Record<DayOfWeek, string> = {
-    monday: "Segunda-feira",
-    tuesday: "Terça-feira",
-    wednesday: "Quarta-feira",
-    thursday: "Quinta-feira",
-    friday: "Sexta-feira",
-    saturday: "Sábado",
-    sunday: "Domingo"
-  }
-
-  const handleSave = () => {
-    saveProfessionalAvailability(availability)
-    toast.success("Configurações salvas com sucesso!")
-  }
-
-  const handleWorkingDayToggle = (day: DayOfWeek) => {
-    setAvailability(prev => {
-      if (!prev) return null
-      return {
-        ...prev,
-        workingDays: {
-          ...prev.workingDays,
-          [day]: !prev.workingDays[day]
-        }
-      }
-    })
-  }
-
-  const handleTimeChange = (field: "start" | "end", value: string) => {
-    setAvailability(prev => {
-      if (!prev) return null
-      return {
-        ...prev,
-        workingHours: { ...prev.workingHours, [field]: value }
-      }
-    })
-  }
-
-  const handleIntervalChange = (value: string) => {
-    const interval = Number(value)
-    if (isNaN(interval) || interval < 1) return
-    setAvailability(prev => {
-      if (!prev) return null
-      return {
-        ...prev,
-        slotInterval: interval
-      }
-    })
-  }
-
-  const handleCloseDateToggle = () => {
-    if (!selectedDate) return
-    const dateStr = selectedDate.toISOString().split("T")[0]
-    setAvailability(prev => {
-      if (!prev) return null
-      const isAlreadyClosed = prev.closedDates.includes(dateStr)
-      if (isAlreadyClosed) {
-        toast.success("Data reaberta")
-        return {
-          ...prev,
-          closedDates: prev.closedDates.filter(d => d !== dateStr)
-        }
-      } else {
-        toast.success("Data fechada")
-        return {
-          ...prev,
-          closedDates: [...prev.closedDates, dateStr]
-        }
-      }
-    })
-  }
-
-  const addCustomSlot = () => {
-    if (!selectedDate || !customTime) {
-      toast.error("Selecione uma data e horário")
-      return
-    }
-
-    const dateStr = selectedDate.toISOString().split("T")[0]
-    setAvailability(prev => {
-      if (!prev) return null
-      const customSlots = prev.customSlots || []
-      const existingIndex = customSlots.findIndex(cs => cs.date === dateStr)
-      if (existingIndex !== -1) {
-        const existing = customSlots[existingIndex]
-        if (existing.slots.includes(customTime)) {
-          toast.error("Horário já adicionado")
-          return prev
-        }
-        const updatedSlots = [...customSlots]
-        updatedSlots[existingIndex] = {
-          ...existing,
-          slots: [...existing.slots, customTime].sort()
-        }
-        toast.success("Horário personalizado adicionado")
-        return { ...prev, customSlots: updatedSlots }
-      } else {
-        toast.success("Horário personalizado adicionado")
-        return {
-          ...prev,
-          customSlots: [...customSlots, { date: dateStr, slots: [customTime] }]
-        }
-      }
-    })
-    setCustomTime("")
-  }
-
-  const removeCustomSlot = (date: string, time: string) => {
-    setAvailability(prev => {
-      if (!prev) return null
-      const updatedCustomSlots = (prev.customSlots || [])
-        .map(cs => (cs.date === date ? { ...cs, slots: cs.slots.filter(t => t !== time) } : cs))
-        .filter(cs => cs.slots.length > 0)
-      toast.success("Horário removido")
-      return { ...prev, customSlots: updatedCustomSlots }
-    })
-  }
-
-  const selectedDateStr = selectedDate?.toISOString().split("T")[0]
-  const isSelectedDateClosed = selectedDateStr ? availability.closedDates.includes(selectedDateStr) : false
-  const customSlotsForSelectedDate =
-    selectedDateStr ? availability.customSlots?.find(cs => cs.date === selectedDateStr)?.slots || [] : []
+  const getDateStatus = (date: Date) => currentAvailability.closedDates.includes(formatDateString(date)) ? "closed" : "available";
 
   return (
     <div className="min-h-screen bg-background pb-20">
-      <header className="bg-gradient-to-br from-primary via-primary to-accent sticky top-0 z-50">
-        <div className="container mx-auto max-w-screen-lg px-4 py-6">
-          <div className="flex items-center gap-4">
-            <button onClick={() => router.back()} className="w-10 h-10 bg-card rounded-full flex items-center justify-center">
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <h1 className="text-xl font-bold text-primary-foreground">Configurações da Agenda</h1>
-          </div>
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+        <div className="container mx-auto max-w-screen-lg">
+          <h1 className="text-2xl font-bold text-primary-foreground text-center">Configuração da Agenda </h1>
         </div>
       </header>
+      <main className="container mx-auto max-w-screen-lg px-4 space-y-4">
 
-      <div className="container mx-auto max-w-screen-lg px-4 py-6 space-y-6">
-        {/* Dias de Atendimento */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Dias de Atendimento</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {(Object.entries(availability.workingDays) as [DayOfWeek, boolean][]).map(([day, isWorking]) => (
-              <div key={day} className="flex items-center justify-between">
-                <Label className="capitalize">{dayNamesMap[day]}</Label>
-                <Switch checked={isWorking} onCheckedChange={() => handleWorkingDayToggle(day)} />
+        <Card className="p-6 bg-white shadow-sm space-y-6">
+          <h2 className="text-xl font-semibold flex items-center text-primary"><Clock className="w-5 h-5 mr-2" />Horário Padrão e Parâmetros</h2>
+          <div className="space-y-2">
+            <Label htmlFor="slot-interval" className="font-medium">Intervalo de Minutos para Agendamento</Label>
+            <div className="flex items-center space-x-2">
+              <Input id="slot-interval" type="number" value={currentAvailability.slotInterval || ""} onChange={handleIntervalChange} min={5} max={120} placeholder="Ex: 30" className="w-24" />
+              <span className="text-sm text-muted-foreground">minutos. (Ex: 30, 45, 60)</span>
+            </div>
+          </div>
+          <div className="space-y-2 pt-4 border-t pt-6">
+            <h3 className="text-lg font-medium">Horário de Trabalho Padrão</h3>
+            <p className="text-sm text-muted-foreground">Este horário se aplica a todos os dias **habilitados** abaixo.</p>
+            <div className="flex space-x-4">
+              <div className="flex flex-col space-y-1">
+                <Label htmlFor="start-time">Início</Label>
+                <Input id="start-time" type="time" value={currentAvailability.workingHours.start} onChange={e => handleWorkingHourChange('start', e.target.value)} className="w-32" />
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Horário Padrão */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Horário de Atendimento Padrão</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Início</Label>
-                <Input
-                  className="bg-background/10"
-                  type="time"
-                  value={availability.workingHours.start}
-                  onChange={e => handleTimeChange("start", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Fim</Label>
-                <Input
-                  type="time"
-                  value={availability.workingHours.end}
-                  onChange={e => handleTimeChange("end", e.target.value)}
-                />
+              <div className="flex flex-col space-y-1">
+                <Label htmlFor="end-time">Fim</Label>
+                <Input id="end-time" type="time" value={currentAvailability.workingHours.end} onChange={e => handleWorkingHourChange('end', e.target.value)} className="w-32" />
               </div>
             </div>
-            <div>
-              <Label>Intervalo entre horários (minutos)</Label>
-              <Input
-                type="number"
-                min={15}
-                step={5}
-                value={availability.slotInterval}
-                onChange={e => handleIntervalChange(e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
+          </div>
 
-        {/* Datas Específicas */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Gerenciar Datas Específicas</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} unavailableDates={availability.closedDates} />
-
-            {selectedDate && (
-              <div className="space-y-4 border-t pt-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">
-                      {selectedDate.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {isSelectedDateClosed ? "Data fechada" : "Data disponível"}
-                    </p>
-                  </div>
-                  <Button
-                    variant={isSelectedDateClosed ? "default" : "destructive"}
-                    onClick={handleCloseDateToggle}
-                  >
-                    {isSelectedDateClosed ? "Reabrir Data" : "Fechar Data"}
-                  </Button>
-                </div>
-
-                {!isSelectedDateClosed && (
-                  <div className="border-t pt-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Label>Horários Personalizados</Label>
-                      <Button variant="ghost" size="sm" onClick={() => setShowCustomSlots(!showCustomSlots)}>
-                        {showCustomSlots ? "Ocultar" : "Mostrar"}
-                      </Button>
+          <div className="pt-4 border-t pt-6">
+            <h3 className="text-lg font-medium mb-4">Dias Habilitados (Semanal)</h3>
+            <div className="space-y-4">
+              {dayKeys.map(day => {
+                const isEnabled = currentAvailability.workingDays[day];
+                return (
+                  <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 pb-3 pt-1">
+                    <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
+                    <div className="flex items-center space-x-4 w-full sm:w-auto justify-end sm:justify-start">
+                      <div className="flex items-center space-x-2 w-[80px] justify-start">
+                        <Label htmlFor={`switch-${day}`}>Aberto</Label>
+                        <Switch id={`switch-${day}`} checked={isEnabled} onCheckedChange={checked => handleToggleDay(day, checked)} />
+                      </div>
+                      {isEnabled ? <span className="text-sm text-primary font-semibold sm:w-24 text-right">{currentAvailability.workingHours.start} - {currentAvailability.workingHours.end}</span> : <span className="text-sm text-red-500 sm:w-24 text-right">FECHADO</span>}
                     </div>
-
-                    {showCustomSlots && (
-                      <>
-                        <div className="flex gap-2 mb-3">
-                          <Input
-                            type="time"
-                            value={customTime}
-                            onChange={e => setCustomTime(e.target.value)}
-                            placeholder="00:00"
-                          />
-                          <Button onClick={addCustomSlot}>
-                            <Plus className="w-4 h-4 mr-1" />
-                            Adicionar
-                          </Button>
-                        </div>
-
-                        {customSlotsForSelectedDate.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-sm text-muted-foreground">Horários personalizados para este dia:</p>
-                            {customSlotsForSelectedDate.map(time => (
-                              <div key={time} className="flex items-center justify-between bg-accent p-2 rounded-lg">
-                                <span>{time}</span>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeCustomSlot(selectedDateStr!, time)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
-                )}
-              </div>
-            )}
-          </CardContent>
+                );
+              })}
+            </div>
+          </div>
+
+          <Button onClick={handleSaveHours} disabled={isSaving || currentAvailability.slotInterval < 5}>{isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : "Salvar Horários e Parâmetros"}</Button>
         </Card>
 
-        <Button onClick={handleSave} className="w-full" size="lg">
-          <Save className="w-4 h-4 mr-2" />
-          Salvar Configurações
-        </Button>
-      </div>
+        <section className="border rounded-lg p-6 bg-white shadow-sm space-y-6">
+          <h2 className="text-xl font-semibold flex items-center text-primary"><Ban className="w-5 h-5 mr-2" />Bloquear Datas Inteiras (Férias/Folgas)</h2>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="md:w-1/2"><CustomCalendar selected={selectedDate} onSelect={handleDateSelect} getDateStatus={getDateStatus} unavailableDates={currentAvailability.closedDates} /></div>
+            <div className="md:w-1/2 space-y-4">
+              <h3 className="text-lg font-medium">Ação para a Data Selecionada</h3>
+              {selectedDate ? <div className="p-4 border rounded-md bg-gray-50 space-y-3"><p className="text-sm font-semibold">Data selecionada:</p><p className="text-lg font-bold text-red-600">{selectedDate.toLocaleDateString('pt-BR')}</p><Button onClick={handleBlockDate} className="w-full bg-red-600 hover:bg-red-700">Bloquear este Dia</Button><p className="text-xs text-muted-foreground pt-2">A data será marcada como indisponível no seu perfil público.</p></div> : <p className="text-muted-foreground italic">Clique em um dia no calendário para bloqueá-lo.</p>}
+              <div className="pt-4">
+                <h3 className="text-lg font-medium mb-2">📋 Datas Bloqueadas</h3>
+                <ScrollArea className="h-40 border rounded-md p-3 bg-white">{currentAvailability.closedDates.length > 0 ? <ul className="space-y-2">{currentAvailability.closedDates.map(dateStr => <li key={dateStr} className="flex justify-between items-center text-sm"><span>{new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR')}</span><Button variant="ghost" size="sm" className="text-blue-500 hover:text-blue-700 h-8" onClick={() => handleUnblockDate(dateStr)}>Desbloquear</Button></li>)}</ul> : <p className="text-muted-foreground text-sm">Nenhuma data bloqueada.</p>}</ScrollArea>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+
+      <Dialog open={showBlockModal} onOpenChange={setShowBlockModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center"><Ban className="w-5 h-5 mr-2" />Confirmar Bloqueio de Data</DialogTitle>
+            <DialogDescription>Você tem certeza que deseja <strong>bloquear o dia {selectedDate?.toLocaleDateString('pt-BR')}</strong>?<div className="mt-2 font-semibold">Esta ação tornará o dia completamente indisponível para novos agendamentos no seu perfil público.</div><div className="text-xs text-red-500 mt-2">(Se houver agendamentos existentes, você deverá cancelá-los manualmente.)</div></DialogDescription>
+          </DialogHeader>
+          <DialogFooter><Button variant="outline" onClick={() => setShowBlockModal(false)}>Cancelar</Button><Button className="bg-red-600 hover:bg-red-700" onClick={confirmBlockDate}>Sim, Bloquear Data</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <NavbarProfessional />
     </div>
-  )
+  );
 }
