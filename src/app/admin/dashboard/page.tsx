@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar, Users, DollarSign, Clock, Share2, TrendingUp, SquareArrowOutUpRight } from "lucide-react"
 import { getStoredAppointments } from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
-import NavbarProfessional from "@/components/NavbarProfessional"  
+import NavbarProfessional from "@/components/NavbarProfessional"
 
 import {
   BarChart,
@@ -25,7 +25,7 @@ import {
 import { toast } from "sonner"
 
 export default function Dashboard() {
-  const { professional } = useAuth() 
+  const { professional } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null);
   const [stats, setStats] = useState({
     todayAppointments: 0,
@@ -122,12 +122,12 @@ export default function Dashboard() {
       </div>
     )
   }
-const handleCopyLink = () => {
-  if (inputRef.current) {
-    navigator.clipboard.writeText(inputRef.current.value);
-    toast.success("Link copiado para a área de transferência!");
-  }
-};
+  const handleCopyLink = () => {
+    if (inputRef.current) {
+      navigator.clipboard.writeText(inputRef.current.value);
+      toast.success("Link copiado para a área de transferência!");
+    }
+  };
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
@@ -195,23 +195,34 @@ const handleCopyLink = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 items-center">
                 <input
                   type="text"
                   value={`/profissional/${professional.id}`}
                   readOnly
+                  name="url"
                   ref={inputRef}
-                  className="flex-1 px-3 py-2 bg-muted rounded-lg text-sm"
+                  className="flex-1 min-w-[200px] px-3 py-2 bg-muted rounded-lg text-sm"
                 />
-                <Button size="sm" onClick={handleCopyLink}>
-                  Copiar
-                </Button>
-                <Link href={`/profissional/${professional.id}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary flex items-center bg-zinc-900 justify-center px-3   rounded-lg">
-                  Acessar <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
-                </Link>
-                 
+
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Button size="sm" onClick={handleCopyLink} className="flex-1 sm:flex-none">
+                    Copiar
+                  </Button>
+
+                  <Link
+                    href={`/profissional/${professional.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center text-sm text-primary bg-zinc-900 px-3 rounded-lg flex-1 sm:flex-none"
+                  >
+                    Acessar
+                    <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </CardContent>
+
           </Card>
           <Card>
             <CardHeader>

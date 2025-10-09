@@ -21,17 +21,16 @@ export default function LoginPageTabbed() {
 
       {/* Conteúdo principal com Tabs centralizadas */}
 
-      <main className="flex-1 flex items-center justify-center px-4 pt-12">
-        <div className="container mx-auto max-w-md text-center">
+      <main className="flex-1 flex px-4 pt-12">
+        <div className="container mx-auto max-w-md">
           <div className="">
             <Card className="w-full max-w-md rounded-xl p-6 shadow-xl">
-              <CardContent className="p-0">
-
+              <CardContent className="p-0"> 
                 {/* Componente Tabs do shadcn/ui */}
                 <Tabs defaultValue="cliente" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 h-10">
-                    <TabsTrigger value="cliente">Cliente</TabsTrigger>
-                    <TabsTrigger value="profissional">Profissional</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 h-full">
+                    <TabsTrigger value="cliente" className="p-2">Cliente</TabsTrigger>
+                    <TabsTrigger value="profissional" className="p-2">Profissional</TabsTrigger>
                   </TabsList>
 
                   {/* Conteúdo da aba Cliente */}

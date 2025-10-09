@@ -146,7 +146,7 @@ const MainContent = ({ user, formData, isEditing, loading, handleSubmit, handleI
         </Card>
       </form>
       <div className="mt-6 pt-4 border-t border-border text-end">
-        <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
+        <Button variant="destructive" size="sm" onClick={handleLogout} className="w-full sm:w-auto">
           <LogOut className="w-4 h-4 mr-2" />
           Sair da Conta
         </Button>

@@ -14,21 +14,21 @@ import { toast } from "sonner"
 
 // Tipagem para o estado do formulário (mantida inalterada)
 interface ProfessionalForm extends Omit<Professional, 'address'> {
-  address: { 
-    street: string; 
-    number: string; 
-    city: string; 
-    state: string; 
-    neighborhood: string; 
-    zipCode: string; 
-    country: string 
+  address: {
+    street: string;
+    number: string;
+    city: string;
+    state: string;
+    neighborhood: string;
+    zipCode: string;
+    country: string
   };
 }
 
 export default function Perfil() {
   const { professional: authProfessional, isLoading, updateProfessional, logout } = useAuth()
- 
-  
+
+
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -44,8 +44,8 @@ export default function Perfil() {
     specialty: '',
     status: 'active',
     whatsapp: '',
-    userId: '', 
-    workingHours: {} as any, 
+    userId: '',
+    workingHours: {} as any,
     address: { street: '', number: '', city: '', state: '', neighborhood: '', zipCode: '', country: '' },
     createdAt: "",
     experience_years: 0,
@@ -53,12 +53,12 @@ export default function Perfil() {
   }
 
   const [formData, setFormData] = useState<ProfessionalForm>(authProfessional ? {
-   
+
     ...authProfessional,
-     
+
     address: {
-        ...initialProfessionalData.address,
-        ...(authProfessional.address || {}) // Sobrescreve com os dados do profissional
+      ...initialProfessionalData.address,
+      ...(authProfessional.address || {}) // Sobrescreve com os dados do profissional
     } as ProfessionalForm['address']
   } as ProfessionalForm : initialProfessionalData); // Adicionado type assertion para garantir conformidade
 
@@ -68,8 +68,8 @@ export default function Perfil() {
       setFormData({
         ...authProfessional,
         address: {
-            ...initialProfessionalData.address,
-            ...(authProfessional.address || {})
+          ...initialProfessionalData.address,
+          ...(authProfessional.address || {})
         } as ProfessionalForm['address']
       } as ProfessionalForm); // Adicionado type assertion aqui também
     }
@@ -124,7 +124,7 @@ export default function Perfil() {
       // Omitindo campos que não são editáveis pelo formulário (se necessário),
       // mas passando o objeto completo para o saveProfessional.
       saveProfessional(formData as Professional);
-      
+
       updateProfessional(formData as Professional);
 
       toast.success('Perfil atualizado!')
@@ -139,7 +139,7 @@ export default function Perfil() {
   const handleLogout = () => {
     logout();
     toast.success("Você foi deslogado")
-    
+
   }
 
   return (
@@ -152,10 +152,8 @@ export default function Perfil() {
 
       <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
         {/* Botões de Ação */}
-        <div className="flex justify-between items-center">
-          <Button variant="destructive" onClick={handleLogout} size="sm">
-            <LogOut className="w-4 h-4 mr-2" /> Sair
-          </Button>
+        <div className="flex justify-end items-center">
+
 
           <Button
             size="sm"
@@ -179,9 +177,9 @@ export default function Perfil() {
                 src={formData.profileImage}
                 alt={formData.name}
                 className="w-full h-full object-cover rounded-full"
-                onError={(e) => { 
+                onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.onerror = null; 
+                  target.onerror = null;
                   target.src = `https://placehold.co/96x96/25555d/fff?text=${formData.name.charAt(0)}`;
                 }}
               />
@@ -190,52 +188,52 @@ export default function Perfil() {
             )}
           </div>
         </div>
-        
+
         {/* Formulário */}
         <Card className="p-6 pt-16 -mt-12">
           <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
           <div className="space-y-4">
             <div>
               <Label htmlFor="name">Nome do Estabelecimento</Label>
-              <Input 
-                id="name" 
-                value={formData.name} 
-                disabled={!isEditing} 
-                onChange={handleInputChange} 
+              <Input
+                id="name"
+                value={formData.name}
+                disabled={!isEditing}
+                onChange={handleInputChange}
               />
             </div>
 
             <div>
               <Label htmlFor="description">Descrição</Label>
-              <Textarea 
-                id="description" 
-                value={formData.description} 
-                disabled={!isEditing} 
-                rows={3} 
-                onChange={handleInputChange} 
+              <Textarea
+                id="description"
+                value={formData.description}
+                disabled={!isEditing}
+                rows={3}
+                onChange={handleInputChange}
               />
             </div>
-            
+
             <h3 className="font-semibold pt-2">Contato</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="phone">Telefone</Label>
-                <Input 
-                  id="phone" 
+                <Input
+                  id="phone"
                   type="tel"
-                  value={formData.phone} 
-                  disabled={!isEditing} 
-                  onChange={handleInputChange} 
+                  value={formData.phone}
+                  disabled={!isEditing}
+                  onChange={handleInputChange}
                 />
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
+                <Input
+                  id="email"
                   type="email"
-                  value={formData.email} 
-                  disabled={!isEditing} 
-                  onChange={handleInputChange} 
+                  value={formData.email}
+                  disabled={!isEditing}
+                  onChange={handleInputChange}
                 />
               </div>
             </div>
@@ -243,12 +241,12 @@ export default function Perfil() {
             {/* Campo whatsapp */}
             <div>
               <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input 
-                id="whatsapp" 
+              <Input
+                id="whatsapp"
                 type="tel"
-                value={formData.whatsapp} 
-                disabled={!isEditing} 
-                onChange={handleInputChange} 
+                value={formData.whatsapp}
+                disabled={!isEditing}
+                onChange={handleInputChange}
               />
             </div>
 
@@ -256,63 +254,70 @@ export default function Perfil() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="street">Rua</Label>
-                <Input 
-                  id="street" 
-                  value={formData.address.street} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="street"
+                  value={formData.address.street}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
               <div>
                 <Label htmlFor="number">Número</Label>
-                <Input 
-                  id="number" 
-                  value={formData.address.number} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="number"
+                  value={formData.address.number}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
               <div>
                 <Label htmlFor="neighborhood">Bairro</Label>
-                <Input 
-                  id="neighborhood" 
-                  value={formData.address.neighborhood} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="neighborhood"
+                  value={formData.address.neighborhood}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
               <div>
                 <Label htmlFor="city">Cidade</Label>
-                <Input 
-                  id="city" 
-                  value={formData.address.city} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="city"
+                  value={formData.address.city}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
               <div>
                 <Label htmlFor="zipCode">CEP</Label>
-                <Input 
-                  id="zipCode" 
-                  value={formData.address.zipCode} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="zipCode"
+                  value={formData.address.zipCode}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
               <div>
                 <Label htmlFor="state">Estado</Label>
-                <Input 
-                  id="state" 
-                  value={formData.address.state} 
-                  disabled={!isEditing} 
-                  onChange={handleAddressChange} 
+                <Input
+                  id="state"
+                  value={formData.address.state}
+                  disabled={!isEditing}
+                  onChange={handleAddressChange}
                 />
               </div>
             </div>
           </div>
         </Card>
 
-     
+        <div className="mt-6 pt-4 border-t border-border text-end">
+          <Button variant="destructive" size="sm" onClick={handleLogout} className="w-full sm:w-auto">
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair da Conta
+          </Button>
+        </div>
+
+
       </div>
 
       <NavbarProfessional />

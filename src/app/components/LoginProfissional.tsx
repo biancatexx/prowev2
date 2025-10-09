@@ -51,7 +51,7 @@ export function LoginProfissional() {
       </div>
 
       <form onSubmit={handleLogin} className="space-y-6">
-        <div className="space-y-2">
+        <div className="mb-2">
           <Label htmlFor="email-pro">E-mail</Label>
           <Input
             id="email-pro"
@@ -64,7 +64,7 @@ export function LoginProfissional() {
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="mb-2">
           <Label htmlFor="password-pro">Senha</Label>
           <Input
             id="password-pro"
@@ -102,17 +102,15 @@ export function LoginProfissional() {
             </Link>
           </div>
 
-          <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-3">
-            <p className="font-semibold text-base">Dados para teste:</p>
-            <div className="space-y-2">
-              <div className="p-2 bg-background rounded">
-                <p className="font-medium">Studio Beleza Premium</p>
-                <p className="text-xs text-muted-foreground">Email: studio@exemplo.com</p>
-                <p className="text-xs text-muted-foreground">Senha: 123456</p>
-              </div>
+          <div className="mt-4 p-4 bg-primary/20 rounded-lg text-sm space-y-3 text-center">
+            <p className="font-semibold mb-0">Dados para teste:</p>
+            <div className="">
+              <p className="text-xs text-muted-foreground">s@email.com</p>
+              <p className="text-xs text-muted-foreground">123456</p>
             </div>
           </div>
         </div>
+
       </form>
     </div>
   )

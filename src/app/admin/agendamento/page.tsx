@@ -9,7 +9,8 @@ import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { toast } from "sonner" // Importação de toast para sonner
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, Edit2, Plus, X, Trash2 } from "lucide-react"
+// Ícones do Lucide - Ajustados para o padrão do primeiro código
+import { ArrowLeft, Edit2, Plus, X, Trash2, CalendarCheck, LayoutGrid, Loader2, CalendarIcon, Clock, ChevronUp, PersonStanding, AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
   saveAppointment,
@@ -28,14 +29,14 @@ const readProfessionalIdFromStorage = (): string | null => {
   return localStorage.getItem("mock_logged_professional_id")
 }
 
+const LOCAL_STORAGE_KEY = 'agendamento_whatsapp'; // Mantido para consistência (embora não salve o whatsapp aqui)
+
 // --- COMPONENTE PRINCIPAL ---
 export default function ProfessionalAgendamento() {
   const router = useRouter()
 
   // 1. CHAME TODOS OS HOOKS INCONDICIONALMENTE NO TOPO
   const [loggedProfessionalId, setLoggedProfessionalId] = useState<string | null>(null);
-
-
 
   // Estados
   const [date, setDate] = useState<Date | undefined>(new Date())
@@ -48,6 +49,10 @@ export default function ProfessionalAgendamento() {
   const [selectedServices, setSelectedServices] = useState<any[]>([])
   const [suggestedName, setSuggestedName] = useState<string | null>(null)
   const [bookingData, setBookingData] = useState<any>(null)
+  
+  // ESTADO REINTEGRADO: Controle da expansão do seletor de Data e Horário
+  const [isDateTimeExpanded, setIsDateTimeExpanded] = useState(true);
+
 
   // Referências (Hooks useRef)
   const whatsappRef = useRef<HTMLInputElement>(null)
@@ -73,6 +78,18 @@ export default function ProfessionalAgendamento() {
     }
   }, []) // Dependência vazia para rodar apenas uma vez na montagem
 
+  // EFEITO REINTEGRADO: Alternar expansão (contração automática)
+  useEffect(() => {
+    if (date && selectedTime && isDateTimeExpanded) {
+      // Contrai após 500ms da seleção de ambos
+      const timer = setTimeout(() => setIsDateTimeExpanded(false), 500);
+      return () => clearTimeout(timer);
+    } else if (!date || !selectedTime) {
+      // Expande se um dos dois for limpo
+      setIsDateTimeExpanded(true);
+    }
+  }, [date, selectedTime]);
+
 
   const professional: Professional | undefined = useMemo(() => {
     if (!loggedProfessionalId) return undefined;
@@ -91,6 +108,7 @@ export default function ProfessionalAgendamento() {
     return professional ? professional.services : []
   }, [professional])
 
+
   // ----------------------------------------------------
   // --- A PARTIR DAQUI, COMEÇA A LÓGICA CONDICIONAL ---
   // ----------------------------------------------------
@@ -99,12 +117,9 @@ export default function ProfessionalAgendamento() {
   if (loggedProfessionalId === null) {
 
     return (
-      <div className="container mx-auto max-w-md px-4 py-6 text-center">
-        <h1 className="text-2xl font-bold text-red-600">ID não encontrado</h1>
-        <p className="mt-4 text-muted-foreground">
-          O ID do profissional não está definido no `localStorage`. Faça login novamente.
-        </p>
-        <Button className="mt-4" onClick={() => router.push("/login")}>Ir para Login</Button>
+      <div className="flex flex-col items-center justify-center min-h-screen p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="mt-4 text-lg">Carregando dados do profissional...</p>
       </div>
     )
   }
@@ -137,17 +152,25 @@ export default function ProfessionalAgendamento() {
     const m = minutes % 60
     return `${h > 0 ? `${h}h ` : ""}${m}min`
   }
+  
+  // FUNÇÃO REINTEGRADA: Formatar o whatsapp (usada no handleWhatsappChange)
+  const formatWhatsapp = (rawValue: string) => {
+    let formattedValue = rawValue;
+    formattedValue = formattedValue.replace(/^(\d{2})(\d)/g, "($1) $2")
+    formattedValue = formattedValue.replace(/(\d{5})(\d)/, "$1-$2")
+    return formattedValue;
+  }
 
-  // --- HANDLERS (mantidos) ---
+  // --- HANDLERS (mantidos/ajustados) ---
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "")
-    if (value.length > 11) value = value.slice(0, 11)
-    value = value.replace(/^(\d{2})(\d)/g, "($1) $2")
-    value = value.replace(/(\d{5})(\d)/, "$1-$2")
-    setWhatsapp(value)
+    let rawValue = e.target.value.replace(/\D/g, "")
+    if (rawValue.length > 11) rawValue = rawValue.slice(0, 11)
 
-    if (value.replace(/\D/g, "").length >= 10) {
-      const lastClientName = getLastClientNameByWhatsapp(value)
+    const formattedValue = formatWhatsapp(rawValue);
+    setWhatsapp(formattedValue);
+
+    if (rawValue.length >= 10) {
+      const lastClientName = getLastClientNameByWhatsapp(formattedValue) // Usa o valor formatado para a busca de mock (consistência)
       if (lastClientName) {
         setSuggestedName(lastClientName)
         setCliente(lastClientName) // Preenche o nome do cliente automaticamente
@@ -172,11 +195,24 @@ export default function ProfessionalAgendamento() {
     toast.success("Serviços limpos")
   }
 
+  // FUNÇÃO REINTEGRADA: Limpar Data e Horário e EXPANDIR
   const handleClearDateTime = () => {
     setDate(undefined)
     setSelectedTime("")
+    setIsDateTimeExpanded(true) // Garante que expande ao limpar
     toast.success("Data e horário limpos")
   }
+
+  // FUNÇÃO REINTEGRADA: Expandir a seção para edição
+  const handleEditDateTime = () => {
+    setIsDateTimeExpanded(true);
+  }
+
+  // FUNÇÃO REINTEGRADA: Recolher a seção manualmente
+  const handleCollapseDateTime = () => {
+    setIsDateTimeExpanded(false);
+  }
+
 
   const handleOpenServicesModal = () => setShowServicesModal(true)
   const handleCloseServicesModal = () => setShowServicesModal(false)
@@ -227,15 +263,15 @@ export default function ProfessionalAgendamento() {
         clientName: cliente,
         clientWhatsapp: cleanWhatsapp, // WhatsApp limpo
         services: selectedServices.map((s) => ({
-          id: s.id,
-          name: s.name,
-          price: s.price,
-          duration: s.duration,
+          id: String(s.id),
+          name: String(s.name),
+          price: Number(s.price),
+          duration: Number(s.duration),
         })),
         date: date.toISOString().split("T")[0],
-        time: selectedTime,
-        totalPrice: totalPrice,
-        totalDuration: totalDuration,
+        time: String(selectedTime),
+        totalPrice: Number(totalPrice),
+        totalDuration: Number(totalDuration),
         status: "agendado" as const, // Força o tipo
         createdAt: new Date().toISOString(),
       }
@@ -259,16 +295,16 @@ export default function ProfessionalAgendamento() {
     return isDateAvailable(professional.id, checkDate) ? ("available" as const) : ("unavailable" as const)
   }
 
-  // --- RENDERIZAÇÃO PRINCIPAL ---
+  // --- RENDERIZAÇÃO PRINCIPAL (AJUSTADA AO LAYOUT PADRÃO) ---
   return (
-    <div className="container mx-auto max-w-md px-4 py-6 mb-16">
+    <div className="container mx-auto max-w-screen-lg pb-20">
       {/* Header */}
       <div className="sticky top-0 bg-background border-b border-border z-20">
-        <div className="flex items-center justify-between px-4 py-4">
+        <div className="flex items-center px-4 py-4">
           <button onClick={() => router.back()} className="p-2 hover:bg-accent rounded-full">
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-lg font-semibold">Novo Agendamento ({professional.name})</h1>
+          <h1 className="text-lg font-semibold text-center flex-1">Novo Agendamento ({professional.name})</h1>
           <div className="w-10" />
         </div>
       </div>
@@ -276,11 +312,11 @@ export default function ProfessionalAgendamento() {
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Serviços</h2>
-          <div className="flex gap-2">
+          <h2 className="text-lg font-semibold"> <LayoutGrid className="inline w-4 h-4 text-primary mb-1 mr-1" /> Serviços</h2>
+          <div className="flex gap-2 pl-6">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" /> Limpar dados
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
@@ -290,16 +326,18 @@ export default function ProfessionalAgendamento() {
                 </>
               ) : (
                 <>
-                  <Edit2 className="w-4 h-4 mr-1" /> Editar ({selectedServices.length})
+                  <Edit2 className="w-4 h-4 mr-1" /> Editar
                 </>
               )}
             </Button>
           </div>
         </div>
         {selectedServices.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum serviço selecionado</p>
+          <div className="pl-6">
+             <p className="text-sm text-muted-foreground">Nenhum serviço selecionado</p>
+          </div>
         ) : (
-          <>
+          <div className="pl-6">
             {selectedServices.map((s, i) => (
               <div key={i} className="flex justify-between py-1">
                 <span>{s.name}</span>
@@ -307,41 +345,110 @@ export default function ProfessionalAgendamento() {
               </div>
             ))}
             <div className="border-t mt-2 pt-2 font-bold">Total: R$ {totalPrice.toFixed(2)}</div>
-          </>
+          </div>
         )}
       </div>
 
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
         <div className="flex justify-between items-center mb-2">
-          <h2 className="text-lg font-semibold">Selecione o dia</h2>
-          {(date || selectedTime) && (
-            <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
-              <Trash2 className="w-4 h-4" />
-            </Button>
+
+          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e horário</h2>
+          <div className="flex gap-2 pl-6">
+            {/* Botão Limpar visível */}
+            {(date || selectedTime) && (
+              <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
+                <Trash2 className="w-4 h-4" /> Limpar dados
+              </Button>
+            )}
+
+            {/* NOVO BOTÃO: Recolher - Visível se expandido e já houver data selecionada */}
+            {isDateTimeExpanded && date && (
+              <Button variant="outline" size="sm" onClick={handleCollapseDateTime}>
+                <ChevronUp className="w-4 h-4 mr-1" /> Recolher
+              </Button>
+            )}
+
+            {/* Botão Editar - Visível se preenchido E contraído */}
+            {date && selectedTime && !isDateTimeExpanded && (
+              <Button variant="outline" size="sm" onClick={handleEditDateTime}>
+                <Edit2 className="w-4 h-4 mr-1" /> Editar
+              </Button>
+            )}
+          </div>
+        </div>
+
+
+
+        {/* Seletores de Data e Horário - VISÍVEIS SOMENTE se isDateTimeExpanded for TRUE */}
+        <div className="pl-6">
+          {isDateTimeExpanded && (
+            <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex-1">
+                <Card className="border">
+                  <CustomCalendar
+                    selected={date}
+                    onSelect={setDate}
+                    getDateStatus={getDateStatus}
+                  />
+                </Card>
+              </div>
+
+              <div className="flex-1" ref={timesRef}>
+                <Card className="border p-3 h-full flex flex-col items-center justify-center">
+                  <TimeSlotPicker
+                    professionalId={professional.id}
+                    selectedDate={date}
+                    selectedTime={selectedTime}
+                    onTimeSelect={setSelectedTime}
+                    totalDuration={totalDuration}
+                  /></Card>
+              </div>
+            </div>
           )}
         </div>
-        <Card className="border shadow-sm">
-          <CustomCalendar selected={date} onSelect={setDate} getDateStatus={getDateStatus} />
-        </Card>
+        <div className="pl-6 mt-4">
+          <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-primary/20">
+            <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
+              <div className="flex flex-wrap items-center gap-4">
+                {date || selectedTime ? (
+                  <>
+                    {date && (
+                      <div className="flex items-center gap-1 font-medium">
+                        <CalendarIcon className="w-4 h-4 text-primary" />
+                        <span>{date.toLocaleDateString("pt-BR")}</span>
+                      </div>
+                    )}
+                    {selectedTime && (
+                      <div className="flex items-center gap-1 font-medium">
+                        <Clock className="w-4 h-4 text-primary" />
+                        <span>{selectedTime}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
 
-        <div className="mt-3" ref={timesRef}>
-          <h2 className="text-lg font-semibold">Selecione o Horário</h2>
-          <TimeSlotPicker
-            professionalId={professional.id} // agora profissional já existe
-            selectedDate={date}
-            selectedTime={selectedTime}
-            onTimeSelect={setSelectedTime}
-            totalDuration={totalDuration}
-          />
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-medium">Selecione uma data e um horário.</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
 
       {/* Cliente */}
       <div className="bg-card rounded-2xl border p-5 mb-4">
-        <h2 className="text-lg font-semibold mb-2">Cliente</h2>
-        <div className="space-y-3">
-          <div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold mb-2"><PersonStanding className="inline w-4 h-4 text-primary mb-1 mr-1" /> Cliente</h2>
+          <div className="w-10" />
+        </div>
+
+        <div className="space-y-3 lg:flex lg:gap-4 lg:space-y-0 pl-6">
+          <div className="flex-1">
             <Label>WhatsApp (opcional)</Label>
             <Input
               type="tel"
@@ -350,9 +457,9 @@ export default function ProfessionalAgendamento() {
               placeholder="(00) 00000-0000"
               ref={whatsappRef}
             />
-            {suggestedName && <p className="text-sm text-green-600 mt-1">✓ Cliente encontrado: {suggestedName}</p>}
+            {suggestedName && <p className="text-xs text-green-600 mt-1">✓ Cliente encontrado: {suggestedName}</p>}
           </div>
-          <div>
+          <div className="flex-1">
             <Label>
               Nome <span className="text-destructive">*</span>
             </Label>
@@ -361,6 +468,7 @@ export default function ProfessionalAgendamento() {
               onChange={(e) => setCliente(e.target.value)}
               ref={clienteRef}
               placeholder="Nome completo do cliente"
+              className={suggestedName ? "bg-primary/10 font-medium" : ""}
             />
           </div>
         </div>
@@ -368,21 +476,24 @@ export default function ProfessionalAgendamento() {
 
       {/* Botão fixado */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
-        <div className="container mx-auto max-w-md">
-          <Button
-            className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-            onClick={handleConfirm}
-            disabled={loading || selectedServices.length === 0 || !date || !selectedTime}
-          >
-            Confirmar Agendamento (R$ {totalPrice.toFixed(2)})
-          </Button>
+        <div className="container mx-auto max-w-screen-lg">
+          <div className="text-center">
+            <Button
+              className="w-full max-w-md bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
+              onClick={handleConfirm}
+              disabled={loading || selectedServices.length === 0 || !date || !selectedTime || !cliente}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              Confirmar Agendamento (R$ {totalPrice.toFixed(2)})
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Modal Serviços (mantido) */}
       {showServicesModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-          <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] overflow-y-auto">
+          <div className="bg-card rounded-xl p-6 w-full max-w-md max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center border-b pb-3 mb-4">
               <h2 className="font-bold text-xl">Selecionar Serviços</h2>
               <button onClick={handleCloseServicesModal} className="p-1 hover:bg-accent rounded-full">
@@ -399,7 +510,7 @@ export default function ProfessionalAgendamento() {
                     <div
                       key={service.id}
                       onClick={() => toggleServiceSelection(service)}
-                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/10 border-primary" : "hover:bg-accent"
+                      className={`p-4 border rounded-lg cursor-pointer transition-colors ${isSelected ? "bg-primary/20 border-primary" : "hover:bg-primary/10"
                         }`}
                     >
                       <div className="flex items-start justify-between">
@@ -448,43 +559,35 @@ export default function ProfessionalAgendamento() {
             <div className="text-center border-b pb-3">
               <h2 className="font-bold text-xl">Confirmar Agendamento</h2>
             </div>
-            <p>
-              <b>Profissional:</b> {professional.name}
+            <p className="font-semibold border-b pb-3">
+              Profissional: <span className="font-normal">{professional.name}</span>
             </p>
-            <p>
-              <b>Serviços:</b>
-            </p>
-            <ul className="list-disc pl-5">
+            
+
+            <div className="space-y-2">
+              <p className="font-semibold">Cliente: <span className="font-normal">{cliente}</span></p>
+              {whatsapp && <p className="font-semibold">WhatsApp: <span className="font-normal">{whatsapp}</span></p>}
+              <p className="font-semibold">Data: <span className="font-normal">{date?.toLocaleDateString("pt-BR")} às {selectedTime}</span></p>
+            </div>
+
+
+            <p className="font-semibold border-t pt-3">Serviços:</p>
+            <ul className="list-disc pl-5 text-sm space-y-1">
               {selectedServices.map((s, i) => (
-                <li key={i}>
-                  {s.name} - R$ {s.price.toFixed(2)}
-                </li>
+                <li key={i}>{s.name} - R$ {s.price.toFixed(2)}</li>
               ))}
             </ul>
-            <p>
-              <b>Duração:</b> {formatDuration(totalDuration)}
-            </p>
-            <p>
-              <b>Total:</b> R$ {totalPrice.toFixed(2)}
-            </p>
-            <p>
-              <b>Cliente:</b> {cliente}
-            </p>
-            {whatsapp && (
-              <p>
-                <b>WhatsApp:</b> {whatsapp}
-              </p>
-            )}
-            <p>
-              <b>Data:</b> {date?.toLocaleDateString("pt-BR")} às {selectedTime}
-            </p>
+            <div className="font-bold text-lg border-t pt-3 flex justify-between">
+              <span>Total ({formatDuration(totalDuration)}):</span>
+              <span>R$ {totalPrice.toFixed(2)}</span>
+            </div>
 
-            <div className="flex gap-2 justify-center border-t pt-3">
+            <div className="flex gap-2 justify-end border-t pt-3">
               <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>
-                Cancelar
+                Voltar e Editar
               </Button>
               <Button onClick={handleFinish} disabled={loading}>
-                {loading ? "Salvando..." : "Confirmar"}
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirmar Agendamento"}
               </Button>
             </div>
           </div>

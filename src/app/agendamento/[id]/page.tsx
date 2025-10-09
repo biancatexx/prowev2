@@ -95,7 +95,7 @@ export default function AgendamentoPage() {
       setWhatsapp(formatWhatsapp(rawValue))
       const lastName = getLastClientNameByWhatsapp(user.whatsapp);
       setCliente(lastName || user.name);
-      toast.success(`Bem-vindo(a), ${user.name.split(' ')[0]}! Informações preenchidas.`);
+      // toast.success(`Bem-vindo(a), ${user.name.split(' ')[0]}! Informações preenchidas.`);
     } else {
       // 3. Se deslogado, limpa foundUser, mas mantém whatsapp do localStorage
       setFoundUser(null);
@@ -494,7 +494,7 @@ export default function AgendamentoPage() {
         <div className="pl-6">
           {isDateTimeExpanded && (
             <div className="flex flex-col lg:flex-row gap-4">
-              <div> 
+              <div>
                 <Card className="border flex-1">
                   <CustomCalendar
                     selected={date}
@@ -504,7 +504,7 @@ export default function AgendamentoPage() {
                 </Card>
               </div>
 
-              <div className="flex-1" ref={timesRef}> 
+              <div className="flex-1" ref={timesRef}>
                 <Card className="border flex-1 p-3 h-full itens-center justify-center">
                   <TimeSlotPicker
                     professionalId={id}
@@ -699,12 +699,26 @@ export default function AgendamentoPage() {
               <span>R$ {totalPrice.toFixed(2)}</span>
             </div>
 
-            <div className="flex gap-2 justify-end border-t pt-3">
-              <Button variant="outline" onClick={() => setShowModal(false)} disabled={loading}>
+            <div className="flex flex-wrap gap-2 justify-end border-t pt-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowModal(false)}
+                disabled={loading}
+                className="flex-1 sm:flex-none"
+              >
                 Voltar e Editar
               </Button>
-              <Button onClick={handleFinish} disabled={loading}>
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : "Confirmar Agendamento"}
+
+              <Button
+                onClick={handleFinish}
+                disabled={loading}
+                className="flex-1 sm:flex-none"
+              >
+                {loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  "Confirmar Agendamento"
+                )}
               </Button>
             </div>
           </div>

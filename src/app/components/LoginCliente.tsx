@@ -74,7 +74,7 @@ export function LoginCliente() {
         <p className="text-muted-foreground text-sm">Digite seu WhatsApp para continuar</p>
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
+        <div className="">
           <Label htmlFor="whatsapp">WhatsApp</Label>
           <Input
             id="whatsapp"
@@ -97,14 +97,11 @@ export function LoginCliente() {
           </Link>
         </div>
 
-        <div className="mt-4 p-4 bg-muted rounded-lg text-sm space-y-3 text-center">
-          <p className="font-semibold text-base">Dados para teste:</p>
-          <div className="space-y-2 ">
-            <div className="p-2 bg-background rounded">
-              <p className="font-medium">Bianca Teixeira da Silva</p>  
-              <p className="text-xs text-muted-foreground">Whatsapp: 85987412626</p>
-            </div>
-
+        <div className="mt-4 p-4 bg-primary/20 rounded-lg text-sm space-y-3 text-center">
+          <p className="font-semibold mb-0">Dados para teste:</p>
+          <div className="">
+            <p className="font-medium">Bianca Teixeira da Silva</p>
+            <p className="text-xs text-muted-foreground">Whatsapp: 85987412626</p>
           </div>
         </div>
       </form>

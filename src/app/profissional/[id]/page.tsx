@@ -237,13 +237,13 @@ export default function ProfessionalDetails() {
       <div className="container mx-auto max-w-screen-lg px-4 -mt-4 relative z-10">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full bg-card border border-border rounded-xl p-1 mb-6">
-            <TabsTrigger value="servicos" className="flex-1 rounded-lg">
+            <TabsTrigger value="servicos" className="flex-1 rounded-lg p-2">
               Serviços
             </TabsTrigger>
-            <TabsTrigger value="agenda" className="flex-1 rounded-lg">
+            <TabsTrigger value="agenda" className="flex-1 rounded-lg p-2">
               Agenda
             </TabsTrigger>
-            <TabsTrigger value="sobre" className="flex-1 rounded-lg">
+            <TabsTrigger value="sobre" className="flex-1 rounded-lg p-2">
               Sobre
             </TabsTrigger>
           </TabsList>
