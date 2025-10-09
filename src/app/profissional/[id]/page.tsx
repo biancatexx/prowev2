@@ -290,31 +290,29 @@ export default function ProfessionalDetails() {
             </div>
             <div className="bg-card rounded-2xl border p-5 mb-4" >
               <div className="flex justify-between items-center mb-2">
-
                 <h2 className="text-lg font-semibold"> <CalendarCheck className="inline" /> Data e horário</h2>
-                <hr className="border-t" />
-
               </div>
-
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div>
-                  <h2 className="">Selecione o dia</h2>
-                  <Card className="border flex-1">
-                    <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
-                  </Card>
-                </div>
-
-                <div className="flex-1"  >
-                  <h2 className="">Selecione o horário</h2>
-                  <Card className="border flex-1 p-3">
-                    <TimeSlotPicker
-                      professionalId={id}
-                      selectedDate={selectedDate}
-                      selectedTime={selectedTime}
-                      onTimeSelect={setSelectedTime} totalDuration={0}
-                    /></Card>
+              <div className="pl-6">
+                <div className="flex flex-col lg:flex-row gap-4">
+                  <div className="">
+                    <h2 className="">Selecione o dia</h2>
+                    <Card className="border flex-1">
+                      <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
+                    </Card>
+                  </div>
+                  <div className="flex-1"  >
+                    <h2 className="">Selecione o horário</h2>
+                    <Card className="border flex-1 p-3">
+                      <TimeSlotPicker
+                        professionalId={id}
+                        selectedDate={selectedDate}
+                        selectedTime={selectedTime}
+                        onTimeSelect={setSelectedTime} totalDuration={0}
+                      /></Card>
+                  </div>
                 </div>
               </div>
+
             </div>
             <div className="bg-card rounded-2xl p-4 border border-border mb-4 hidden">
               <Card className="border shadow-sm mb-4">

@@ -138,7 +138,7 @@ export function TimeSlotPicker({
   }
 
   return (
-    <ScrollArea className="h-64 w-full rounded-md border p-4 bg-background">
+    <ScrollArea className="h-64 w-full">
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
         {availableSlots.map(slot => (
           <Button

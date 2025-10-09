@@ -113,7 +113,7 @@ export default function Agenda() {
         {/* Visão Diária */}
         {tab === "hora" && (
           <>
-            <Card className="border shadow-sm h-full flex justify-center items-center p-4">
+            <Card className="border shadow-sm h-full flex flex-col lg:flex-row gap-4 items-center p-4">
               <div className="flex flex-col lg:flex-row gap-4">
                 <CustomCalendar
                   selected={date}
