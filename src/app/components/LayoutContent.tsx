@@ -67,7 +67,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     }
     
     return (
-        <div className="bg-zinc-900 p-2">
+        <div className="bg-zinc-900 px-2">
 
             <div className="w-full">
                 <nav className="">

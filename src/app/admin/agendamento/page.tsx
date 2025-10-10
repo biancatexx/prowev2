@@ -6,10 +6,9 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CustomCalendar } from "@/components/CustomCalendar"
 import { TimeSlotPicker } from "@/components/TimeSlotPicker"
-import { toast } from "sonner" // Importação de toast para sonner
+import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-// Ícones do Lucide - Ajustados para o padrão do primeiro código
 import { ArrowLeft, Edit2, Plus, X, Trash2, CalendarCheck, LayoutGrid, Loader2, CalendarIcon, Clock, ChevronUp, PersonStanding, AlertTriangle } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
@@ -23,23 +22,19 @@ import {
 } from "@/data/mockData"
 
 // --- FUNÇÃO DE AJUDA ---
-// Lê o ID do localStorage (apenas para client-side)
 const readProfessionalIdFromStorage = (): string | null => {
   if (typeof window === "undefined") return null
   return localStorage.getItem("mock_logged_professional_id")
 }
 
-const LOCAL_STORAGE_KEY = 'agendamento_whatsapp'; // Mantido para consistência (embora não salve o whatsapp aqui)
-
 // --- COMPONENTE PRINCIPAL ---
 export default function ProfessionalAgendamento() {
   const router = useRouter()
 
-  // 1. CHAME TODOS OS HOOKS INCONDICIONALMENTE NO TOPO
   const [loggedProfessionalId, setLoggedProfessionalId] = useState<string | null>(null);
 
   // Estados
-  const [date, setDate] = useState<Date | undefined>(new Date())
+  const [date, setDate] = useState<Date | undefined>(undefined) // Definido como undefined para começar
   const [selectedTime, setSelectedTime] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
   const [cliente, setCliente] = useState("")
@@ -48,13 +43,11 @@ export default function ProfessionalAgendamento() {
   const [showServicesModal, setShowServicesModal] = useState(false)
   const [selectedServices, setSelectedServices] = useState<any[]>([])
   const [suggestedName, setSuggestedName] = useState<string | null>(null)
-  const [bookingData, setBookingData] = useState<any>(null)
-  
+
   // ESTADO REINTEGRADO: Controle da expansão do seletor de Data e Horário
   const [isDateTimeExpanded, setIsDateTimeExpanded] = useState(true);
 
-
-  // Referências (Hooks useRef)
+  // Referências
   const whatsappRef = useRef<HTMLInputElement>(null)
   const clienteRef = useRef<HTMLInputElement>(null)
   const calendarRef = useRef<HTMLDivElement>(null)
@@ -66,35 +59,49 @@ export default function ProfessionalAgendamento() {
       const storedId = readProfessionalIdFromStorage()
       setLoggedProfessionalId(storedId);
 
+      // --- CORREÇÃO: Carrega dados do agendamento vindo da navegação ---
       const storedBooking = localStorage.getItem("booking_data")
       if (storedBooking) {
-        const data = JSON.parse(storedBooking)
-        setBookingData(data)
-        if (data.selectedDate) setDate(new Date(data.selectedDate))
-        if (data.selectedTime) setSelectedTime(data.selectedTime)
-        if (data.selectedServices) setSelectedServices(data.selectedServices)
-        localStorage.removeItem("booking_data")
+        try {
+          const data = JSON.parse(storedBooking)
+          // Define a data, se presente e válida
+          if (data.selectedDate) setDate(new Date(data.selectedDate))
+          // Define o horário, se presente
+          if (data.selectedTime) setSelectedTime(data.selectedTime)
+          // Define os serviços, se presentes
+          if (data.selectedServices && Array.isArray(data.selectedServices)) setSelectedServices(data.selectedServices)
+          // Define o nome, se presente
+          if (data.clientName) setCliente(data.clientName)
+          // Define o whatsapp, se presente
+          if (data.whatsapp) setWhatsapp(data.whatsapp)
+
+          localStorage.removeItem("booking_data")
+        } catch (error) {
+          console.error("Erro ao parsear dados de agendamento do localStorage:", error)
+          localStorage.removeItem("booking_data")
+        }
       }
     }
-  }, []) // Dependência vazia para rodar apenas uma vez na montagem
+  }, [])
 
   // EFEITO REINTEGRADO: Alternar expansão (contração automática)
   useEffect(() => {
+    // Se a data E o horário estão selecionados E a seção está expandida, contrai
     if (date && selectedTime && isDateTimeExpanded) {
-      // Contrai após 500ms da seleção de ambos
       const timer = setTimeout(() => setIsDateTimeExpanded(false), 500);
       return () => clearTimeout(timer);
-    } else if (!date || !selectedTime) {
-      // Expande se um dos dois for limpo
+    } 
+    // Se um dos dois não está selecionado E a seção está contraída, expande
+    else if ((!date || !selectedTime) && !isDateTimeExpanded) {
       setIsDateTimeExpanded(true);
     }
-  }, [date, selectedTime]);
+  }, [date, selectedTime, isDateTimeExpanded]);
 
 
   const professional: Professional | undefined = useMemo(() => {
     if (!loggedProfessionalId) return undefined;
 
-    const foundProfessional = getProfessionalById(loggedProfessionalId) ?? undefined; // <--- converte null para undefined
+    const foundProfessional = getProfessionalById(loggedProfessionalId) ?? undefined;
     if (!foundProfessional && getProfessionals().length > 0 && process.env.NODE_ENV === 'development') {
       console.warn(`[MOCK INFO] Profissional com ID "${loggedProfessionalId}" não encontrado. Usando primeiro mock.`);
       return getProfessionals()[0];
@@ -103,19 +110,17 @@ export default function ProfessionalAgendamento() {
     return foundProfessional;
   }, [loggedProfessionalId]);
 
-  // Hook useMemo para serviços disponíveis (sempre depende de `professional`)
+  // Hook useMemo para serviços disponíveis
   const availableServices = useMemo(() => {
     return professional ? professional.services : []
   }, [professional])
 
 
   // ----------------------------------------------------
-  // --- A PARTIR DAQUI, COMEÇA A LÓGICA CONDICIONAL ---
+  // --- LÓGICA DE RENDERIZAÇÃO E VALIDAÇÃO ---
   // ----------------------------------------------------
 
-
   if (loggedProfessionalId === null) {
-
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-4">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -124,7 +129,6 @@ export default function ProfessionalAgendamento() {
     )
   }
 
-  // Verifica se o profissional foi encontrado após o ID ser carregado
   if (!professional) {
     return (
       <div className="container mx-auto max-w-md px-4 py-6 text-center">
@@ -140,8 +144,6 @@ export default function ProfessionalAgendamento() {
     )
   }
 
-  // Se chegarmos aqui, `professional` está definitivamente definido e o componente pode renderizar a UI.
-
   // Cálculos (dependem de `professional` estar definido)
   const totalPrice = selectedServices.reduce((s, sv) => s + (sv.price || 0), 0)
   const totalDuration = selectedServices.reduce((s, sv) => s + (Number(sv.duration) || 0), 0)
@@ -153,7 +155,6 @@ export default function ProfessionalAgendamento() {
     return `${h > 0 ? `${h}h ` : ""}${m}min`
   }
   
-  // FUNÇÃO REINTEGRADA: Formatar o whatsapp (usada no handleWhatsappChange)
   const formatWhatsapp = (rawValue: string) => {
     let formattedValue = rawValue;
     formattedValue = formattedValue.replace(/^(\d{2})(\d)/g, "($1) $2")
@@ -170,10 +171,10 @@ export default function ProfessionalAgendamento() {
     setWhatsapp(formattedValue);
 
     if (rawValue.length >= 10) {
-      const lastClientName = getLastClientNameByWhatsapp(formattedValue) // Usa o valor formatado para a busca de mock (consistência)
+      const lastClientName = getLastClientNameByWhatsapp(formattedValue)
       if (lastClientName) {
         setSuggestedName(lastClientName)
-        setCliente(lastClientName) // Preenche o nome do cliente automaticamente
+        setCliente(lastClientName)
       } else {
         setSuggestedName(null)
       }
@@ -195,24 +196,20 @@ export default function ProfessionalAgendamento() {
     toast.success("Serviços limpos")
   }
 
-  // FUNÇÃO REINTEGRADA: Limpar Data e Horário e EXPANDIR
   const handleClearDateTime = () => {
     setDate(undefined)
     setSelectedTime("")
-    setIsDateTimeExpanded(true) // Garante que expande ao limpar
+    setIsDateTimeExpanded(true)
     toast.success("Data e horário limpos")
   }
 
-  // FUNÇÃO REINTEGRADA: Expandir a seção para edição
   const handleEditDateTime = () => {
     setIsDateTimeExpanded(true);
   }
 
-  // FUNÇÃO REINTEGRADA: Recolher a seção manualmente
   const handleCollapseDateTime = () => {
     setIsDateTimeExpanded(false);
   }
-
 
   const handleOpenServicesModal = () => setShowServicesModal(true)
   const handleCloseServicesModal = () => setShowServicesModal(false)
@@ -252,16 +249,15 @@ export default function ProfessionalAgendamento() {
 
       const cleanWhatsapp = whatsapp.replace(/\D/g, "")
 
-      // Garante que o cliente existe no mockData.ts
       const clientId = ensureClientExists(cliente, cleanWhatsapp)
 
       const newAppointment = {
         id: `apt-${Date.now()}`,
-        professionalId: professional.id, // ID do profissional logado
+        professionalId: professional.id,
         professionalName: professional.name,
-        clientId, // ID do cliente (garantido pela ensureClientExists)
+        clientId,
         clientName: cliente,
-        clientWhatsapp: cleanWhatsapp, // WhatsApp limpo
+        clientWhatsapp: cleanWhatsapp,
         services: selectedServices.map((s) => ({
           id: String(s.id),
           name: String(s.name),
@@ -272,7 +268,7 @@ export default function ProfessionalAgendamento() {
         time: String(selectedTime),
         totalPrice: Number(totalPrice),
         totalDuration: Number(totalDuration),
-        status: "agendado" as const, // Força o tipo
+        status: "agendado" as const,
         createdAt: new Date().toISOString(),
       }
 
@@ -280,7 +276,7 @@ export default function ProfessionalAgendamento() {
       toast.success("Agendamento criado com sucesso!")
 
       setTimeout(() => {
-        router.push("/admin/agenda") // Redireciona para a página de agenda
+        router.push("/admin/agenda")
       }, 500)
     } catch (error) {
       console.error("[v0] Erro ao criar agendamento:", error)
@@ -295,11 +291,11 @@ export default function ProfessionalAgendamento() {
     return isDateAvailable(professional.id, checkDate) ? ("available" as const) : ("unavailable" as const)
   }
 
-  // --- RENDERIZAÇÃO PRINCIPAL (AJUSTADA AO LAYOUT PADRÃO) ---
+  // --- RENDERIZAÇÃO PRINCIPAL ---
   return (
     <div className="container mx-auto max-w-screen-lg pb-20">
       {/* Header */}
-      <div className="sticky top-0 bg-background border-b border-border z-20">
+      <div className="sticky top-0 bg-card border-b border-border z-20">
         <div className="flex items-center px-4 py-4">
           <button onClick={() => router.back()} className="p-2 hover:bg-accent rounded-full">
             <ArrowLeft className="w-6 h-6" />
@@ -352,7 +348,6 @@ export default function ProfessionalAgendamento() {
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
         <div className="flex justify-between items-center mb-2">
-
           <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e horário</h2>
           <div className="flex gap-2 pl-6">
             {/* Botão Limpar visível */}
@@ -361,14 +356,12 @@ export default function ProfessionalAgendamento() {
                 <Trash2 className="w-4 h-4" /> Limpar dados
               </Button>
             )}
-
             {/* NOVO BOTÃO: Recolher - Visível se expandido e já houver data selecionada */}
             {isDateTimeExpanded && date && (
               <Button variant="outline" size="sm" onClick={handleCollapseDateTime}>
                 <ChevronUp className="w-4 h-4 mr-1" /> Recolher
               </Button>
             )}
-
             {/* Botão Editar - Visível se preenchido E contraído */}
             {date && selectedTime && !isDateTimeExpanded && (
               <Button variant="outline" size="sm" onClick={handleEditDateTime}>
@@ -377,8 +370,6 @@ export default function ProfessionalAgendamento() {
             )}
           </div>
         </div>
-
-
 
         {/* Seletores de Data e Horário - VISÍVEIS SOMENTE se isDateTimeExpanded for TRUE */}
         <div className="pl-6">
@@ -393,7 +384,6 @@ export default function ProfessionalAgendamento() {
                   />
                 </Card>
               </div>
-
               <div className="flex-1" ref={timesRef}>
                 <Card className="border p-3 h-full flex flex-col items-center justify-center">
                   <TimeSlotPicker
@@ -427,7 +417,6 @@ export default function ProfessionalAgendamento() {
                     )}
                   </>
                 ) : (
-
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <span className="font-medium">Selecione uma data e um horário.</span>
@@ -437,7 +426,6 @@ export default function ProfessionalAgendamento() {
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Cliente */}
@@ -542,7 +530,6 @@ export default function ProfessionalAgendamento() {
                   <Trash2 className="w-4 h-4 mr-2" /> Limpar Seleção
                 </Button>
               )}
-
               {/* Confirmar */}
               <Button onClick={handleCloseServicesModal} className="w-full">
                 Confirmar Seleção ({selectedServices.length})
@@ -563,13 +550,11 @@ export default function ProfessionalAgendamento() {
               Profissional: <span className="font-normal">{professional.name}</span>
             </p>
             
-
             <div className="space-y-2">
               <p className="font-semibold">Cliente: <span className="font-normal">{cliente}</span></p>
               {whatsapp && <p className="font-semibold">WhatsApp: <span className="font-normal">{whatsapp}</span></p>}
               <p className="font-semibold">Data: <span className="font-normal">{date?.toLocaleDateString("pt-BR")} às {selectedTime}</span></p>
             </div>
-
 
             <p className="font-semibold border-t pt-3">Serviços:</p>
             <ul className="list-disc pl-5 text-sm space-y-1">

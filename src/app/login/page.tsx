@@ -3,11 +3,7 @@
 import Link from "next/link"
 import { Users, HardHat, ArrowLeft } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card" // Importações completas do Card
-
-// Removidas as importações de Tabs e os componentes Login, pois não são mais necessários
-// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-// import { LoginProfissional } from "@/components/LoginProfissional"
-// import { LoginCliente } from "@/components/LoginCliente"
+ 
 
 /**
  * Componente de Card de Seleção.
@@ -17,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
  * @param {string} props.title - O título do card.
  * @param {string} props.description - A descrição breve.
  */
-const SelectionCard = ({ href, icon, title, description }) => (
+const SelectionCard = ({ href, icon, title, description }: { href: string; icon: React.ReactNode; title: string; description: string }) => (
   <Link href={href} className="w-full sm:w-80 transition-all duration-300 hover:scale-[1.03] hover:shadow-2xl">
     <Card className="h-full border-2 border-transparent hover:border-primary/50 cursor-pointer rounded-xl p-4 shadow-xl">
       <CardHeader className="flex flex-col items-center p-4">

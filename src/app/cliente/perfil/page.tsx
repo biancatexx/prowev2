@@ -78,47 +78,6 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
   return (
     <main className="container mx-auto max-w-screen-lg px-4">
       <div className="space-y-6">
-        <div className="text-end">
-          {/* ALTERAÇÃO: AlertDialog controlado pelo estado isModalOpen */}
-          <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                disabled={loading || !hasChanges}
-                className="w-full sm:w-auto"
-              >
-                {loading ? "Salvando..." : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Salvar Alterações
-                  </>
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Confirmar Alterações</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Você tem certeza que deseja salvar estas alterações no seu perfil?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                {/* Usamos AlertDialogCancel para fechar o modal no cancelamento */}
-                <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel> 
-                
-                {/* ALTERAÇÃO: AlertDialogAction com onClick, que é onde a submissão ocorre.
-                   O fechamento deve ser manual dentro do handleSubmit. */}
-                <AlertDialogAction onClick={handleSubmit} disabled={loading} asChild>
-                   {/* Usar asChild e Button separado garante que o botão de ação 
-                   não feche o modal imediatamente, dando tempo para a lógica assíncrona */}
-                  <Button disabled={loading}>
-                    {loading ? "Salvando..." : "Sim, Salvar"}
-                  </Button>
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
 
         {/* Imagem de Perfil */}
         <div className="text-center flex justify-center -mb-4">
@@ -126,7 +85,7 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
             <span>{formData.name ? formData.name.charAt(0).toUpperCase() : 'P'}</span>
           </div>
         </div>
-        
+
         <Card className="p-6 pt-16 -mt-12 space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Nome completo *</Label>
@@ -147,12 +106,51 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
         </Card>
       </div>
 
-      <div className="mt-6 pt-4 border-t border-border text-end">
+      <div className="text-end mt-4">
+        <AlertDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              disabled={loading || !hasChanges}
+              className="w-full sm:w-auto"
+            >
+              {loading ? "Salvando..." : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Alterações
+                </>
+              )}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmar Alterações</AlertDialogTitle>
+              <AlertDialogDescription>
+                Você tem certeza que deseja salvar estas alterações no seu perfil?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleSubmit} disabled={loading} asChild>
+                <Button disabled={loading}>
+                  {loading ? "Salvando..." : "Sim, Salvar"}
+                </Button>
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-border text-end">
         <Button variant="destructive" size="sm" onClick={handleLogout} className="w-full sm:w-auto">
           <LogOut className="w-4 h-4 mr-2" />
           Sair da Conta
         </Button>
       </div>
+
+
+
+
     </main>
   )
 }
@@ -164,7 +162,7 @@ export default function PerfilPage() {
   const [loading, setLoading] = useState(false)
   // NOVO ESTADO: Controla a abertura/fechamento do modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   const [formData, setFormData] = useState<FormDataState>({
     name: "",
     whatsapp: "",
@@ -214,7 +212,7 @@ export default function PerfilPage() {
 
   // Funçao de submissão (chamada pelo AlertDialogAction)
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); 
+    e.preventDefault();
     if (!hasChanges || loading || !user) {
       // Garante que se a lógica falhar (e.g., sem usuário), o modal ainda feche
       if (isModalOpen) setIsModalOpen(false);
@@ -232,7 +230,7 @@ export default function PerfilPage() {
       }
 
       // 1. Simula a chamada assíncrona (aqui saveUser pode ser assíncrono)
-      await saveUser(updatedUser) 
+      await saveUser(updatedUser)
       // 2. Atualiza o contexto global
       updateUser(updatedUser)
 
@@ -243,10 +241,10 @@ export default function PerfilPage() {
         email: updatedUser.email,
         birthDate: updatedUser.birthDate || "",
       })
-      
+
       toast.success("Perfil atualizado! 🎉")
       // AÇÃO CHAVE: Fechar o modal APENAS após o sucesso do salvamento
-      setIsModalOpen(false); 
+      setIsModalOpen(false);
 
     } catch (error) {
       toast.error("Não foi possível atualizar o perfil.")

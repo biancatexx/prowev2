@@ -1,19 +1,32 @@
 'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Edit2, Save, LogOut } from "lucide-react"
-// Importação atualizada para incluir syncAvailabilityFromProfessional
-import { saveProfessional, syncAvailabilityFromProfessional, type Professional, type WorkingHoursMap, type DayOfWeek, Address } from "@/data/mockData" 
+import { Save, LogOut } from "lucide-react"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
+} from "@/components/ui/alert-dialog"
+
+import { saveProfessional, syncAvailabilityFromProfessional, type Professional, type WorkingHoursMap, type DayOfWeek, Address } from "@/data/mockData"
 import NavbarProfessional from "@/components/NavbarProfessional"
 import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import Link from "next/link"
-import { Switch } from "@/components/ui/switch" 
+import { Switch } from "@/components/ui/switch"
+// ❌ REMOVENDO A IMPORTAÇÃO DE deepEqual, QUE CAUSA O ERRO
+// import { deepEqual } from "@/lib/utils" 
 
 // ===============================================
 // 📌 TIPAGEM DO FORMULÁRIO
@@ -43,8 +56,8 @@ const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "fri
 export default function Perfil() {
     const { professional: authProfessional, isLoading, updateProfessional, logout } = useAuth()
 
-    const [isEditing, setIsEditing] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     // Horário padrão completo (fallback caso o authProfessional não tenha algum dia)
     const defaultWorkingHours: WorkingHoursMap = {
@@ -56,9 +69,9 @@ export default function Perfil() {
         saturday: { enabled: false, start: "09:00", end: "13:00" },
         sunday: { enabled: false, start: "00:00", end: "00:00" },
     };
-    
+
     const initialProfessionalData: ProfessionalForm = {
-        id: '', name: '', description: '', phone: '', email: '', profileImage: '', specialty: '', 
+        id: '', name: '', description: '', phone: '', email: '', profileImage: '', specialty: '',
         status: 'active', whatsapp: '', userId: '', createdAt: "", experience_years: 0, services: [],
         workingHours: defaultWorkingHours,
         address: { street: '', number: '', city: '', state: '', neighborhood: '', zipCode: '' },
@@ -80,18 +93,32 @@ export default function Perfil() {
             workingHours: mergedWorkingHours
         } as ProfessionalForm;
     };
-    
 
-    const [formData, setFormData] = useState<ProfessionalForm>(authProfessional 
+
+    const [formData, setFormData] = useState<ProfessionalForm>(authProfessional
         ? initializeFormData(authProfessional)
         : initialProfessionalData
-    ); 
+    );
+    const [originalFormData, setOriginalFormData] = useState<ProfessionalForm>(formData);
 
+    // 🔄 Sincroniza formData e originalFormData quando authProfessional muda
     useEffect(() => {
         if (authProfessional) {
-            setFormData(initializeFormData(authProfessional)); 
+            const initialData = initializeFormData(authProfessional);
+            setFormData(initialData);
+            setOriginalFormData(initialData);
         }
     }, [authProfessional]);
+
+
+    // 🔍 Lógica para checar se houve alterações
+    // Usando JSON.stringify() como comparação profunda, resolvendo o erro de importação.
+    const hasChanges = useMemo(() => {
+        // Ordena chaves antes de stringify para garantir que a ordem não cause false negatives,
+        // embora JSON.stringify em objetos simples geralmente preserve a ordem de inserção (o que é ok para objetos de estado React).
+        // Para maior segurança, podemos apenas comparar as strings.
+        return JSON.stringify(formData) !== JSON.stringify(originalFormData);
+    }, [formData, originalFormData]);
 
     if (isLoading) {
         return (
@@ -159,7 +186,7 @@ export default function Perfil() {
         }));
     };
 
-    const handleSave = () => {
+    const executeSave = () => {
         if (loading) return;
         setLoading(true);
 
@@ -173,23 +200,23 @@ export default function Perfil() {
         }
 
         try {
-            // 1. SALVA OS DADOS DO PROFISSIONAL (Incluindo os Horários Granulares)
+            // 1. SALVA OS DADOS DO PROFISSIONAL 
             saveProfessional(formData as Professional);
-            
-            // 2. SINCRONIZA A AGENDA DE AJUSTES (ProfessionalAvailability)
-            // Isso garante que a tela de Ajustes reflita os dias habilitados e o novo horário padrão.
+
+            // 2. SINCRONIZA A AGENDA DE AJUSTES 
             syncAvailabilityFromProfessional(formData as Professional);
-            
-            // 3. ATUALIZA O CONTEXTO DE AUTENTICAÇÃO
+
+            // 3. ATUALIZA O CONTEXTO DE AUTENTICAÇÃO E OS DADOS ORIGINAIS
             updateProfessional(formData as Professional);
+            setOriginalFormData(formData); // 🔑 ATUALIZA OS DADOS ORIGINAIS APÓS SALVAR
 
             toast.success('Perfil e Configurações de Agenda atualizados!')
-            setIsEditing(false)
         } catch (error) {
             console.error(error);
-            toast.error('Erro ao salvar, tente mais tarde.') 
+            toast.error('Erro ao salvar, tente mais tarde.')
         } finally {
             setLoading(false);
+            setShowConfirmModal(false); // Fecha o modal
         }
     }
 
@@ -208,26 +235,11 @@ export default function Perfil() {
             </header>
 
             <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
-                {/* Botões de Ação */}
-                <div className="flex justify-end items-center">
-                    <Button
-                        size="sm"
-                        onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
-                        disabled={loading}
-                        className="w-32"
-                    >
-                        {loading ? "Salvando..." : isEditing ? (
-                            <><Save className="w-5 h-5 mr-1" /> Salvar</>
-                        ) : (
-                            <><Edit2 className="w-5 h-5 mr-1" /> Editar</>
-                        )}
-                    </Button>
-                </div>
+
 
                 {/* Imagem de Perfil */}
                 <div className="text-center flex justify-center -mb-4">
                     <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white z-10">
-                        {/* Lógica de Imagem... */}
                         {formData.profileImage ? (
                             <img
                                 src={formData.profileImage}
@@ -245,83 +257,82 @@ export default function Perfil() {
                     </div>
                 </div>
 
-                {/* Formulário: Informações do Negócio e Contato */}
+                {/* Formulário: Informações do Negócio e Contato - Inputs SEMPRE HABILITADOS */}
                 <Card className="p-6 pt-16 -mt-12">
                     <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
                     <div className="space-y-4">
-                        {/* Campos (Nome, Descrição, Contato, Endereço)... */}
                         <div>
                             <Label htmlFor="name">Nome do Estabelecimento</Label>
-                            <Input id="name" value={formData.name} disabled={!isEditing} onChange={handleInputChange}/>
+                            <Input id="name" value={formData.name} onChange={handleInputChange} />
                         </div>
 
                         <div>
                             <Label htmlFor="description">Descrição</Label>
-                            <Textarea id="description" value={formData.description} disabled={!isEditing} rows={3} onChange={handleInputChange}/>
+                            <Textarea id="description" value={formData.description} rows={3} onChange={handleInputChange} />
                         </div>
 
                         <h3 className="font-semibold pt-2">Contato</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="phone">Telefone</Label>
-                                <Input id="phone" type="tel" value={formData.phone} disabled={!isEditing} onChange={handleInputChange}/>
+                                <Input id="phone" type="tel" value={formData.phone} onChange={handleInputChange} />
                             </div>
                             <div>
                                 <Label htmlFor="email">Email</Label>
-                                <Input id="email" type="email" value={formData.email} disabled={!isEditing} onChange={handleInputChange}/>
+                                <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
                             </div>
                         </div>
 
                         <div>
                             <Label htmlFor="whatsapp">WhatsApp</Label>
-                            <Input id="whatsapp" type="tel" value={formData.whatsapp} disabled={!isEditing} onChange={handleInputChange}/>
+                            <Input id="whatsapp" type="tel" value={formData.whatsapp} onChange={handleInputChange} />
                         </div>
 
                         <h3 className="font-semibold pt-2">Endereço</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="street">Rua</Label>
-                                <Input id="street" value={formData.address.street} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="street" value={formData.address.street} onChange={handleAddressChange} />
                             </div>
                             <div>
                                 <Label htmlFor="number">Número</Label>
-                                <Input id="number" value={formData.address.number} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="number" value={formData.address.number} onChange={handleAddressChange} />
                             </div>
                             <div>
                                 <Label htmlFor="neighborhood">Bairro</Label>
-                                <Input id="neighborhood" value={formData.address.neighborhood} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="neighborhood" value={formData.address.neighborhood} onChange={handleAddressChange} />
                             </div>
                             <div>
                                 <Label htmlFor="city">Cidade</Label>
-                                <Input id="city" value={formData.address.city} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="city" value={formData.address.city} onChange={handleAddressChange} />
                             </div>
                             <div>
                                 <Label htmlFor="zipCode">CEP</Label>
-                                <Input id="zipCode" value={formData.address.zipCode} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="zipCode" value={formData.address.zipCode} onChange={handleAddressChange} />
                             </div>
                             <div>
                                 <Label htmlFor="state">Estado</Label>
-                                <Input id="state" value={formData.address.state} disabled={!isEditing} onChange={handleAddressChange}/>
+                                <Input id="state" value={formData.address.state} onChange={handleAddressChange} />
                             </div>
                         </div>
                     </div>
                 </Card>
 
-                {/* Seção Horário de Funcionamento (Diário) - AQUI ESTÁ A LÓGICA DE EDIÇÃO DO HORÁRIO */}
+                {/* Seção Horário de Funcionamento (Diário) - Inputs SEMPRE HABILITADOS */}
                 <Card className="p-6">
                     <h2 className="text-lg font-bold mb-4">Horário de Funcionamento</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana. Clique em "Editar" acima para alterar.</p>
+                    <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana.</p>
                     <div className="space-y-4">
                         {dayKeys.map((dayKey) => {
                             const day = dayKey as DayOfWeek;
-                            const schedule = formData.workingHours[day] || defaultWorkingHours[day]; 
+                            const schedule = formData.workingHours[day] || defaultWorkingHours[day];
 
                             return (
                                 <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 pb-3 pt-1">
                                     <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
-                                    
+
                                     <div className="flex items-center space-x-4 w-full sm:w-auto">
-                                        
+
                                         {/* Switch Habilita/Desabilita */}
                                         <div className="flex items-center space-x-2 w-[80px] justify-start">
                                             <Label htmlFor={`switch-${day}`}>Aberto</Label>
@@ -329,32 +340,31 @@ export default function Perfil() {
                                                 id={`switch-${day}`}
                                                 checked={schedule.enabled}
                                                 onCheckedChange={(checked) => handleToggleDay(day, checked)}
-                                                disabled={!isEditing}
                                             />
                                         </div>
-                                        
+
                                         {/* Horário de Início */}
                                         <Input
                                             type="time"
                                             value={schedule.start}
-                                            disabled={!isEditing || !schedule.enabled}
+                                            disabled={!schedule.enabled}
                                             onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
                                             className="w-24 text-center"
                                         />
 
                                         <span className="text-muted-foreground">até</span>
-                                        
+
                                         {/* Horário de Fim */}
                                         <Input
                                             type="time"
                                             value={schedule.end}
-                                            disabled={!isEditing || !schedule.enabled}
+                                            disabled={!schedule.enabled}
                                             onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
                                             className="w-24 text-center"
                                         />
                                     </div>
-                                    
-                                    {/* Mensagem "Fechado" para visualização (no mobile) */}
+
+                                    {/* Mensagem "Fechado" */}
                                     {!schedule.enabled && (
                                         <span className="text-sm text-red-500 sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4">
                                             FECHADO
@@ -366,7 +376,41 @@ export default function Perfil() {
                     </div>
                 </Card>
                 {/* Fim da Seção Horário de Funcionamento */}
-
+                {/* Botões de Ação */}
+                <div className="flex justify-end items-center space-x-2">
+                    {/* Botão SALVAR HABILITADO / MODAL */}
+                    {hasChanges ? (
+                        <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                            <AlertDialogTrigger asChild>
+                                <Button disabled={loading}
+                                >
+                                    {loading ? "Salvando..." : (
+                                        <><Save className="w-5 h-5 mr-1" /> Salvar Edição</>
+                                    )}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Confirmar Edições</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Você tem certeza que deseja salvar todas as alterações feitas no seu perfil e horários de funcionamento?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={loading}>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction onClick={executeSave} disabled={loading}>
+                                        {loading ? "Salvando..." : "Confirmar e Salvar"}
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    ) : (
+                        /* Botão SALVAR DESABILITADO */
+                        <Button disabled={true} variant="secondary"   >
+                            <Save className="w-5 h-5 mr-1" /> Salvar Edição
+                        </Button>
+                    )}
+                </div>
                 <div className="mt-6 pt-4 border-t border-border text-end">
                     <Button variant="destructive" size="sm" onClick={handleLogout} className="w-full sm:w-auto">
                         <LogOut className="w-4 h-4 mr-2" />
