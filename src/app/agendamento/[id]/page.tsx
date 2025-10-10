@@ -419,9 +419,9 @@ export default function AgendamentoPage() {
 
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-4 mb-4 mt-4">
-        <div className="flex justify-between mb-2">
+        <div className="flex flex-col sm:flex-row justify-between mb-2">
           <h2 className="text-lg font-semibold"> <LayoutGrid className="inline w-4 h-4 text-primary mb-1 mr-1" /> Serviços</h2>
-          <div className="flex flex-col sm:flex-row gap-2">
+          <div className="flex gap-2 justify-between">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
                 <Trash2 className="w-4 h-4" /> Limpar
@@ -470,13 +470,11 @@ export default function AgendamentoPage() {
       </div>
 
       {/* Data e Horário */}
-      {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-4 mb-4" ref={calendarRef}>
-        <div className="flex justify-between mb-2">
-
+        <div className="flex flex-col sm:flex-row justify-between mb-2">
           <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e hora</h2>
           <div
-            className="flex flex-col sm:flex-row gap-2" >
+            className="flex gap-2 justify-between" >
             {(selectedDate || selectedTime) && (
               <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
                 <Trash2 className="w-4 h-4" /> Limpar

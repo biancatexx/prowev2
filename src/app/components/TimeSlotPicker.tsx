@@ -139,14 +139,14 @@ export function TimeSlotPicker({
 
   return (
     <ScrollArea className="h-64 w-full">
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+      <div className="flex flex-wrap gap-2">
         {availableSlots.map(slot => (
           <Button
             key={slot.time}
             variant={selectedTime === slot.time ? "default" : "outline"}
             onClick={() => onTimeSelect(slot.time)}
             disabled={!slot.available}
-            className={`w-full ${!slot.available ? "opacity-50 cursor-not-allowed" : ""}`}
+            className={`w-20 h-8 border-input ${!slot.available ? "opacity-50 cursor-not-allowed" : ""}`}
           >
             {formatTime(slot.time)}
           </Button>
