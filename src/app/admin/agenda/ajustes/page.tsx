@@ -23,6 +23,17 @@ import NavbarProfessional from '@/components/NavbarProfessional';
 const dayNames: { [key in DayOfWeek]: string } = { monday: 'Segunda-feira', tuesday: 'Terça-feira', wednesday: 'Quarta-feira', thursday: 'Quinta-feira', friday: 'Sexta-feira', saturday: 'Sábado', sunday: 'Domingo' };
 const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
+// Mapeamento de Date.getDay() (0=Dom, 1=Seg, ...) para a chave DayOfWeek
+const dayIndexToDayKey: { [key: number]: DayOfWeek } = {
+    0: 'sunday',
+    1: 'monday',
+    2: 'tuesday',
+    3: 'wednesday',
+    4: 'thursday',
+    5: 'friday',
+    6: 'saturday',
+};
+
 // Estendendo o tipo ProfessionalAvailability para incluir workingHoursMap para edição
 interface AvailabilityForm extends ProfessionalAvailability {
     workingHoursMap: WorkingHoursMap; // Adicionamos o mapa de horários para edição granular
@@ -75,8 +86,6 @@ export default function AjustesPage() {
                 ...defaultWorkingHours,
                 // Usar o horário do perfil principal, que é a fonte de verdade para a granularidade
                 ...(authProfessional.workingHours || {}),
-                // Mesclar com qualquer horário específico salvo no 'stored' se a página usasse o horário granular
-                // Para simplificar, vamos forçar o uso do horário do perfil como fonte inicial
             };
 
             const initialData: AvailabilityForm = {
@@ -169,11 +178,10 @@ export default function AjustesPage() {
 
         try {
             // A. SALVA OS PARÂMETROS DA AGENDA (Intervalo e Datas Bloqueadas)
-            // Agora, a ProfessionalAvailability salva é mais simples, o horário granular vai para o Perfil
             const availabilityToSave: ProfessionalAvailability = {
                 ...currentAvailability,
                 workingHours: { start: "", end: "" }, // Zera o campo obsoleto
-                workingDays: dayKeys.reduce((acc, day) => { // Mantém workingDays para compatibilidade, mas o workingHoursMap é a fonte
+                workingDays: dayKeys.reduce((acc, day) => { // Mantém workingDays para compatibilidade
                     acc[day] = currentAvailability.workingHoursMap[day].enabled;
                     return acc;
                 }, {} as { [key in DayOfWeek]: boolean }),
@@ -203,12 +211,16 @@ export default function AjustesPage() {
         }
     };
 
-    // --- Lógica de Bloqueio de Data (Mantida) ---
+    // --- Lógica de Bloqueio de Data (Atualizada para incluir o horário semanal) ---
 
     const handleDateSelect = (date: Date | undefined) => {
         if (!date) { setSelectedDate(undefined); return; }
         const dateStr = formatDateString(date);
+        // Deseleciona a data se ela já estiver bloqueada (manual)
         if (currentAvailability.closedDates.includes(dateStr)) setSelectedDate(undefined);
+        // Note: Dias de folga semanal (`day-off`) ainda podem ser selecionados para um bloqueio manual,
+        // mas a estilização no calendário só permite bloquear dias "available" ou "day-off", 
+        // mas não "closed" (que já estão bloqueados).
         else setSelectedDate(date);
     };
 
@@ -249,13 +261,34 @@ export default function AjustesPage() {
         }
     };
 
+    /**
+     * VERIFICAÇÃO PRINCIPAL: Retorna o status de uma data (para colorir no CustomCalendar)
+     * - 'closed': Bloqueio manual (férias, feriado específico)
+     * - 'day-off': Dia de folga semanal (configurado no workingHoursMap)
+     * - 'available': Dia normal de trabalho
+     */
+    
     const getDateStatus = (date: Date) => {
-        if (currentAvailability.closedDates.includes(formatDateString(date))) {
-            return "closed";
+        const dateStr = formatDateString(date);
+
+        // 1. Verificar se é uma data bloqueada manualmente
+        if (currentAvailability.closedDates.includes(dateStr)) {
+            return "closed"; 
         }
+
+        // 2. Verificar se o dia da semana está desabilitado no horário de trabalho padrão
+        const dayOfWeekIndex = date.getDay();
+        const dayKey = dayIndexToDayKey[dayOfWeekIndex];
+
+        if (currentAvailability.workingHoursMap[dayKey] && !currentAvailability.workingHoursMap[dayKey].enabled) {
+            return "unavailable"; // NOVO STATUS
+        }
+
+        // 3. Dia de trabalho normal
         return "available";
     };
 
+    
     // --- Componente de Renderização ---
 
     return (
@@ -266,9 +299,9 @@ export default function AjustesPage() {
                 </div>
             </header>
             <main className="container mx-auto max-w-screen-lg px-4 space-y-6">
-                <section className="border rounded-lg p-6 bg-white shadow-sm  ">
+                <section className="border rounded-lg p-6 bg-white shadow-sm  ">
                     <h2 className="text-lg font-bold"><Ban className="w-5 h-5 mr-2 inline" />Bloquear dias</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Defina bloqueios de férias e folgas.</p>
+                    <p className="text-sm text-muted-foreground mb-4">Defina bloqueios de férias e folgas. Os dias de folga semanais (sábados e domingos, por exemplo) já aparecem desabilitados.</p>
 
                     <div className="flex flex-col md:flex-row gap-6">
 
@@ -311,7 +344,13 @@ export default function AjustesPage() {
                                             <p className="text-sm font-semibold">Data selecionada:</p>
                                             <div className='flex flex-wrap justify-between itens-center'>
                                                 <p className="text-lg font-bold text-red-600">{selectedDate.toLocaleDateString('pt-BR')}</p>
-                                                <Button onClick={handleBlockDate} className=" ">Bloquear este Dia</Button>
+                                                <Button 
+                                                    onClick={handleBlockDate} 
+                                                    className=" "
+                                                    disabled={getDateStatus(selectedDate) === "closed"} // Não deixa bloquear uma data já bloqueada manualmente
+                                                >
+                                                    Bloquear este Dia
+                                                </Button>
                                             </div>
                                             <p className="text-xs text-muted-foreground pt-2">A data será marcada como indisponível no seu perfil público.</p>
                                         </>
@@ -327,15 +366,15 @@ export default function AjustesPage() {
                     </div>
                 </section>
                 {/* Seção Horário Padrão e Parâmetros */}
-                <Card className="p-6 bg-white shadow-sm  ">
+                <Card className="p-6 bg-white shadow-sm  ">
                     <h2 className="text-lg font-bold"><Clock className="w-5 h-5 mr-2 inline" />Intervalo de agendamentos</h2>
 
-                      <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
-                 
+                    <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
+                    
 
                     {/* Intervalo */}
                     <div className="space-y-2 pb-4 border-b mt-2">
-                         <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-2">
                             <Input
                                 id="slot-interval"
                                 type="number"
@@ -348,7 +387,7 @@ export default function AjustesPage() {
                             />
                             <span className="text-sm text-muted-foreground">minutos. (Mín: 5, Máx: 120).</span>
                         </div>
-                         </div>
+                        </div>
 
                     {/* Horário Granular por Dia da Semana (Adaptado da página Perfil) */}
                     <div className="pt-2">

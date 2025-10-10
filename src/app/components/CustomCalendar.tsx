@@ -176,7 +176,7 @@ export function CustomCalendar({
         >
           <CalendarCheck className="w-4 h-4 mr-2" /> Agenda Hoje
         </Button>
-      </div> 
+      </div>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button variant="ghost" size="icon" onClick={previousMonth}>
