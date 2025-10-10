@@ -258,7 +258,7 @@ export default function PerfilPage() {
   const handleLogout = () => {
     logout()
     toast.success("Você foi deslogado!")
-    router.push("/perfil")
+    router.push("/cliente/perfil")
   }
 
   return (

@@ -11,9 +11,9 @@ const Navbar = () => {
 
   const navLinks = [
     { path: "/explorar", label: "Explorar", icon: Search },
-    { path: "/historico", label: "Histórico", icon: Calendar },
-    { path: "/favoritos", label: "Favoritos", icon: Heart },
-    { path: "/perfil", label: "Perfil", icon: User },
+    { path: "/cliente/historico", label: "Histórico", icon: Calendar },
+    { path: "/cliente/favoritos", label: "Favoritos", icon: Heart },
+    { path: "/cliente/perfil", label: "Perfil", icon: User },
   ];
 
   return (

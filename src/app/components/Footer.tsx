@@ -30,12 +30,12 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link href={"/historico"} className="text-sm hover:text-accent transition-colors">
+                <Link href={"/cliente/historico"} className="text-sm hover:text-accent transition-colors">
                   Agendamentos
                 </Link>
               </li>
               <li>
-                <Link href="/favoritos" className="text-sm hover:text-accent transition-colors">
+                <Link href="/cliente/favoritos" className="text-sm hover:text-accent transition-colors">
                   Favoritos
                 </Link>
               </li>

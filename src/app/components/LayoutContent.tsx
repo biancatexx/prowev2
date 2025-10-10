@@ -47,7 +47,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         if (user) {
             const userName = getFirstName(user.name);
             authContent = (
-                <Link href="/perfil" className="text-white text-base font-semibold hover:text-primary transition-colors">
+                <Link href="/cliente/perfil" className="text-white text-base font-semibold hover:text-primary transition-colors">
                     Olá, {userName} 👋
                 </Link>
             );

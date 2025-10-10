@@ -30,7 +30,7 @@ export function LoginCliente() {
           title: "Login realizado!",
           description: "Bem-vindo de volta.",
         })
-        router.push("/perfil")
+        router.push("/cliente/perfil")
       } else {
         toast({
           title: "WhatsApp não encontrado",

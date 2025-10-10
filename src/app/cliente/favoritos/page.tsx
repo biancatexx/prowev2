@@ -103,7 +103,7 @@ export default function Favoritos() {
               <p className="text-sm text-muted-foreground mb-6">
                 Complete seu perfil com o WhatsApp para salvar e acessar seus favoritos.
               </p>
-              <Button onClick={() => router.push("/perfil")}>Ir para o Perfil</Button>
+              <Button onClick={() => router.push("/cliente/perfil")}>Ir para o Perfil</Button>
             </div>
           </main>
         )

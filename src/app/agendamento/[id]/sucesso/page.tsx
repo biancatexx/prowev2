@@ -27,7 +27,7 @@ export default function AgendamentoSucesso() {
           </Button>
           {/* O clique redireciona para o histórico. Como o usuário está logado,
               o histórico carrega automaticamente os agendamentos dele. */}
-          <Button onClick={() => router.push("/historico")} variant="outline" className="w-full">
+          <Button onClick={() => router.push("/cliente/historico")} variant="outline" className="w-full">
             Ver Meus Agendamentos
           </Button>
         </div>
