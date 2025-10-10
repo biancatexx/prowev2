@@ -15,7 +15,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     const NavbarComponent = isAdminArea ? NavbarProfessional : NavbarApp;
 
     return (
-        <div className="f bg-zinc-900 p-2">
+        <div className="bg-zinc-900 p-2">
             <div className="w-full">
                 <main className="flex-1 overflow-y-auto rounded-[calc(var(--radius)*4)]">
                     {children} 

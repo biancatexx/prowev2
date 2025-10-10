@@ -422,9 +422,9 @@ export const initializeMocks = (): void => {
   if (!localStorage.getItem(STORAGE_KEYS.APPOINTMENTS)) {
     // Garante que os clientes dos agendamentos iniciais existam na lista de Users
     initialMockAppointments.forEach(apt => {
-        ensureClientExists(apt.clientName, apt.clientWhatsapp)
+      ensureClientExists(apt.clientName, apt.clientWhatsapp)
     });
-    
+
     // Agora, salva os agendamentos iniciais
     saveToStorage(STORAGE_KEYS.APPOINTMENTS, initialMockAppointments)
   }
@@ -630,9 +630,9 @@ export const saveAppointment = (appointment: MockAppointment): void => {
  * 🗑️ NOVO: Remove um agendamento pelo ID e salva no storage.
  */
 export const deleteAppointment = (appointmentId: string): void => {
-    const appointments = getStoredAppointments();
-    const updatedAppointments = appointments.filter((apt) => apt.id !== appointmentId);
-    saveToStorage(STORAGE_KEYS.APPOINTMENTS, updatedAppointments);
+  const appointments = getStoredAppointments();
+  const updatedAppointments = appointments.filter((apt) => apt.id !== appointmentId);
+  saveToStorage(STORAGE_KEYS.APPOINTMENTS, updatedAppointments);
 }
 
 
@@ -748,8 +748,8 @@ export const getClientsByProfessional = (professionalId: string): Client[] => {
   appointments.forEach((apt) => {
     // Usamos o ID de usuário do cliente do mock, se disponível, para garantir a unicidade
     const clientUser = getUserById(apt.clientId)
-    const key = clientUser ? clientUser.id : cleanWhatsappNumber(apt.clientWhatsapp) 
-    
+    const key = clientUser ? clientUser.id : cleanWhatsappNumber(apt.clientWhatsapp)
+
     if (!key) return; // Não processa agendamentos sem ID de cliente/whatsapp
 
     if (clientsMap.has(key)) {
@@ -764,7 +764,7 @@ export const getClientsByProfessional = (professionalId: string): Client[] => {
       }
     } else {
       clientsMap.set(key, {
-        id: key, 
+        id: key,
         name: apt.clientName,
         whatsapp: apt.clientWhatsapp,
         email: clientUser?.email,
@@ -869,3 +869,60 @@ export const getLastClientNameByWhatsapp = (whatsapp: string): string | null => 
   )
   return sortedAppointments[0].clientName
 }
+const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+// ... (Resto das suas funções de disponibilidade)
+
+/**
+ * 🔄 SINCRONIZA a agenda de disponibilidade (ProfessionalAvailability) 
+ * com os novos horários granulares (Professional.workingHours) do perfil.
+ */
+export const syncAvailabilityFromProfessional = (professional: Professional): void => {
+  const storedAvailability = getProfessionalAvailability(professional.id);
+  const fallbackAvailability = getDefaultAvailability(professional.id);
+
+  // 1. Encontrar o primeiro dia habilitado para definir o novo Horário Padrão da agenda
+  let newStandardWorkingHours = fallbackAvailability.workingHours;
+  let foundStandard = false;
+
+  for (const day of dayKeys) {
+    const schedule = professional.workingHours[day];
+    if (schedule && schedule.enabled) {
+      newStandardWorkingHours = { start: schedule.start, end: schedule.end };
+      foundStandard = true;
+      break; // Usa o horário do primeiro dia ativo encontrado como o 'padrão'
+    }
+  }
+
+  // Se nenhum dia estava ativo, mantém o padrão neutro de fallback
+  if (!foundStandard) {
+    newStandardWorkingHours = { start: "09:00", end: "18:00" };
+  }
+
+
+  // 2. Atualizar a lista de dias habilitados (workingDays)
+  const newWorkingDays: ProfessionalAvailability["workingDays"] = dayKeys.reduce((acc, day) => {
+    // Usa o estado `enabled` de cada dia no Professional
+    acc[day] = professional.workingHours[day]?.enabled || false;
+    return acc;
+  }, {} as ProfessionalAvailability["workingDays"]);
+
+
+  // 3. Montar o objeto final de Availability
+  const finalAvailability: ProfessionalAvailability = {
+    professionalId: professional.id,
+    // Preserva o slotInterval e closedDates existentes
+    slotInterval: storedAvailability?.slotInterval || 30,
+    closedDates: storedAvailability?.closedDates || [],
+    customSlots: storedAvailability?.customSlots || [],
+
+    // Atualiza WorkingDays e WorkingHours com base no Perfil
+    workingDays: newWorkingDays,
+    workingHours: newStandardWorkingHours,
+  };
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("storage"));
+  }
+  saveProfessionalAvailability(finalAvailability);
+};
