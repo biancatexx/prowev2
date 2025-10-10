@@ -428,9 +428,9 @@ export default function ProfessionalDetails() {
 
       {/* Footer fixo */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30 rounded-t-3xl">
-        <div className="container mx-auto max-w-screen-lg px-4 text-center">
+        <div className="container mx-auto max-w-screen-lg px-4">
           {(selectedServices.length > 0 || selectedDate || selectedTime) && (
-            <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-border">
+            <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-border mb-2">
               {/* Texto */}
               <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
                 {selectedServices.length > 0 && (
@@ -471,18 +471,22 @@ export default function ProfessionalDetails() {
           )}
 
           {/* Botão de agendar */}
-          <Button
+          <div className="text-center">
+            <Button
 
-            onClick={handleSchedule}
-            className={`${selectedServices.length === 0 && !selectedDate && !selectedTime
-              ? "bg-zinc-900 text-white hover:bg-zinc-700"
-              : "bg-primary text-zinc-900 hover:bg-primary/90"
-              }`}
-          >
-            {selectedServices.length === 0 && !selectedDate && !selectedTime
-              ? "Agendar atendimento"
-              : "Continuar agendamento"}
-          </Button>
+              onClick={handleSchedule}
+              className={`${selectedServices.length === 0 && !selectedDate && !selectedTime
+                ? "bg-zinc-900 text-white hover:bg-zinc-700"
+                : "bg-primary text-zinc-900 hover:bg-primary/90"
+                }`}
+            >
+              {selectedServices.length === 0 && !selectedDate && !selectedTime
+                ? "Agendar atendimento"
+                : "Continuar agendamento"}
+            </Button>
+
+          </div>
+
 
         </div>
       </div>

@@ -45,7 +45,7 @@ export default function AgendamentoPage() {
   const [bookingData, setBookingData] = useState<any>(null)
 
   // Estados do agendamento
-  const [date, setDate] = useState<Date | undefined>(new Date())
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [selectedTime, setSelectedTime] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
   const [cliente, setCliente] = useState("")
@@ -69,15 +69,15 @@ export default function AgendamentoPage() {
 
   // EFEITO: Alternar expansão (contração automática)
   useEffect(() => {
-    if (date && selectedTime && isDateTimeExpanded) {
+    if (selectedDate && selectedTime && isDateTimeExpanded) {
       // Contrai após 500ms da seleção de ambos
       const timer = setTimeout(() => setIsDateTimeExpanded(false), 500);
       return () => clearTimeout(timer);
-    } else if (!date || !selectedTime) {
+    } else if (!selectedDate || !selectedTime) {
       // Expande se um dos dois for limpo
       setIsDateTimeExpanded(true);
     }
-  }, [date, selectedTime]);
+  }, [selectedDate, selectedTime]);
 
 
   // EFEITO 1: Carregar valor persistido e dados do AuthContext
@@ -111,7 +111,7 @@ export default function AgendamentoPage() {
       if (stored) {
         const data = JSON.parse(stored)
         setBookingData(data)
-        if (data.selectedDate) setDate(new Date(data.selectedDate))
+        if (data.selectedDate) setSelectedDate(new Date(data.selectedDate))
         if (data.selectedTime) setSelectedTime(data.selectedTime)
         if (!isProfessionalView && data.selectedServices) setSelectedServices(data.selectedServices)
         localStorage.removeItem("booking_data")
@@ -250,13 +250,11 @@ export default function AgendamentoPage() {
 
   // FUNÇÃO: Limpar Data e Horário e EXPANDIR
   const handleClearDateTime = () => {
-    setDate(undefined)
+    setSelectedDate(undefined)
     setSelectedTime("")
-    setIsDateTimeExpanded(true) // Garante que expande ao limpar
     toast.success("Data e horário limpos")
   }
 
-  // FUNÇÃO: Expandir a seção para edição
   const handleEditDateTime = () => {
     setIsDateTimeExpanded(true);
   }
@@ -294,7 +292,7 @@ export default function AgendamentoPage() {
       toast.error("Selecione pelo menos um serviço")
       return
     }
-    if (!date) {
+    if (!selectedDate) {
       toast.error("Selecione a data")
       calendarRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
       return
@@ -311,7 +309,7 @@ export default function AgendamentoPage() {
   const handleFinish = async () => {
     setLoading(true)
     try {
-      if (!date || !selectedTime || !cliente) {
+      if (!selectedDate || !selectedTime || !cliente) {
         toast.error("Preencha todos os campos obrigatórios")
         setLoading(false)
         return
@@ -350,7 +348,7 @@ export default function AgendamentoPage() {
           price: Number(s.price),
           duration: Number(s.duration),
         })),
-        date: date.toISOString().split("T")[0],
+        date: selectedDate.toISOString().split("T")[0],
         time: String(selectedTime),
         totalPrice: Number(totalPrice),
         totalDuration: Number(totalDuration),
@@ -407,7 +405,7 @@ export default function AgendamentoPage() {
 
       {/* Estabelecimento */}
       {!isProfessionalView && professional && (
-        <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
+        <div className="bg-card rounded-2xl border p-4 mb-4 mt-4">
           <h2 className="text-lg font-semibold mb-2"><House className="inline w-4 h-4 text-primary mb-1 mr-1" /> Estabelecimento</h2>
           <div className="">
             <p className="font-medium">{professional.name}</p>
@@ -420,13 +418,13 @@ export default function AgendamentoPage() {
       )}
 
       {/* Serviços */}
-      <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
+      <div className="bg-card rounded-2xl border p-4 mb-4 mt-4">
         <div className="flex justify-between mb-2">
           <h2 className="text-lg font-semibold"> <LayoutGrid className="inline w-4 h-4 text-primary mb-1 mr-1" /> Serviços</h2>
           <div className="flex flex-col sm:flex-row gap-2">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
-                <Trash2 className="w-4 h-4" /> Limpar
+                <Trash2 className="w-4 h-4" /> Limpar S
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
@@ -443,13 +441,21 @@ export default function AgendamentoPage() {
 
           </div>
         </div>
-        <div className="flex gap-2 justify-end">
 
-        </div>
         {selectedServices.length === 0 ? (
-          <div className="flex gap-2 ">
-            <p className="text-sm text-muted-foreground">Nenhum serviço selecionado</p>
+          <div className="mt-2">
+            <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-primary/20 mb-4">
+              <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                    <span className="font-medium">Selecione pelo menos um serviço.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
+
         ) : (
           <>
             {selectedServices.map((s, i) => (
@@ -464,44 +470,51 @@ export default function AgendamentoPage() {
       </div>
 
       {/* Data e Horário */}
-      <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
+      <div className="bg-card rounded-2xl border p-4 mb-4" ref={calendarRef}>
         <div className="flex justify-between mb-2">
 
           <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e hora</h2>
-          <div className="flex flex-col sm:flex-row gap-2"> {/* CORREÇÃO APLICADA AQUI: flex-col para mobile, sm:flex-row para desktop */}
-            {/* Botão Limpar visível */}
-            {(date || selectedTime) && (
+          <div
+            className="flex flex-col sm:flex-row gap-2"
+            onMouseEnter={() => setIsDateTimeExpanded(true)}
+            onMouseLeave={() => {
+              if (selectedDate && selectedTime) setIsDateTimeExpanded(false);
+            }}
+          >
+            {/* Botão Limpar - só aparece se hover e houver data/hora */}
+            {(selectedDate || selectedTime) && isDateTimeExpanded && (
               <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
                 <Trash2 className="w-4 h-4" /> Limpar
               </Button>
             )}
 
-            {/* NOVO BOTÃO: Recolher - Visível se expandido e já houver data selecionada */}
-            {isDateTimeExpanded && date && (
-              <Button variant="outline" size="sm" onClick={handleCollapseDateTime}>
-                <ChevronUp className="w-4 h-4 mr-1" /> Recolher
-              </Button>
-            )}
-
-            {/* Botão Editar - Visível se preenchido E contraído */}
-            {date && selectedTime && !isDateTimeExpanded && (
-              <Button variant="outline" size="sm" onClick={handleEditDateTime}>
-                <Edit2 className="w-4 h-4 mr-1" /> Editar
-              </Button>
-            )}
+            {/* Botão de ação principal */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDateTimeExpanded(!isDateTimeExpanded)}
+            >
+              {isDateTimeExpanded ? (
+                <>
+                  <ChevronUp className="w-4 h-4 mr-1" /> Fechar
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4 mr-1" /> {selectedDate && selectedTime ? "Editar" : "Selecionar"}
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
-
-        {/* Seletores de Data e Horário - VISÍVEIS SOMENTE se isDateTimeExpanded for TRUE */}
         <div className="">
           {isDateTimeExpanded && (
             <div className="flex flex-col lg:flex-row gap-4">
               <div>
                 <Card className="border flex-1">
                   <CustomCalendar
-                    selected={date}
-                    onSelect={setDate}
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
                     getDateStatus={getDateStatus}
                   />
                 </Card>
@@ -511,7 +524,7 @@ export default function AgendamentoPage() {
                 <Card className="border flex-1 p-3 h-full itens-center justify-center">
                   <TimeSlotPicker
                     professionalId={id}
-                    selectedDate={date}
+                    selectedDate={selectedDate}
                     selectedTime={selectedTime}
                     onTimeSelect={setSelectedTime}
                     totalDuration={totalDuration}
@@ -520,16 +533,16 @@ export default function AgendamentoPage() {
             </div>
           )}
         </div>
-        <div className="gap-2 mt-4">
+        <div className="mt-2">
           <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-primary/20 mb-4">
             <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-4">
-                {date || selectedTime ? (
+                {selectedDate || selectedTime ? (
                   <>
-                    {date && (
+                    {selectedDate && (
                       <div className="flex items-center gap-1 font-medium">
                         <CalendarIcon className="w-4 h-4 text-primary" />
-                        <span>{date.toLocaleDateString("pt-BR")}</span>
+                        <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
                       </div>
                     )}
                     {selectedTime && (
@@ -554,7 +567,7 @@ export default function AgendamentoPage() {
       </div>
 
       {/* Cliente */}
-      <div className="bg-card rounded-2xl border p-5 mb-4">
+      <div className="bg-card rounded-2xl border p-4 mb-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold mb-2"><PersonStanding className="inline w-4 h-4 text-primary mb-1 mr-1" /> Cliente</h2>
           {/* Layout Responsivo: flex-col por padrão, lg:flex-row para telas grandes */}
@@ -688,7 +701,7 @@ export default function AgendamentoPage() {
             <div className="space-y-2">
               <p className="font-semibold">Cliente: <span className="font-normal">{cliente}</span></p>
               {whatsapp && <p className="font-semibold">WhatsApp: <span className="font-normal">{whatsapp}</span></p>}
-              <p className="font-semibold">Data: <span className="font-normal">{date?.toLocaleDateString("pt-BR")} às {selectedTime}</span></p>
+              <p className="font-semibold">Data: <span className="font-normal">{selectedDate?.toLocaleDateString("pt-BR")} às {selectedTime}</span></p>
             </div>
 
             <p className="font-semibold border-t pt-3">Serviços:</p>
