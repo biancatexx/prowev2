@@ -17,7 +17,7 @@ export default function NavbarProfessional() {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
+    <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50  rounded-t-3xl">
       <div className="container mx-auto max-w-screen-lg px-4">
         <div className="flex justify-around items-center py-2">
           {links.map((link) => {

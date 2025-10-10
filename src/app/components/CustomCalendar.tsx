@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, CalendarCheck } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -62,6 +62,20 @@ export function CustomCalendar({
   const nextMonth = () => {
     setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
   }
+
+  // Nova função para voltar para o mês e dia atual no calendário
+  const goToTodayCalendar = () => {
+    setCurrentMonth(new Date()) // Define o mês exibido para o mês atual
+    onSelect?.(new Date()) // Seleciona o dia de hoje
+  }
+
+  // Verifica se o mês atual do calendário é o mês de hoje
+  const isCurrentMonth = currentMonth.getMonth() === today.getMonth() && currentMonth.getFullYear() === today.getFullYear();
+  // Verifica se o dia selecionado é o dia de hoje
+  const isTodaySelected = isCurrentMonth && (selected && selected.getDate() === today.getDate());
+  // O botão "Hoje" deve ser desabilitado se já estiver exibindo o mês atual E o dia atual estiver selecionado
+  const isTodayButtonDisabled = isCurrentMonth && isTodaySelected;
+
 
   const formatDateString = (date: Date) => {
     return date.toISOString().split("T")[0]
@@ -153,6 +167,16 @@ export function CustomCalendar({
 
   return (
     <div className={cn("w-full p-4", className)}>
+      {/* Atalho "Hoje" */}
+      <div className="flex justify-center">
+        <Button size="sm" variant="outline"
+          onClick={goToTodayCalendar}
+          disabled={isTodayButtonDisabled}
+          className="disabled:opacity-30 disabled:pointer-events-none"
+        >
+          <CalendarCheck className="w-4 h-4 mr-2" /> Agenda Hoje
+        </Button>
+      </div> 
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <Button variant="ghost" size="icon" onClick={previousMonth}>
@@ -165,6 +189,7 @@ export function CustomCalendar({
           <ChevronRight className="w-5 h-5" />
         </Button>
       </div>
+
 
       {/* Week days */}
       <div className="grid grid-cols-7 gap-2 mb-2">

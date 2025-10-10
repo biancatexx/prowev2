@@ -320,9 +320,9 @@ export default function Perfil() {
 
                 {/* Seção Horário de Funcionamento (Diário) - Inputs SEMPRE HABILITADOS */}
                 <Card className="p-6">
-                    <h2 className="text-lg font-bold mb-4">Horário de Funcionamento</h2>
+                    <h2 className="text-lg font-bold">Horário de Funcionamento</h2>
                     <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana.</p>
-                    <div className="space-y-4">
+                    <div className="">
                         {dayKeys.map((dayKey) => {
                             const day = dayKey as DayOfWeek;
                             const schedule = formData.workingHours[day] || defaultWorkingHours[day];
@@ -332,15 +332,21 @@ export default function Perfil() {
                                     <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
 
                                     <div className="flex items-center space-x-4 w-full sm:w-auto">
-
                                         {/* Switch Habilita/Desabilita */}
-                                        <div className="flex items-center space-x-2 w-[80px] justify-start">
-                                            <Label htmlFor={`switch-${day}`}>Aberto</Label>
-                                            <Switch
+                                        <div className="flex items-center space-x-2 w-[100px] justify-end relative">
+
+                                            <Label
+                                                htmlFor={`switch-${day}`}
+                                                className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4 cursor-pointer`}
+                                            >
+                                                {schedule.enabled ? "Aberto" : "Fechado"}
+                                            </Label><Switch
                                                 id={`switch-${day}`}
                                                 checked={schedule.enabled}
                                                 onCheckedChange={(checked) => handleToggleDay(day, checked)}
+                                                className="cursor-pointer"
                                             />
+
                                         </div>
 
                                         {/* Horário de Início */}
@@ -365,11 +371,7 @@ export default function Perfil() {
                                     </div>
 
                                     {/* Mensagem "Fechado" */}
-                                    {!schedule.enabled && (
-                                        <span className="text-sm text-red-500 sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4">
-                                            FECHADO
-                                        </span>
-                                    )}
+
                                 </div>
                             );
                         })}
