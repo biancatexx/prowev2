@@ -424,7 +424,7 @@ export default function AgendamentoPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
-                <Trash2 className="w-4 h-4" /> Limpar S
+                <Trash2 className="w-4 h-4" /> Limpar
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
@@ -470,25 +470,18 @@ export default function AgendamentoPage() {
       </div>
 
       {/* Data e Horário */}
+      {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-4 mb-4" ref={calendarRef}>
         <div className="flex justify-between mb-2">
 
           <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e hora</h2>
           <div
-            className="flex flex-col sm:flex-row gap-2"
-            onMouseEnter={() => setIsDateTimeExpanded(true)}
-            onMouseLeave={() => {
-              if (selectedDate && selectedTime) setIsDateTimeExpanded(false);
-            }}
-          >
-            {/* Botão Limpar - só aparece se hover e houver data/hora */}
-            {(selectedDate || selectedTime) && isDateTimeExpanded && (
+            className="flex flex-col sm:flex-row gap-2" >
+            {(selectedDate || selectedTime) && (
               <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
                 <Trash2 className="w-4 h-4" /> Limpar
               </Button>
             )}
-
-            {/* Botão de ação principal */}
             <Button
               variant="outline"
               size="sm"
@@ -500,7 +493,11 @@ export default function AgendamentoPage() {
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-1" /> {selectedDate && selectedTime ? "Editar" : "Selecionar"}
+                  {selectedDate && selectedTime ? (
+                    <><Edit2 className="w-4 h-4 mr-1" />Editar</>
+                  ) : (
+                    <><Plus className="w-4 h-4 mr-1" />Selecionar</>
+                  )}
                 </>
               )}
             </Button>
@@ -537,35 +534,31 @@ export default function AgendamentoPage() {
           <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-primary/20 mb-4">
             <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-4">
-                {selectedDate || selectedTime ? (
+                {(selectedDate || selectedTime) ? (
                   <>
-                    {selectedDate && (
-                      <div className="flex items-center gap-1 font-medium">
-                        <CalendarIcon className="w-4 h-4 text-primary" />
-                        <span>{selectedDate.toLocaleDateString("pt-BR")}</span>
-                      </div>
-                    )}
-                    {selectedTime && (
-                      <div className="flex items-center gap-1 font-medium">
-                        <Clock className="w-4 h-4 text-primary" />
-                        <span>{selectedTime}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-1 font-medium">
+                      <CalendarIcon className="w-4 h-4 text-primary" />
+                      <span>{selectedDate ? selectedDate.toLocaleDateString("pt-BR") : "Selecione uma data."}</span>
+                    </div>
+                    <div className="flex items-center gap-1 font-medium">
+                      <Clock className="w-4 h-4 text-primary" />
+                      <span>{selectedTime ? selectedTime : "Selecione um horário."}</span>
+                    </div>
                   </>
                 ) : (
-
                   <div className="flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                     <span className="font-medium">Selecione uma data e um horário.</span>
                   </div>
                 )}
               </div>
+
+
             </div>
           </div>
         </div>
 
       </div>
-
       {/* Cliente */}
       <div className="bg-card rounded-2xl border p-4 mb-4">
         <div className="flex items-center justify-between">
