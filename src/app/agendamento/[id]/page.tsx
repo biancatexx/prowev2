@@ -9,7 +9,7 @@ import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2, CalendarCheck, House, LayoutGrid, Loader2, LogOut, AlertTriangle, CalendarIcon, Clock, ChevronUp, PersonStanding } from "lucide-react" // Importado ChevronUp
+import { ArrowLeft, MapPin, Edit2, Plus, X, Trash2, CalendarCheck, House, LayoutGrid, Loader2, LogOut, AlertTriangle, CalendarIcon, Clock, ChevronUp, PersonStanding } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
   saveAppointment,
@@ -261,7 +261,7 @@ export default function AgendamentoPage() {
     setIsDateTimeExpanded(true);
   }
 
-  // 🔑 NOVA FUNÇÃO: Recolher a seção manualmente
+  // NOVO FUNÇÃO: Recolher a seção manualmente
   const handleCollapseDateTime = () => {
     setIsDateTimeExpanded(false);
   }
@@ -395,7 +395,7 @@ export default function AgendamentoPage() {
     <div className="container mx-auto max-w-screen-lg pb-20">
       {/* Header */}
       <div className="sticky top-0 bg-background border-b border-border z-20">
-        <div className="flex items-center  px-4 py-4">
+        <div className="flex items-center px-4 py-4">
           <button onClick={() => router.back()} className="p-2 hover:bg-accent rounded-full">
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -409,7 +409,7 @@ export default function AgendamentoPage() {
       {!isProfessionalView && professional && (
         <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
           <h2 className="text-lg font-semibold mb-2"><House className="inline w-4 h-4 text-primary mb-1 mr-1" /> Estabelecimento</h2>
-          <div className="pl-6">
+          <div className="">
             <p className="font-medium">{professional.name}</p>
             <p className="text-sm text-muted-foreground flex items-center gap-2">
               <MapPin className="w-4 h-4" />
@@ -421,12 +421,12 @@ export default function AgendamentoPage() {
 
       {/* Serviços */}
       <div className="bg-card rounded-2xl border p-5 mb-4 mt-4">
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between mb-2">
           <h2 className="text-lg font-semibold"> <LayoutGrid className="inline w-4 h-4 text-primary mb-1 mr-1" /> Serviços</h2>
-          <div className="flex gap-2 pl-6">
+          <div className="flex flex-col sm:flex-row gap-2">
             {selectedServices.length > 0 && (
               <Button variant="ghost" size="sm" onClick={handleClearServices}>
-                <Trash2 className="w-4 h-4" /> Limpar dados
+                <Trash2 className="w-4 h-4" /> Limpar
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={handleOpenServicesModal}>
@@ -440,10 +440,14 @@ export default function AgendamentoPage() {
                 </>
               )}
             </Button>
+
           </div>
         </div>
+        <div className="flex gap-2 justify-end">
+
+        </div>
         {selectedServices.length === 0 ? (
-          <div className="flex gap-2 pl-6">
+          <div className="flex gap-2 ">
             <p className="text-sm text-muted-foreground">Nenhum serviço selecionado</p>
           </div>
         ) : (
@@ -461,18 +465,18 @@ export default function AgendamentoPage() {
 
       {/* Data e Horário */}
       <div className="bg-card rounded-2xl border p-5 mb-4" ref={calendarRef}>
-        <div className="flex justify-between items-center mb-2">
+        <div className="flex justify-between mb-2">
 
-          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e horário</h2>
-          <div className="gap-2 pl-6">
+          <h2 className="text-lg font-semibold"> <CalendarCheck className="inline w-4 h-4 text-primary mb-1 mr-1" /> Data e hora</h2>
+          <div className="flex flex-col sm:flex-row gap-2"> {/* CORREÇÃO APLICADA AQUI: flex-col para mobile, sm:flex-row para desktop */}
             {/* Botão Limpar visível */}
             {(date || selectedTime) && (
               <Button variant="ghost" size="sm" onClick={handleClearDateTime}>
-                <Trash2 className="w-4 h-4" /> Limpar dados
+                <Trash2 className="w-4 h-4" /> Limpar
               </Button>
             )}
 
-            {/* 🔑 NOVO BOTÃO: Recolher - Visível se expandido e já houver data selecionada */}
+            {/* NOVO BOTÃO: Recolher - Visível se expandido e já houver data selecionada */}
             {isDateTimeExpanded && date && (
               <Button variant="outline" size="sm" onClick={handleCollapseDateTime}>
                 <ChevronUp className="w-4 h-4 mr-1" /> Recolher
@@ -489,9 +493,8 @@ export default function AgendamentoPage() {
         </div>
 
 
-
         {/* Seletores de Data e Horário - VISÍVEIS SOMENTE se isDateTimeExpanded for TRUE */}
-        <div className="pl-6">
+        <div className="">
           {isDateTimeExpanded && (
             <div className="flex flex-col lg:flex-row gap-4">
               <div>
@@ -517,7 +520,7 @@ export default function AgendamentoPage() {
             </div>
           )}
         </div>
-        <div className="gap-2 pl-6 mt-4">
+        <div className="gap-2 mt-4">
           <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-primary/20 mb-4">
             <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
               <div className="flex flex-wrap items-center gap-4">
@@ -564,7 +567,7 @@ export default function AgendamentoPage() {
           )}
         </div>
 
-        <div className="space-y-3 lg:flex lg:gap-4 lg:space-y-0 pl-6">
+        <div className="space-y-3 lg:flex lg:gap-4 lg:space-y-0 ">
           <div className="flex-1">
             <Label>WhatsApp {!isProfessionalView && <span className="text-destructive">*</span>}</Label>
             <Input
@@ -595,8 +598,8 @@ export default function AgendamentoPage() {
       </div>
 
       {/* Botão fixado */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
-        <div className="container mx-auto max-w-screen-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10 rounded-t-3xl">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <div className="text-center">
             <Button
               className="bg-zinc-900 hover:bg-zinc-800 text-zinc-50"
