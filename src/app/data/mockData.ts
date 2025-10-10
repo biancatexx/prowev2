@@ -628,6 +628,7 @@ export const saveAppointment = (appointment: MockAppointment): void => {
 
 /**
  * 🗑️ NOVO: Remove um agendamento pelo ID e salva no storage.
+ * Esta função é a chave para a correção.
  */
 export const deleteAppointment = (appointmentId: string): void => {
   const appointments = getStoredAppointments();
@@ -642,6 +643,7 @@ export const getAppointmentsByProfessional = (professionalId: string): MockAppoi
 /**
  * 🆕 NOVO: Retorna a lista de agendamentos de um cliente específico.
  * @param userId O ID do cliente (User.id)
+ * CHAMA getStoredAppointments() para ler os dados ATUALIZADOS.
  */
 export const getAppointmentsByUserId = (userId: string): MockAppointment[] =>
   getStoredAppointments().filter((apt) => apt.clientId === userId)

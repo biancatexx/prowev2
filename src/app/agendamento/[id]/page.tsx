@@ -359,6 +359,9 @@ export default function AgendamentoPage() {
       saveAppointment(newAppointment)
       toast.success("Agendamento criado com sucesso!")
 
+      // 🔑 CORREÇÃO 1: Fecha o modal IMEDIATAMENTE após o sucesso
+      setShowModal(false)
+
       // Limpa o whatsapp do localStorage após o sucesso (para não preencher o próximo)
       localStorage.removeItem(LOCAL_STORAGE_KEY);
 
@@ -672,7 +675,7 @@ export default function AgendamentoPage() {
         </div>
       )}
 
-      {/* Confirmação Modal (Inalterado) */}
+      {/* Confirmação Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
           <div className="bg-card rounded-xl p-6 w-full max-w-md space-y-3">
@@ -712,6 +715,7 @@ export default function AgendamentoPage() {
                 onClick={() => setShowModal(false)}
                 disabled={loading}
                 className="flex-1 sm:flex-none"
+                type="button"
               >
                 Voltar e Editar
               </Button>
@@ -720,6 +724,7 @@ export default function AgendamentoPage() {
                 onClick={handleFinish}
                 disabled={loading}
                 className="flex-1 sm:flex-none"
+                type="button" // 🔑 CORREÇÃO: Garante o single-click
               >
                 {loading ? (
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />

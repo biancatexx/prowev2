@@ -280,30 +280,16 @@ export default function AjustesPage() {
                             />
                         </div>
 
-                        <div className="md:w-1/2 space-y-4">
-                            <h3 className="text-lg font-medium">Ação para a Data Selecionada</h3>
-                            {selectedDate ?
-                                <div className="p-4 border rounded-md bg-gray-50 space-y-3">
-                                    <p className="text-sm font-semibold">Data selecionada:</p>
-                                    <p className="text-lg font-bold text-red-600">{selectedDate.toLocaleDateString('pt-BR')}</p>
-                                    <Button onClick={handleBlockDate} className="w-full bg-red-600 hover:bg-red-700">Bloquear este Dia</Button>
-                                    <p className="text-xs text-muted-foreground pt-2">A data será marcada como indisponível no seu perfil público.</p>
-                                </div>
-                                :
-                                <p className="text-muted-foreground italic">Clique em um dia no calendário para bloqueá-lo.</p>
-                            }
-
-                            <div className="pt-4">
-                                <h3 className="text-lg font-medium mb-2">📋 Datas Bloqueadas</h3>
+                        <div className='md:w-1/2 space-y-4'>
+                            <div className="">
+                                <h2 className="text-lg font-bold">Datas Bloqueadas</h2>
                                 <ScrollArea className="h-40 border rounded-md p-3 bg-white">
                                     {currentAvailability.closedDates.length > 0 ?
                                         <ul className="space-y-2">
                                             {currentAvailability.closedDates.map(dateStr =>
                                                 <li key={dateStr} className="flex justify-between items-center text-sm">
                                                     <span>{new Date(dateStr + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
+                                                    <Button size="sm" variant="outline"
                                                         className="text-blue-500 hover:text-blue-700 h-8"
                                                         onClick={() => handleUnblockDate(dateStr)}
                                                     >
@@ -317,17 +303,39 @@ export default function AjustesPage() {
                                     }
                                 </ScrollArea>
                             </div>
+                            <div className="">
+                                <h3 className="text-lg font-medium">Ação para a Data Selecionada</h3>
+                                <div className="p-4 border rounded-md bg-gray-50 space-y-3">
+                                    {selectedDate ?
+                                        <>
+                                            <p className="text-sm font-semibold">Data selecionada:</p>
+                                            <div className='flex flex-wrap justify-between itens-center'>
+                                                <p className="text-lg font-bold text-red-600">{selectedDate.toLocaleDateString('pt-BR')}</p>
+                                                <Button onClick={handleBlockDate} className=" ">Bloquear este Dia</Button>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground pt-2">A data será marcada como indisponível no seu perfil público.</p>
+                                        </>
+                                        :
+                                        <p className="text-muted-foreground italic">Clique em um dia no calendário para bloqueá-lo.</p>
+                                    }
+                                </div>
+
+
+                            </div>
                         </div>
+
                     </div>
                 </section>
                 {/* Seção Horário Padrão e Parâmetros */}
-                <Card className="p-6 bg-white shadow-sm space-y-6">
+                <Card className="p-6 bg-white shadow-sm  ">
                     <h2 className="text-lg font-bold"><Clock className="w-5 h-5 mr-2 inline" />Intervalo de agendamentos</h2>
 
+                      <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
+                 
+
                     {/* Intervalo */}
-                    <div className="space-y-2 pb-4 border-b">
-                        <Label htmlFor="slot-interval" className="font-medium">Intervalo de Minutos para Agendamento</Label>
-                        <div className="flex items-center space-x-2">
+                    <div className="space-y-2 pb-4 border-b mt-2">
+                         <div className="flex items-center space-x-2">
                             <Input
                                 id="slot-interval"
                                 type="number"
@@ -340,8 +348,7 @@ export default function AjustesPage() {
                             />
                             <span className="text-sm text-muted-foreground">minutos. (Mín: 5, Máx: 120).</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
-                    </div>
+                         </div>
 
                     {/* Horário Granular por Dia da Semana (Adaptado da página Perfil) */}
                     <div className="pt-2">
@@ -433,7 +440,7 @@ export default function AjustesPage() {
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowBlockModal(false)}>Cancelar</Button>
-                        <Button className="bg-red-600 hover:bg-red-700" onClick={confirmBlockDate}>Sim, Bloquear Data</Button>
+                        <Button className="bg-red-600 hover:bg-red-700" type='button' onClick={confirmBlockDate}>Sim, Bloquear Data</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
