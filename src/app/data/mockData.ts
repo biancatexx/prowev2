@@ -660,62 +660,84 @@ const isTimeSlotBooked = (professionalId: string, date: string, time: string): b
 /**
  * Gera os slots de horário disponíveis para um profissional em uma data específica.
  */
+/**
+ * Gera os slots de horário disponíveis para um profissional em uma data específica.
+ */
 export const generateTimeSlots = (professionalId: string, date: Date): TimeSlot[] => {
-  const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
-  const dateStr = date.toISOString().split("T")[0]
-  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayName = dayNames[date.getDay()]
+  const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId);
+  const professional = getProfessionalById(professionalId); // ⬅️ NOVO: Pega o objeto Professional
 
-  if (availability.closedDates.includes(dateStr)) return []
-  if (!availability.workingDays[dayName]) return []
+  // Se o Professional não for encontrado, ou não tiver workingHours, não há como agendar
+  if (!professional || !professional.workingHours) return [];
 
-  const customSlot = availability.customSlots?.find((cs) => cs.date === dateStr)
+  const dateStr = date.toISOString().split("T")[0];
+  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayName = dayNames[date.getDay()];
+
+  // 1. OBTÉM O HORÁRIO DE TRABALHO DO DIA A PARTIR DO MAPA GRANULAR
+  const daySchedule = professional.workingHours[dayName];
+
+  // 2. Verifica se a data está bloqueada ou se o dia da semana está desabilitado
+  if (availability.closedDates.includes(dateStr) || !daySchedule || !daySchedule.enabled) {
+    return [];
+  }
+
+  // --- Lógica de Slots Customizados (Mantida) ---
+  const customSlot = availability.customSlots?.find((cs) => cs.date === dateStr);
   if (customSlot) {
     return customSlot.slots.map((time) => ({
       time,
       available: !isTimeSlotBooked(professionalId, dateStr, time),
       reason: isTimeSlotBooked(professionalId, dateStr, time) ? "booked" : "custom",
-    }))
+    }));
   }
 
-  const slots: TimeSlot[] = []
-  const { start, end } = availability.workingHours
-  const [startHour, startMinute] = start.split(":").map(Number)
-  const [endHour, endMinute] = end.split(":").map(Number)
+  // 3. USA OS HORÁRIOS GRANULARES DO DIA
+  const slots: TimeSlot[] = [];
+  const { start, end } = daySchedule; // ⬅️ AGORA VEM DE daySchedule (mapa granular)
+  const [startHour, startMinute] = start.split(":").map(Number);
+  const [endHour, endMinute] = end.split(":").map(Number);
 
-  let currentMinutes = startHour * 60 + startMinute
-  const endMinutes = endHour * 60 + endMinute
+  // ... (O restante do cálculo de slots permanece o mesmo) ...
+  let currentMinutes = startHour * 60 + startMinute;
+  const endMinutes = endHour * 60 + endMinute;
 
   while (currentMinutes < endMinutes) {
-    const hours = Math.floor(currentMinutes / 60)
-    const minutes = currentMinutes % 60
-    const timeStr = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+    const hours = Math.floor(currentMinutes / 60);
+    const minutes = currentMinutes % 60;
+    const timeStr = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
 
-    const now = new Date()
-    const checkDate = new Date(date)
-    checkDate.setHours(hours, minutes, 0, 0)
+    const now = new Date();
+    const checkDate = new Date(date);
+    checkDate.setHours(hours, minutes, 0, 0);
 
     // Adiciona apenas se for um horário futuro ou o dia atual (e não o passado no dia)
     if (checkDate > now || date.toDateString() !== now.toDateString()) {
       slots.push({
         time: timeStr,
         available: !isTimeSlotBooked(professionalId, dateStr, timeStr),
-      })
+      });
     }
 
-    currentMinutes += availability.slotInterval
+    currentMinutes += availability.slotInterval;
   }
-  return slots
+  return slots;
 }
-
 export const isDateAvailable = (professionalId: string, date: Date): boolean => {
-  const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId)
-  const dateStr = date.toISOString().split("T")[0]
-  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
-  const dayName = dayNames[date.getDay()]
+  const availability = getProfessionalAvailability(professionalId) || getDefaultAvailability(professionalId);
+  const professional = getProfessionalById(professionalId); // ⬅️ NOVO: Pega o objeto Professional
 
-  if (availability.closedDates.includes(dateStr)) return false
-  return availability.workingDays[dayName]
+  if (!professional || !professional.workingHours) return false;
+
+  const dateStr = date.toISOString().split("T")[0];
+  const dayNames: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const dayName = dayNames[date.getDay()];
+  const daySchedule = professional.workingHours[dayName]; // ⬅️ Pega o schedule granular
+
+  if (availability.closedDates.includes(dateStr)) return false;
+
+  // Usa o campo 'enabled' do mapa granular
+  return !!daySchedule?.enabled;
 }
 
 export const getUnavailableReason = (professionalId: string, date: Date): string => {

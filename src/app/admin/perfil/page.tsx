@@ -318,7 +318,7 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-                {/* Seção Horário de Funcionamento (Diário) - Inputs SEMPRE HABILITADOS */}
+          
                 <Card className="p-6">
                     <h2 className="text-lg font-bold">Horário de Funcionamento</h2>
                     <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana.</p>
@@ -377,7 +377,7 @@ export default function Perfil() {
                         })}
                     </div>
                 </Card>
-                {/* Fim da Seção Horário de Funcionamento */}
+           
                 {/* Botões de Ação */}
                 <div className="flex justify-end items-center space-x-2">
                     {/* Botão SALVAR HABILITADO / MODAL */}

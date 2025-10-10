@@ -1,6 +1,6 @@
 'use client'
-import React, { useState, useEffect } from 'react';
-import { Clock, Ban, Loader2 } from "lucide-react";
+import React, { useState, useEffect, useMemo } from 'react';
+import { Clock, Ban, Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,53 +13,102 @@ import { Switch } from "@/components/ui/switch";
 // Importações necessárias
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomCalendar } from '@/components/CustomCalendar';
-import { getProfessionalAvailability, saveProfessionalAvailability, getDefaultAvailability, DayOfWeek, ProfessionalAvailability, Professional, saveProfessional } from '@/data/mockData';
+import { getProfessionalAvailability, saveProfessionalAvailability, getDefaultAvailability, DayOfWeek, ProfessionalAvailability, Professional, saveProfessional, WorkingHoursMap } from '@/data/mockData';
 import NavbarProfessional from '@/components/NavbarProfessional';
 
+// ===============================================
+// 📌 CONSTANTES E TIPAGENS
+// ===============================================
 
 const dayNames: { [key in DayOfWeek]: string } = { monday: 'Segunda-feira', tuesday: 'Terça-feira', wednesday: 'Quarta-feira', thursday: 'Quinta-feira', friday: 'Sexta-feira', saturday: 'Sábado', sunday: 'Domingo' };
 const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
+// Estendendo o tipo ProfessionalAvailability para incluir workingHoursMap para edição
+interface AvailabilityForm extends ProfessionalAvailability {
+    workingHoursMap: WorkingHoursMap; // Adicionamos o mapa de horários para edição granular
+}
+
+// Horário padrão completo (fallback)
+const defaultWorkingHours: WorkingHoursMap = {
+    monday: { enabled: true, start: "09:00", end: "18:00" },
+    tuesday: { enabled: true, start: "09:00", end: "18:00" },
+    wednesday: { enabled: true, start: "09:00", end: "18:00" },
+    thursday: { enabled: true, start: "09:00", end: "18:00" },
+    friday: { enabled: true, start: "09:00", end: "18:00" },
+    saturday: { enabled: false, start: "09:00", end: "13:00" },
+    sunday: { enabled: false, start: "00:00", end: "00:00" },
+};
+
+// ===============================================
+// ⚙️ COMPONENTE AJUSTES
+// ===============================================
+
 export default function AjustesPage() {
     const { professional: authProfessional, isLoading, updateProfessional } = useAuth();
-    const [availability, setAvailability] = useState<ProfessionalAvailability | null>(null);
+    const [availability, setAvailability] = useState<AvailabilityForm | null>(null);
+    const [originalAvailability, setOriginalAvailability] = useState<AvailabilityForm | null>(null); // Estado original para comparação
+
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
     const [showBlockModal, setShowBlockModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    // 🔄 Lógica de Inicialização
     useEffect(() => {
         if (!authProfessional || isLoading) return;
         const professionalId = authProfessional.id;
         const stored = getProfessionalAvailability(professionalId);
         let defaultAvail = getDefaultAvailability(professionalId);
 
-        // --- Lógica de Inicialização Corrigida ---
+        // Se a configuração de agendamento NÃO existe, inicializamos do zero
         if (!stored) {
-            // Se a configuração de agendamento NÃO existe, inicializamos:
-
-            // 1. Horário Padrão: Usa um horário neutro (9h-18h), NÃO o horário de Segunda.
-            defaultAvail.workingHours = {
-                start: "09:00",
-                end: "18:00"
+            // Usa o horário granular do perfil (authProfessional.workingHours)
+            const initialData: AvailabilityForm = {
+                ...defaultAvail,
+                workingHours: { start: "09:00", end: "18:00" }, // Campo obsoleto, mantido por compatibilidade
+                workingHoursMap: authProfessional.workingHours || defaultWorkingHours,
+            };
+            setAvailability(initialData);
+            setOriginalAvailability(initialData);
+        } else {
+            // Se 'stored' existe, usamos, mas garantimos que 'workingHoursMap' existe e está completo.
+            const mergedWorkingHoursMap: WorkingHoursMap = {
+                ...defaultWorkingHours,
+                // Usar o horário do perfil principal, que é a fonte de verdade para a granularidade
+                ...(authProfessional.workingHours || {}),
+                // Mesclar com qualquer horário específico salvo no 'stored' se a página usasse o horário granular
+                // Para simplificar, vamos forçar o uso do horário do perfil como fonte inicial
             };
 
-            // 2. Dias Habilitados: LÊ a configuração de dias habilitados do perfil granular
-            dayKeys.forEach(day => {
-                defaultAvail.workingDays[day] = authProfessional.workingHours[day].enabled
-            });
+            const initialData: AvailabilityForm = {
+                ...stored,
+                // O workingHoursMap que vamos editar, iniciando com o dado do Perfil Principal
+                workingHoursMap: mergedWorkingHoursMap,
+            };
+            setAvailability(initialData);
+            setOriginalAvailability(initialData);
         }
-
-        // Se 'stored' existe, usamos a configuração salva. Se não, usamos o 'defaultAvail'.
-        setAvailability(stored || defaultAvail);
     }, [authProfessional, isLoading]);
+
+    const currentAvailability = availability as AvailabilityForm;
+
+    // 🔍 Lógica para checar se houve alterações
+    const hasChanges = useMemo(() => {
+        if (!availability || !originalAvailability) return false;
+        // Compara os campos: slotInterval, closedDates e workingHoursMap (granular)
+        return (
+            availability.slotInterval !== originalAvailability.slotInterval ||
+            JSON.stringify(availability.closedDates) !== JSON.stringify(originalAvailability.closedDates) ||
+            JSON.stringify(availability.workingHoursMap) !== JSON.stringify(originalAvailability.workingHoursMap)
+        );
+    }, [availability, originalAvailability]);
+
 
     if (isLoading || !authProfessional) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Carregando configurações...</p></div>;
     if (!availability) return <div className="min-h-screen bg-background flex items-center justify-center"><p className="text-muted-foreground">Inicializando agenda...</p></div>;
 
-    const currentAvailability = availability as ProfessionalAvailability;
     const formatDateString = (date: Date) => date.toISOString().split("T")[0];
 
-    // --- Handlers de Edição ---
+    // --- Handlers de Edição Granular ---
 
     const handleIntervalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value);
@@ -67,58 +116,82 @@ export default function AjustesPage() {
         else if (e.target.value === "") setAvailability(prev => prev ? ({ ...prev, slotInterval: 0 }) : null);
     };
 
-    const handleWorkingHourChange = (field: 'start' | 'end', value: string) => setAvailability(prev => prev ? ({ ...prev, workingHours: { ...prev.workingHours, [field]: value } }) : null);
+    // NOVO HANDLER: Atualiza o horário de um dia específico no workingHoursMap
+    const handleWorkingHourChange = (day: DayOfWeek, field: 'start' | 'end', value: string) => {
+        setAvailability(prev => prev ? ({
+            ...prev,
+            workingHoursMap: {
+                ...prev.workingHoursMap,
+                [day]: {
+                    ...prev.workingHoursMap[day],
+                    [field]: value,
+                },
+            },
+        }) : null);
+    };
 
-    const handleToggleDay = (day: DayOfWeek, checked: boolean) => setAvailability(prev => prev ? ({ ...prev, workingDays: { ...prev.workingDays, [day]: checked } }) : null);
+    // NOVO HANDLER: Atualiza o switch (habilitado/desabilitado) de um dia específico
+    const handleToggleDay = (day: DayOfWeek, checked: boolean) => {
+        setAvailability(prev => prev ? ({
+            ...prev,
+            workingHoursMap: {
+                ...prev.workingHoursMap,
+                [day]: {
+                    ...prev.workingHoursMap[day],
+                    enabled: checked,
+                },
+            },
+        }) : null);
+    };
 
-    // --- Lógica de Salvamento (Sobrescreve o Perfil Principal) ---
+    // --- Lógica de Salvamento ---
 
     const handleSaveHours = async () => {
         if (isSaving || !currentAvailability) return;
         setIsSaving(true);
 
-        const start = currentAvailability.workingHours.start;
-        const end = currentAvailability.workingHours.end;
-
-        if (start >= end) {
-            toast.error("O horário de início deve ser anterior ao horário de fim.");
+        // 1. Validação de Intervalo
+        if (currentAvailability.slotInterval < 5 || currentAvailability.slotInterval > 120) {
+            toast.error("O intervalo de minutos deve ser entre 5 e 120.");
             setIsSaving(false);
             return;
         }
 
-        try {
-            if (currentAvailability.slotInterval < 5 || currentAvailability.slotInterval > 120) {
-                toast.error("O intervalo de minutos deve ser entre 5 e 120.");
+        // 2. Validação de Horário (Início < Fim)
+        for (const day of dayKeys) {
+            const schedule = currentAvailability.workingHoursMap[day];
+            if (schedule.enabled && schedule.start >= schedule.end) {
+                toast.error(`O horário de início deve ser anterior ao de fim para ${dayNames[day]}.`);
                 setIsSaving(false);
                 return;
             }
+        }
 
-            // 1. SALVA OS PARÂMETROS DA AGENDA (Intervalo, Padrão de Horário e Dias Habilitados)
-            saveProfessionalAvailability(currentAvailability);
+        try {
+            // A. SALVA OS PARÂMETROS DA AGENDA (Intervalo e Datas Bloqueadas)
+            // Agora, a ProfessionalAvailability salva é mais simples, o horário granular vai para o Perfil
+            const availabilityToSave: ProfessionalAvailability = {
+                ...currentAvailability,
+                workingHours: { start: "", end: "" }, // Zera o campo obsoleto
+                workingDays: dayKeys.reduce((acc, day) => { // Mantém workingDays para compatibilidade, mas o workingHoursMap é a fonte
+                    acc[day] = currentAvailability.workingHoursMap[day].enabled;
+                    return acc;
+                }, {} as { [key in DayOfWeek]: boolean }),
+            };
+            saveProfessionalAvailability(availabilityToSave);
 
-            // 2. ATUALIZA O PERFIL PRINCIPAL COM ESTES NOVOS HORÁRIOS PADRÃO
-            const updatedWorkingHours = { ...authProfessional.workingHours };
-
-            dayKeys.forEach(day => {
-                const isDayEnabledInSettings = currentAvailability.workingDays[day];
-
-                updatedWorkingHours[day] = {
-                    // Aplica o status (habilitado/desabilitado) definido nesta página de Ajustes
-                    enabled: isDayEnabledInSettings,
-                    // Aplica o horário padrão definido nesta página de Ajustes
-                    start: currentAvailability.workingHours.start,
-                    end: currentAvailability.workingHours.end,
-                };
-            });
-
+            // B. ATUALIZA O PERFIL PRINCIPAL COM OS NOVOS HORÁRIOS GRANULARES
             const updatedProfessional: Professional = {
                 ...authProfessional,
-                workingHours: updatedWorkingHours
+                workingHours: currentAvailability.workingHoursMap // Salva o novo mapa granular
             };
 
             // Salva o novo horário no mock data e no contexto de autenticação
             saveProfessional(updatedProfessional);
             updateProfessional(updatedProfessional);
+
+            // C. Atualiza o estado original para desabilitar o botão de salvar
+            setOriginalAvailability(currentAvailability);
 
             toast.success("Horários e parâmetros de agendamento salvos com sucesso!");
 
@@ -130,7 +203,7 @@ export default function AjustesPage() {
         }
     };
 
-    // --- Lógica de Bloqueio de Data (Para o CustomCalendar) ---
+    // --- Lógica de Bloqueio de Data (Mantida) ---
 
     const handleDateSelect = (date: Date | undefined) => {
         if (!date) { setSelectedDate(undefined); return; }
@@ -150,6 +223,7 @@ export default function AjustesPage() {
             const updatedAvailability = { ...currentAvailability, closedDates: newClosedDates };
             saveProfessionalAvailability(updatedAvailability);
             setAvailability(updatedAvailability);
+            setOriginalAvailability(prev => prev ? ({ ...prev, closedDates: newClosedDates }) : null); // Atualiza estado original
             toast.success(`Data ${dateStr} bloqueada com sucesso!`);
         } catch {
             toast.error("Erro ao bloquear data.");
@@ -167,6 +241,7 @@ export default function AjustesPage() {
             const updatedAvailability = { ...currentAvailability, closedDates: newClosedDates };
             saveProfessionalAvailability(updatedAvailability);
             setAvailability(updatedAvailability);
+            setOriginalAvailability(prev => prev ? ({ ...prev, closedDates: newClosedDates }) : null); // Atualiza estado original
             toast.success(`Data ${dateToUnblock} desbloqueada com sucesso.`);
         }
         catch {
@@ -174,13 +249,10 @@ export default function AjustesPage() {
         }
     };
 
-    // FUNÇÃO QUE O CALENDÁRIO USA PARA MARCAR OS DIAS BLOQUEADOS
     const getDateStatus = (date: Date) => {
-        // Verifica se a data está no array de datas bloqueadas. Se sim, retorna "closed".
         if (currentAvailability.closedDates.includes(formatDateString(date))) {
             return "closed";
         }
-        // Se não, retorna "available" (ou qualquer outra regra de agendamento, se houver)
         return "available";
     };
 
@@ -190,108 +262,14 @@ export default function AjustesPage() {
         <div className="min-h-screen bg-background pb-20">
             <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
                 <div className="container mx-auto max-w-screen-lg px-4">
-                    <h1 className="text-2xl font-bold text-primary-foreground text-center">Configuração da Agenda </h1>
+                    <h1 className="text-2xl font-bold text-primary-foreground text-center">Configuração da Agenda</h1>
                 </div>
             </header>
             <main className="container mx-auto max-w-screen-lg px-4 space-y-6">
+                <section className="border rounded-lg p-6 bg-white shadow-sm  ">
+                    <h2 className="text-lg font-bold"><Ban className="w-5 h-5 mr-2 inline" />Bloquear dias</h2>
+                    <p className="text-sm text-muted-foreground mb-4">Defina bloqueios de férias e folgas.</p>
 
-                {/* Seção Horário Padrão e Parâmetros */}
-                <Card className="p-6 bg-white shadow-sm space-y-6">
-                    <h2 className="text-xl font-semibold flex items-center text-primary"><Clock className="w-5 h-5 mr-2" />Horário Padrão e Parâmetros</h2>
-
-                    {/* Intervalo */}
-                    <div className="space-y-2">
-                        <Label htmlFor="slot-interval" className="font-medium">Intervalo de Minutos para Agendamento</Label>
-                        <div className="flex items-center space-x-2">
-                            <Input
-                                id="slot-interval"
-                                type="number"
-                                value={currentAvailability.slotInterval || ""}
-                                onChange={handleIntervalChange}
-                                min={5}
-                                max={120}
-                                placeholder="Ex: 30"
-                                className="w-24"
-                            />
-                            <span className="text-sm text-muted-foreground">minutos. (Mín: 5, Máx: 120)</span>
-                        </div>
-                    </div>
-
-                    {/* Horário Padrão de Início/Fim */}
-                    <div className="space-y-2 pt-4 border-t pt-6">
-                        <h3 className="text-lg font-medium">Horário de Trabalho Padrão</h3>
-                        <p className="text-sm text-muted-foreground">Este horário se aplica a todos os dias **habilitados** abaixo ao clicar em Salvar.</p>
-                        <div className="flex space-x-4">
-                            <div className="flex flex-col space-y-1">
-                                <Label htmlFor="start-time">Início</Label>
-                                <Input
-                                    id="start-time"
-                                    type="time"
-                                    value={currentAvailability.workingHours.start}
-                                    onChange={e => handleWorkingHourChange('start', e.target.value)}
-                                    className="w-32"
-                                />
-                            </div>
-                            <div className="flex flex-col space-y-1">
-                                <Label htmlFor="end-time">Fim</Label>
-                                <Input
-                                    id="end-time"
-                                    type="time"
-                                    value={currentAvailability.workingHours.end}
-                                    onChange={e => handleWorkingHourChange('end', e.target.value)}
-                                    className="w-32"
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Dias Habilitados (Semanal) */}
-                    <div className="pt-4 border-t pt-6">
-                        <h3 className="text-lg font-medium mb-4">Dias Habilitados (Semanal)</h3>
-                        <p className="text-sm text-red-500 mb-4 font-semibold">Atenção: Ações de "Salvar" nesta página **sobrescreverão** os horários granulares que você pode ter definido na página Perfil.</p>
-                        <div className="space-y-4">
-                            {dayKeys.map(day => {
-                                const isEnabled = currentAvailability.workingDays[day];
-                                return (
-                                    <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 pb-3 pt-1">
-                                        <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
-                                        <div className="flex items-center space-x-4 w-full sm:w-auto justify-end sm:justify-start">
-                                            {/* Switch Habilita/Desabilita */}
-                                            <div className="flex items-center space-x-2 w-[100px] justify-end relative">
-
-                                                <Label
-                                                    htmlFor={`switch-${day}`}
-                                                    className={`text-sm ${isEnabled ? "text-green-600" : "text-red-500"} sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4 cursor-pointer`}
-                                                >
-                                                    {isEnabled ? "Aberto" : "Fechado"}
-                                                </Label><Switch
-                                                    id={`switch-${day}`}
-                                                    checked={isEnabled}
-                                                    onCheckedChange={(checked) => handleToggleDay(day, checked)}
-                                                    className="cursor-pointer"
-                                                />
-
-                                            </div>
-
-
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    <Button
-                        onClick={handleSaveHours}
-                        disabled={isSaving || currentAvailability.slotInterval < 5}
-                    >
-                        {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : "Salvar Horários e Parâmetros"}
-                    </Button>
-                </Card>
-
-                {/* Seção Bloqueio de Datas */}
-                <section className="border rounded-lg p-6 bg-white shadow-sm space-y-6">
-                    <h2 className="text-xl font-semibold flex items-center text-primary"><Ban className="w-5 h-5 mr-2" />Bloquear Datas Inteiras (Férias/Folgas)</h2>
                     <div className="flex flex-col md:flex-row gap-6">
 
                         <div className="md:w-1/2">
@@ -299,7 +277,6 @@ export default function AjustesPage() {
                                 selected={selectedDate}
                                 onSelect={handleDateSelect}
                                 getDateStatus={getDateStatus}
-                            // O CustomCalendar usará getDateStatus para marcar os dias fechados
                             />
                         </div>
 
@@ -343,9 +320,107 @@ export default function AjustesPage() {
                         </div>
                     </div>
                 </section>
+                {/* Seção Horário Padrão e Parâmetros */}
+                <Card className="p-6 bg-white shadow-sm space-y-6">
+                    <h2 className="text-lg font-bold"><Clock className="w-5 h-5 mr-2 inline" />Intervalo de agendamentos</h2>
+
+                    {/* Intervalo */}
+                    <div className="space-y-2 pb-4 border-b">
+                        <Label htmlFor="slot-interval" className="font-medium">Intervalo de Minutos para Agendamento</Label>
+                        <div className="flex items-center space-x-2">
+                            <Input
+                                id="slot-interval"
+                                type="number"
+                                value={currentAvailability.slotInterval || ""}
+                                onChange={handleIntervalChange}
+                                min={5}
+                                max={120}
+                                placeholder="Ex: 30"
+                                className="w-24"
+                            />
+                            <span className="text-sm text-muted-foreground">minutos. (Mín: 5, Máx: 120).</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
+                    </div>
+
+                    {/* Horário Granular por Dia da Semana (Adaptado da página Perfil) */}
+                    <div className="pt-2">
+                        <h2 className="text-lg font-bold">Horário de Funcionamento</h2>
+                        <p className="text-sm text-muted-foreground mb-4">Defina o horário de trabalho específico e habilite/desabilite para cada dia da semana.</p>
+
+                        <div className=" ">
+                            {dayKeys.map((dayKey) => {
+                                const day = dayKey as DayOfWeek;
+                                // Pega o horário do novo workingHoursMap
+                                const schedule = currentAvailability.workingHoursMap[day] || defaultWorkingHours[day];
+
+                                return (
+                                    <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 py-2">
+                                        <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
+
+                                        <div className="flex items-center space-x-4 w-full sm:w-auto">
+                                            {/* Switch Habilita/Desabilita */}
+                                            <div className="flex items-center space-x-2 w-[100px] justify-end relative">
+                                                <Label
+                                                    htmlFor={`switch-${day}`}
+                                                    className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4 cursor-pointer`}
+                                                >
+                                                    {schedule.enabled ? "Aberto" : "Fechado"}
+                                                </Label>
+                                                <Switch
+                                                    id={`switch-${day}`}
+                                                    checked={schedule.enabled}
+                                                    onCheckedChange={(checked) => handleToggleDay(day, checked)}
+                                                    className="cursor-pointer"
+                                                />
+                                            </div>
+
+                                            {/* Horário de Início */}
+                                            <Input
+                                                type="time"
+                                                value={schedule.start}
+                                                disabled={!schedule.enabled}
+                                                onChange={(e) => handleWorkingHourChange(day, 'start', e.target.value)}
+                                                className="w-24 text-center"
+                                            />
+
+                                            <span className="text-muted-foreground">até</span>
+
+                                            {/* Horário de Fim */}
+                                            <Input
+                                                type="time"
+                                                value={schedule.end}
+                                                disabled={!schedule.enabled}
+                                                onChange={(e) => handleWorkingHourChange(day, 'end', e.target.value)}
+                                                className="w-24 text-center"
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+
+                </Card>
+                <div className='text-end mb-4'>
+                    {!hasChanges && <p className="text-xs text-muted-foreground mx-2 inline">Nenhuma alteração pendente.</p>}
+                    <Button
+                        onClick={handleSaveHours}
+                        disabled={isSaving || currentAvailability.slotInterval < 5 || !hasChanges} // Habilitado apenas se houver alterações
+                    >
+                        {isSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Salvando...</> : (
+                            <><Save className="w-5 h-5 mr-1" /> Salvar Configurações</>
+                        )}
+                    </Button>
+
+
+
+                </div>
+
             </main>
 
-            {/* Modal de Confirmação de Bloqueio */}
+            {/* Modal de Confirmação de Bloqueio (Mantido) */}
             <Dialog open={showBlockModal} onOpenChange={setShowBlockModal}>
                 <DialogContent>
                     <DialogHeader>
