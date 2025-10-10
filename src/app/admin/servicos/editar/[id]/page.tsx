@@ -128,7 +128,7 @@ export default function EditarServicoPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
-        <div className="container mx-auto max-w-screen-lg">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex justify-start items-center mb-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-primary-foreground mr-4">
               <ArrowLeft className="w-5 h-5" />

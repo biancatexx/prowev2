@@ -198,7 +198,7 @@ export default function ProfessionalDetails() {
     <div className="min-h-screen bg-background pb-48">
       {/* Header */}
       <header className="bg-primary rounded-b-3xl pb-6 pt-8 px-4">
-        <div className="container mx-auto max-w-screen-lg">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex items-center justify-between mb-6">
             <button
               onClick={() => router.back()}
@@ -235,6 +235,7 @@ export default function ProfessionalDetails() {
 
       {/* Tabs */}
       <div className="container mx-auto max-w-screen-lg px-4 -mt-4 relative z-10">
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full bg-card border border-border rounded-xl p-1 mb-6">
             <TabsTrigger value="servicos" className="flex-1 rounded-lg p-2">
@@ -426,8 +427,8 @@ export default function ProfessionalDetails() {
       </div>
 
       {/* Footer fixo */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30">
-        <div className="container mx-auto max-w-screen-lg flex flex-col gap-3">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30 rounded-t-3xl">
+        <div className="container mx-auto max-w-screen-lg px-4 text-center">
           {(selectedServices.length > 0 || selectedDate || selectedTime) && (
             <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-border">
               {/* Texto */}
@@ -473,7 +474,7 @@ export default function ProfessionalDetails() {
           <Button
 
             onClick={handleSchedule}
-            className={`w-full ${selectedServices.length === 0 && !selectedDate && !selectedTime
+            className={`${selectedServices.length === 0 && !selectedDate && !selectedTime
               ? "bg-zinc-900 text-white hover:bg-zinc-700"
               : "bg-primary text-zinc-900 hover:bg-primary/90"
               }`}

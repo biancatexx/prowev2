@@ -99,7 +99,7 @@ export default function ClientesPage() {
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
-        <div className="container mx-auto max-w-screen-lg">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <h1 className="text-2xl font-bold text-primary-foreground text-center">Clientes</h1>
         </div>
       </header>

@@ -118,7 +118,7 @@ export default function ClienteDetalhePage() {
     return (
         <div className="min-h-screen bg-background pb-8">
             <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
-                <div className="container mx-auto max-w-screen-lg">
+                <div className="container mx-auto max-w-screen-lg px-4">
                     <button
                         onClick={() => router.back()}
                         className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md mb-4"

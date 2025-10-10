@@ -475,8 +475,8 @@ export default function ProfessionalAgendamento() {
       </div>
 
       {/* Botão fixado */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10">
-        <div className="container mx-auto max-w-screen-lg">
+      <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 z-10 rounded-t-3xl">
+        <div className="container mx-auto max-w-screen-lg px-4">
           <div className="text-center">
             <Button
               className="w-full max-w-md bg-zinc-900 hover:bg-zinc-800 text-zinc-50"

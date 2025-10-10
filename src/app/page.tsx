@@ -94,7 +94,7 @@ const Explorar = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      
       <header className="bg-primary rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex items-center justify-between mb-4">
@@ -105,6 +105,7 @@ const Explorar = () => {
                 <Bell className="w-5 h-5" />
               </button>
             </div> */}
+            
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-2 w-full max-w-4xl">
