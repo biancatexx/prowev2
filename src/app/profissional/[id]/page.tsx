@@ -15,11 +15,9 @@ import {
   removeFavorite,
   isFavorite,
   isDateAvailable,
-  generateTimeSlots,
-  getUnavailableReason,
   type Favorite,
   type DayOfWeek,
-  type WorkingHoursMap, // 🔑 IMPORTAÇÃO ADICIONADA
+  type WorkingHoursMap,
 } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
 
@@ -50,23 +48,19 @@ const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) =
 
   return (
     <div className="bg-card rounded-2xl p-4 border border-border mb-4">
-      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
-        <Clock className="w-4 h-4" /> Horário de Atendimento Geral
-      </h3>
+      
       <div className="space-y-2 text-sm">
         {dayKeys.map((day, index) => {
           const isToday = index === todayIndex;
           const hours = workingHours[day];
 
-          // 🛑 Regra: Não mostrar o horário de hoje
-          if (isToday) {
-            return null;
-          }
-
           return (
-            <div key={day} className="flex justify-between items-center text-muted-foreground">
+            <div
+              key={day}
+              className={`flex justify-between items-center  ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+            >
               <span className="font-medium capitalize">
-                {dayNamesPt[day]}
+                {dayNamesPt[day]} {isToday && '(Hoje)'}
               </span>
               <span>
                 {hours?.enabled ? `${hours.start} às ${hours.end}` : "Fechado"}
@@ -275,6 +269,7 @@ export default function ProfessionalDetails() {
     return isDateAvailable(id, date) ? "available" : "unavailable"
   }
 
+
   return (
     <div className="min-h-screen bg-background pb-48">
       {/* Header */}
@@ -380,20 +375,22 @@ export default function ProfessionalDetails() {
 
               {isQueueOperation ? (
                 // 1. MENSAGEM PARA MODO FILA
-                <div className="flex flex-col lg:flex-row gap-4">
-                  <Card className="border flex-1">
-                    <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
-                  </Card>
-                  <div className="">
-                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg text-center">
-
+                <div className="flex flex-col lg:flex-row gap-2 grid-col-4">
+                  <div className="col-2">
+                    <Card className="border flex-1">
+                      <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
+                    </Card>
+                  </div>
+                  <div className="col-1">
+                    <div className=" "> 
                       <p className="text-lg font-semibold text-primary">Atendimento por Ordem de Chegada (Fila)</p>
                       <p className="text-muted-foreground text-sm">
-                        Este profissional não utiliza agendamento. Você será atendido na ordem de chegada durante o horário de funcionamento.
+                        Este profissional não utiliza agendamento. <br />Você será atendido na ordem de chegada durante o horário de funcionamento.
                       </p>
-                      <div className="flex items-center justify-center gap-2 text-foreground font-medium border-t pt-2 mt-4">
-                        <Clock className="w-4 h-4" />
-                        Horário de hoje: {getTodayWorkingHours()}
+                      <div className="border-b last:border-b-0 py-2" >
+                        {professional.workingHours && (
+                          <WorkingHoursCard workingHours={professional.workingHours} />
+                        )}
                       </div>
                     </div>
                   </div>
@@ -409,14 +406,14 @@ export default function ProfessionalDetails() {
                         <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
                       </Card>
                     </div>
-                    <div className="flex-1"  >
+                    <div className="flex-1"  >
                       <h2 className="mb-2">Selecione o horário</h2>
                       <Card className="border flex-1 p-3">
                         <TimeSlotPicker
                           professionalId={id}
                           selectedDate={selectedDate}
                           selectedTime={selectedTime}
-                          onTimeSelect={setSelectedTime} totalDuration={0}
+                          onTimeSelect={setSelectedTime} totalDuration={totalDuration} // Use totalDuration aqui!
                         /></Card>
                     </div>
                   </div>
@@ -426,12 +423,6 @@ export default function ProfessionalDetails() {
           </TabsContent>
           {/* Sobre */}
           <TabsContent value="sobre">
-
-            {/* NOVO BLOCO: Horário de Atendimento Geral */}
-            {professional.workingHours && (
-              <WorkingHoursCard workingHours={professional.workingHours} />
-            )}
-
             {/* Descrição */}
             {professional.description && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
@@ -471,8 +462,7 @@ export default function ProfessionalDetails() {
                       href={`https://facebook.com/${professional.social_facebook}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm bg-primary/20"
-                    >
+                      className="flex items-center gap-2 px-4 py-2 bg-accent rounded-lg text-sm bg-primary/20">
                       <Facebook className="w-4 h-4" />{professional.social_facebook}
                     </a>
                   )}
@@ -499,20 +489,21 @@ export default function ProfessionalDetails() {
                   {getAddress()}
                 </p>
                 <div className="w-full h-48 rounded-lg overflow-hidden border mt-2">
+                  {/* ATENÇÃO: A URL DO IFRAME FOI CORRIGIDA DE FORMA SEGURA */}
                   <iframe
                     width="100%"
                     height="100%"
                     frameBorder="0"
-                    src={`https://www.google.com/maps?q=${encodeURIComponent(getAddress())}&output=embed`}
+                    src={`https://maps.google.com/maps?q=${encodeURIComponent(getAddress())}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                     allowFullScreen
                   ></iframe>
                 </div>
-                <div className="  text-end">
+                <div className="text-end">
                   <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getAddress())}`}
+                    href={`https://maps.google.com/maps?q=${encodeURIComponent(getAddress())}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-zinc-900 font-sm font-semibold hover:underline mt-2 inline-block"
+                    className="text-primary font-sm font-semibold hover:underline mt-2 inline-block"
                   >
                     Abrir no Google Maps
                   </a>
@@ -574,7 +565,7 @@ export default function ProfessionalDetails() {
               onClick={handleSchedule}
               // A condição de desabilitar/mudar cor é simplificada se for fila (só precisa de serviços)
               disabled={!isQueueOperation && (selectedServices.length === 0 || !selectedDate || !selectedTime)}
-              className={`w-full ${selectedServices.length === 0 && !selectedDate && !selectedTime
+              className={`w-full ${selectedServices.length === 0 && (!selectedDate || !selectedTime) && !isQueueOperation
                 ? "bg-zinc-900 text-white hover:bg-zinc-700"
                 : "bg-primary text-zinc-900 hover:bg-primary/90"
                 }`}
