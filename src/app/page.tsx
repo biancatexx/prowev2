@@ -1,21 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
-import Navbar from "@/components/Navbar";
+// Removida importação Navbar, já que NavbarApp é usada
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Heart, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { getProfessionals, getMockServices } from "@/data/mockData";
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
-// Removidas importações não utilizadas: Star, Bell, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 
 interface Professional {
   id: string;
   name: string;
   specialty: string | null;
-  profile_image: string | null; // Corrigido para ser o nome correto da propriedade
+  profileImage: string | null; // Usando 'profileImage' como no mockData
   services?: Array<{ category: string; price: number }>;
-  address: { street: string; neighborhood: string; city: string };
+  address: { street: string; neighborhood: string; city: string; state: string; }; // Adicionado 'state' para consistência
 }
 
 const categories = [
@@ -44,21 +43,23 @@ const Explorar = () => {
       const profServices = allMockServices.filter((s: any) => s.professionalId === prof.id);
       return {
         ...prof,
-        address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A" },
-        services: profServices
+        address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A", state: "N/A" },
+        services: profServices,
+        // Garante que a foto lida do mockData (profileImage) seja usada
+        profileImage: prof.profileImage || null,
       };
     }) as Professional[];
 
     setProfessionals(loadedProfessionals);
     setLoading(false);
-  }, []);
+  }, []); // Roda apenas na montagem, lendo os dados atualizados do localStorage/mockData
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
   };
 
   const getAddress = (prof: Professional) => {
-    if (prof.address && typeof prof.address === 'object') return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}`;
+    if (prof.address && typeof prof.address === 'object') return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}/${prof.address.state}`;
     return "Endereço não informado";
   };
 
@@ -70,21 +71,10 @@ const Explorar = () => {
     return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
   };
 
-  // MODIFICAÇÃO APLICADA AQUI: Mostrar apenas as categorias de serviço únicas
   const getServices = (prof: Professional) => {
     if (!prof.services || prof.services.length === 0) return "Serviços não informados";
-
-    // 1. Extrai todas as categorias
-    const allCategories = prof.services.map((s: any) => s.category);
-
-    // 2. Remove as duplicatas usando Set
-    const uniqueCategories = Array.from(new Set(allCategories));
-
-    // 3. Limita a exibição a 3 categorias
-    const displayCategories = uniqueCategories.slice(0, 3);
-
-    // 4. Junta as categorias e adiciona "..." se houver mais de 3
-    return displayCategories.join(", ") + (uniqueCategories.length > 3 ? "..." : "");
+    // Limita a exibição a 3 serviços para evitar textos longos
+    return prof.services.slice(0, 3).map((s: any) => s.category).join(", ") + (prof.services.length > 3 ? "..." : "");
   };
 
   const filteredProfessionals = professionals.filter((prof) => {
@@ -110,13 +100,6 @@ const Explorar = () => {
         <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-zinc-900 leading-snug">Encontre o profissional disponível mais perto de você</h1>
-            {/* Botão de Notificação removido por não ter lógica funcional */}
-            {/* <div className="flex gap-2 hidden">
-              <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                <Bell className="w-5 h-5" />
-              </button>
-            </div> */}
-
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-2 w-full max-w-4xl">
@@ -154,10 +137,9 @@ const Explorar = () => {
         <section className="mt-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Categorias</h2>
-
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-between">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {categories.map((category) => (
               <button
                 key={category.name}
@@ -169,9 +151,8 @@ const Explorar = () => {
                     rounded-full p-4 text-center text-2xl
                     hover:shadow-lg transition-all cursor-pointer 
                     border-2 
-                    ${selectedCategory === category.name
-                      ? "bg-primary text-primary-foreground border-primary shadow-lg" // Estilo Ativo
-                      : "bg-card text-foreground border-border hover:border-primary/50"} // Estilo Inativo
+                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                      : "bg-card text-foreground border-border hover:border-primary/50"} 
                   `}
                 >
                   {category.icon}
@@ -201,15 +182,20 @@ const Explorar = () => {
               filteredProfessionals.map(professional => (
                 <div key={professional.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex gap-3">
-                    <Link href={`/profissional/${professional.id}`} className="flex-shrink-0">
-                      {professional.profile_image ? (
+                    <Link href={`/profissional/${professional.id}`} className="flex-shrink-0 w-18 h-18 rounded-full overflow-hidden border-primary">
+                      {professional.profileImage ? ( // USANDO profileImage AGORA
                         <img
-                          src={professional.profile_image}
+                          src={professional.profileImage}
                           alt={professional.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover border-2 rounded-full border-primary "
+                          // Fallback caso a imagem falhe ao carregar
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-avatar')?.classList.remove('hidden');
+                          }}
                         />
                       ) : (
-                        <div className="w-18 h-18 mx-auto rounded-full bg-zinc-900 text-white flex items-center justify-center text-4xl font-bold border">
+                        <div className="w-18 h-18 mx-auto rounded-full border-primary bg-zinc-900 text-white flex items-center justify-center text-xl font-bold border fallback-avatar">
                           <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
                         </div>
                       )}
@@ -218,7 +204,7 @@ const Explorar = () => {
                       <Link href={`/profissional/${professional.id}`}>
                         <h3 className="font-bold text-lg text-foreground mb-0">{professional.name}</h3>
                         <p className="text-sm text-muted-foreground mb-1 truncate">{getServices(professional)}</p>
-                        <p className="text-sm font-bold text-primary mb-2">{getPriceRange(professional)}</p>
+                        <div className="rounded-sm bg-primary/50 w-auto px-2 inline-block"><p className="text-sm font-semibold">{getPriceRange(professional)}</p></div>
                       </Link>
                     </div>
                     <button

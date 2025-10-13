@@ -1,12 +1,11 @@
-'use client'
-
-import { useEffect, useState, useMemo } from "react"
+"use client";
+import { useEffect, useState, useMemo, useRef } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Save, LogOut } from "lucide-react"
+import { Save, LogOut, Pen, Clock } from "lucide-react"
 import {
     AlertDialog,
     AlertDialogAction,
@@ -25,12 +24,7 @@ import { useAuth } from "@/contexts/AuthContext"
 import { toast } from "sonner"
 import Link from "next/link"
 import { Switch } from "@/components/ui/switch"
-// ❌ REMOVENDO A IMPORTAÇÃO DE deepEqual, QUE CAUSA O ERRO
-// import { deepEqual } from "@/lib/utils" 
 
-// ===============================================
-// 📌 TIPAGEM DO FORMULÁRIO
-// ===============================================
 
 interface ProfessionalForm extends Omit<Professional, 'address'> {
     address: Address;
@@ -49,17 +43,17 @@ const dayNames: { [key in DayOfWeek]: string } = {
 const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
 
-// ===============================================
-// ⚙️ COMPONENTE PERFIL
-// ===============================================
-
 export default function Perfil() {
     const { professional: authProfessional, isLoading, updateProfessional, logout } = useAuth()
 
     const [loading, setLoading] = useState(false)
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-    // Horário padrão completo (fallback caso o authProfessional não tenha algum dia)
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    // Não precisamos mais de newImageFile separado se vamos converter direto para Base64
+    // Mas vamos mantê-lo para a lógica de `hasChanges` e para clareza sobre um "novo" upload.
+    const [newImageFile, setNewImageFile] = useState<File | null>(null);
+
     const defaultWorkingHours: WorkingHoursMap = {
         monday: { enabled: true, start: "09:00", end: "18:00" },
         tuesday: { enabled: true, start: "09:00", end: "18:00" },
@@ -76,7 +70,7 @@ export default function Perfil() {
         description: '',
         phone: '',
         email: '',
-        profileImage: '',
+        profileImage: '', // Pode ser uma string Base64 ou URL real
         specialty: '',
         status: 'active',
         whatsapp: '',
@@ -85,7 +79,7 @@ export default function Perfil() {
         experience_years: 0,
         services: [],
         workingHours: defaultWorkingHours,
-        operationType: 'agendamento', // 🔑 VALOR INICIAL PARA O NOVO CAMPO
+        operationType: 'agendamento',
         address: {
             street: '',
             number: '',
@@ -106,15 +100,13 @@ export default function Perfil() {
             ...(professional.address || {})
         };
 
-        // Garante que operationType tenha um fallback se estiver faltando
         const operationType = professional.operationType || initialProfessionalData.operationType;
-
 
         return {
             ...professional,
             address: mergedAddress,
             workingHours: mergedWorkingHours,
-            operationType: operationType, // Usa o valor do profissional ou o fallback
+            operationType: operationType,
         } as ProfessionalForm;
     };
 
@@ -125,7 +117,6 @@ export default function Perfil() {
     );
     const [originalFormData, setOriginalFormData] = useState<ProfessionalForm>(formData);
 
-    //  Sincroniza formData e originalFormData quando authProfessional muda
     useEffect(() => {
         if (authProfessional) {
             const initialData = initializeFormData(authProfessional);
@@ -135,14 +126,12 @@ export default function Perfil() {
     }, [authProfessional]);
 
 
-    // 🔍 Lógica para checar se houve alterações
-    // Usando JSON.stringify() como comparação profunda, resolvendo o erro de importação.
     const hasChanges = useMemo(() => {
-        // Ordena chaves antes de stringify para garantir que a ordem não cause false negatives,
-        // embora JSON.stringify em objetos simples geralmente preserve a ordem de inserção (o que é ok para objetos de estado React).
-        // Para maior segurança, podemos apenas comparar as strings.
-        return JSON.stringify(formData) !== JSON.stringify(originalFormData);
-    }, [formData, originalFormData]);
+        const isFormChanged = JSON.stringify(formData) !== JSON.stringify(originalFormData);
+        const isImageFilePending = newImageFile !== null;
+
+        return isFormChanged || isImageFilePending;
+    }, [formData, originalFormData, newImageFile]);
 
     if (isLoading) {
         return (
@@ -221,7 +210,34 @@ export default function Perfil() {
         }));
     };
 
-    const executeSave = () => {
+    // 📸 AJUSTADO: Função para lidar com a seleção da imagem (agora lê como Base64)
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (!file.type.startsWith('image/')) {
+                toast.error("Por favor, selecione um arquivo de imagem válido.");
+                return;
+            }
+
+            // FileReader para ler o arquivo como Base64
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const base64String = reader.result as string;
+
+                // 1. Armazena o arquivo real para a lógica de `hasChanges`
+                setNewImageFile(file); // Mantém o controle de que um novo arquivo foi selecionado
+
+                // 2. Atualiza o profileImage no formData para a string Base64
+                setFormData(prev => ({
+                    ...prev,
+                    profileImage: base64String,
+                }));
+            };
+            reader.readAsDataURL(file); // Lê o arquivo como uma URL de dados (Base64)
+        }
+    };
+
+    const executeSave = async () => {
         if (loading) return;
         setLoading(true);
 
@@ -235,15 +251,19 @@ export default function Perfil() {
         }
 
         try {
-            // 1. SALVA OS DADOS DO PROFISSIONAL 
-            saveProfessional(formData as Professional);
+            let updatedFormData = { ...formData };
 
-            // 2. SINCRONIZA A AGENDA DE AJUSTES 
-            syncAvailabilityFromProfessional(formData as Professional);
+            // Se um novo arquivo foi selecionado, profileImage já foi atualizado para Base64 em handleImageChange
+            // Então, só precisamos resetar newImageFile
+            if (newImageFile) {
+                toast.info("Processando nova imagem de perfil...");
+                setNewImageFile(null); // Limpa o arquivo de upload pendente
+            }
 
-            // 3. ATUALIZA O CONTEXTO DE AUTENTICAÇÃO E OS DADOS ORIGINAIS
-            updateProfessional(formData as Professional);
-            setOriginalFormData(formData); // 🔑 ATUALIZA OS DADOS ORIGINAIS APÓS SALVAR
+            saveProfessional(updatedFormData as Professional);
+            syncAvailabilityFromProfessional(updatedFormData as Professional);
+            updateProfessional(updatedFormData as Professional);
+            setOriginalFormData(updatedFormData);
 
             toast.success('Perfil e Configurações de Agenda atualizados!')
         } catch (error) {
@@ -251,7 +271,7 @@ export default function Perfil() {
             toast.error('Erro ao salvar, tente mais tarde.')
         } finally {
             setLoading(false);
-            setShowConfirmModal(false); // Fecha o modal
+            setShowConfirmModal(false);
         }
     }
 
@@ -261,40 +281,65 @@ export default function Perfil() {
 
     }
 
+    const triggerFileInput = () => {
+        fileInputRef.current?.click();
+    }
+
     return (
-        <div className="">
+        <div className="min-h-screen pb-20">
             <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
-                <div className="container mx-auto max-w-screen-lg px-4">
+                <div className="container mx-auto max-w-screen-lg">
                     <h1 className="text-2xl font-bold text-primary-foreground text-center">Perfil Profissional</h1>
                 </div>
             </header>
 
-            <div className="container mx-auto max-w-screen-lg px-4 space-y-4">
+            <div className="container mx-auto max-w-screen-lg px-4 space-y-6">
 
 
-                {/* Imagem de Perfil */}
                 <div className="text-center flex justify-center -mb-4">
-                    <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white z-10">
-                        {formData.profileImage ? (
-                            <img
-                                src={formData.profileImage}
-                                alt={formData.name}
-                                className="w-full h-full object-cover rounded-full"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.onerror = null;
-                                    target.src = `https://placehold.co/96x96/25555d/fff?text=${formData.name.charAt(0)}`;
-                                }}
-                            />
-                        ) : (
-                            <span>{formData.name ? formData.name.charAt(0).toUpperCase() : 'P'}</span>
-                        )}
+                    <div className="relative w-28 h-28">
+                        <div className="w-28 h-28 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-5xl font-bold shadow-xl border-4 border-white overflow-hidden">
+                            {formData.profileImage ? (
+                                <img
+                                    src={formData.profileImage}
+                                    alt={formData.name}
+                                    className="w-full h-full object-cover rounded-full"
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.onerror = null;
+                                        // Fallback para a inicial do nome
+                                        target.src = `https://placehold.co/112x112/25555d/fff?text=${formData.name.charAt(0)}`;
+                                    }}
+                                />
+                            ) : (
+                                <span>{formData.name ? formData.name.charAt(0).toUpperCase() : 'P'}</span>
+                            )}
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={triggerFileInput}
+                            className="absolute bottom-0 right-0 p-2 bg-accent rounded-full text-accent-foreground 
+                            border-2 border-white shadow-md transition-colors hover:bg-zinc-900 hover:text-white z-20"
+                            aria-label="Alterar Imagem de Perfil"
+                        >
+                            <Pen className="w-4 h-4" />
+                        </button>
+
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleImageChange}
+                            accept="image/*"
+                            className="hidden"
+                        />
+
                     </div>
                 </div>
 
-                {/* Formulário: Informações do Negócio e Contato - Inputs SEMPRE HABILITADOS */}
+                {/* Informações do Negócio e Contato */}
                 <Card className="p-6 pt-16 -mt-12">
-                    <h2 className="text-lg font-bold mb-4">Informações do Negócio</h2>
+                    <h2 className="text-xl font-bold mb-4 border-b pb-2">Detalhes da Empresa</h2>
                     <div className="space-y-4">
                         <div>
                             <Label htmlFor="name">Nome do Estabelecimento</Label>
@@ -305,8 +350,12 @@ export default function Perfil() {
                             <Label htmlFor="description">Descrição</Label>
                             <Textarea id="description" value={formData.description} rows={3} onChange={handleInputChange} />
                         </div>
+                        <div>
+                            <Label htmlFor="specialty">Especialidade Principal</Label>
+                            <Input id="specialty" value={formData.specialty || ''} onChange={handleInputChange} />
+                        </div>
 
-                        <h3 className="font-semibold pt-2">Contato</h3>
+                        <h3 className="font-semibold pt-2 border-t mt-4">Contato</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="phone">Telefone</Label>
@@ -316,14 +365,13 @@ export default function Perfil() {
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
                             </div>
+                            <div className="sm:col-span-2">
+                                <Label htmlFor="whatsapp">WhatsApp</Label>
+                                <Input id="whatsapp" type="tel" value={formData.whatsapp} onChange={handleInputChange} />
+                            </div>
                         </div>
 
-                        <div>
-                            <Label htmlFor="whatsapp">WhatsApp</Label>
-                            <Input id="whatsapp" type="tel" value={formData.whatsapp} onChange={handleInputChange} />
-                        </div>
-
-                        <h3 className="font-semibold pt-2">Endereço</h3>
+                        <h3 className="font-semibold pt-2 border-t mt-4">Endereço</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <Label htmlFor="street">Rua</Label>
@@ -349,76 +397,71 @@ export default function Perfil() {
                                 <Label htmlFor="state">Estado</Label>
                                 <Input id="state" value={formData.address.state} onChange={handleAddressChange} />
                             </div>
-
                         </div>
                     </div>
                 </Card>
 
-
+                {/* Horários de Funcionamento e Tipo de Operação */}
                 <Card className="p-6">
-                    <div className="">
+                    <div className="flex items-center gap-3 mb-4 border-b pb-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        <h2 className="text-xl font-bold">Horários de Funcionamento</h2>
+                    </div>
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Defina o horário de abertura e fechamento para cada dia da semana.
+                    </p>
+                    <div className="space-y-3">
                         {dayKeys.map((dayKey) => {
                             const day = dayKey as DayOfWeek;
                             const schedule = formData.workingHours[day] || defaultWorkingHours[day];
 
                             return (
-                                <div key={day} className="border-b last:border-b-0 py-2" >
-                                    <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
-
-                                    <div className="grid grid-cols-1 sm:grid-cols-2">
-
-                                        {/* Switch Habilita/Desabilita */}
+                                <div key={day} className="flex flex-col sm:flex-row sm:items-center justify-between border-b last:border-b-0 py-3 gap-2" >
+                                    <div className="flex items-center gap-4">
+                                        <span className="font-medium w-28 text-left">{dayNames[day]}</span>
                                         <div className="flex items-center space-x-2">
-                                            <Label
-                                                htmlFor={`switch-${day}`}
-                                                className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} `}
-                                            >
-                                                {schedule.enabled ? "Aberto" : "Fechado"}
-                                            </Label><Switch
+                                            <Switch
                                                 id={`switch-${day}`}
                                                 checked={schedule.enabled}
                                                 onCheckedChange={(checked) => handleToggleDay(day, checked)}
                                                 className="cursor-pointer"
                                             />
-
-                                        </div>
-
-                                        <div className="flex items-center space-x-2 mt-2 ml-auto text-end">
-                                            {/* Horário de Início */}
-                                            <Input
-                                                type="time"
-                                                value={schedule.start}
-                                                disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHoursChange(day, 'start',
-                                                    e.target.value)}
-                                                className="w-24 text-center"
-                                            />
-                                            <span className="text-muted-foreground">até</span>
-                                            {/* Horário de Fim */}
-                                            <Input
-                                                type="time"
-                                                value={schedule.end}
-                                                disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHoursChange(day, 'end',
-                                                    e.target.value)}
-                                                className="w-24 text-center"
-                                            />
+                                            <Label
+                                                htmlFor={`switch-${day}`}
+                                                className={`text-sm ${schedule.enabled ? "text-green-600 font-bold" : "text-red-500"} `}
+                                            >
+                                                {schedule.enabled ? "Aberto" : "Fechado"}
+                                            </Label>
                                         </div>
                                     </div>
-
-                                    {/* Mensagem "Fechado" */}
-
+                                    <div className="flex items-center space-x-2">
+                                        <Input
+                                            type="time"
+                                            value={schedule.start}
+                                            disabled={!schedule.enabled}
+                                            onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
+                                            className="w-24 text-center"
+                                        />
+                                        <span className="text-muted-foreground">até</span>
+                                        <Input
+                                            type="time"
+                                            value={schedule.end}
+                                            disabled={!schedule.enabled}
+                                            onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
+                                            className="w-24 text-center"
+                                        />
+                                    </div>
                                 </div>
                             );
                         })}
                     </div>
-                    <div className="sm:col-span-2 pt-4 border-t mt-4 border-border flex flex-col sm:flex-row sm:items-center sm:justify-between">
+
+                    {/* Tipo de Operação (Rádio Buttons) */}
+                    <div className="pt-6 border-t mt-6 border-border flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <Label htmlFor="operationType" className="text-lg font-bold">
-                                Tipo de Operação
-                            </Label>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Defina o horário específico para cada dia da semana.
+                            <h3 className="text-lg font-bold">Tipo de Atendimento</h3>
+                            <p className="text-sm text-muted-foreground mb-4 sm:mb-0">
+                                Escolha como prefere gerenciar o fluxo de clientes.
                             </p>
                         </div>
 
@@ -429,20 +472,13 @@ export default function Perfil() {
                                     name="operationType"
                                     value="fila"
                                     checked={formData.operationType === "fila"}
-                                    onChange={(e) =>
-                                        handleOperationTypeChange(
-                                            e.target.value as ProfessionalForm["operationType"]
-                                        )
-                                    }
+                                    onChange={(e) => handleOperationTypeChange(e.target.value as ProfessionalForm["operationType"])}
                                     className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
                                 />
                                 <span
-                                    className={`text-sm font-medium ${formData.operationType === "fila"
-                                            ? "text-primary font-bold"
-                                            : "text-muted-foreground"
-                                        }`}
+                                    className={`text-sm font-medium ${formData.operationType === "fila" ? "text-primary font-bold" : "text-muted-foreground"}`}
                                 >
-                                    Fila
+                                    Fila (Por ordem de chegada)
                                 </span>
                             </label>
 
@@ -452,20 +488,13 @@ export default function Perfil() {
                                     name="operationType"
                                     value="agendamento"
                                     checked={formData.operationType === "agendamento"}
-                                    onChange={(e) =>
-                                        handleOperationTypeChange(
-                                            e.target.value as ProfessionalForm["operationType"]
-                                        )
-                                    }
+                                    onChange={(e) => handleOperationTypeChange(e.target.value as ProfessionalForm["operationType"])}
                                     className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
                                 />
                                 <span
-                                    className={`text-sm font-medium ${formData.operationType === "agendamento"
-                                            ? "text-primary font-bold"
-                                            : "text-muted-foreground"
-                                        }`}
+                                    className={`text-sm font-medium ${formData.operationType === "agendamento" ? "text-primary font-bold" : "text-muted-foreground"}`}
                                 >
-                                    Agendamento
+                                    Agendamento (Com hora marcada)
                                 </span>
                             </label>
                         </div>
@@ -473,7 +502,7 @@ export default function Perfil() {
                 </Card>
 
                 {/* Botões de Ação */}
-                <div className="flex justify-end items-center space-x-2">
+                <div className="flex justify-end items-center space-x-2 pb-4">
                     {/* Botão SALVAR HABILITADO / MODAL */}
                     {hasChanges ? (
                         <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
@@ -490,6 +519,9 @@ export default function Perfil() {
                                     <AlertDialogTitle>Confirmar Edições</AlertDialogTitle>
                                     <AlertDialogDescription>
                                         Você tem certeza que deseja salvar todas as alterações feitas no seu perfil e horários de funcionamento?
+                                        {newImageFile &&
+                                            <span className="text-primary font-bold block mt-2">Uma nova imagem de perfil será enviada.</span>
+                                        }
                                     </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
@@ -502,7 +534,7 @@ export default function Perfil() {
                         </AlertDialog>
                     ) : (
                         /* Botão SALVAR DESABILITADO */
-                        <Button disabled={true} variant="secondary"   >
+                        <Button disabled={true} variant="secondary" >
                             <Save className="w-5 h-5 mr-1" /> Salvar Edição
                         </Button>
                     )}
