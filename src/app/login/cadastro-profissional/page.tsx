@@ -85,24 +85,24 @@ export default function CadastroProfissionalPage() {
     return `${hours}h ${remainingMinutes}m`;
   };
 
- const formatPriceInput = (value: string): string => {
-  if (!value) return "";
-  // remove tudo que não seja número
-  const digits = value.replace(/\D/g, "");
-  const number = Number(digits) / 100; // divide por 100 para ter centavos
-  return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-};
+  const formatPriceInput = (value: string): string => {
+    if (!value) return "";
+    // remove tudo que não seja número
+    const digits = value.replace(/\D/g, "");
+    const number = Number(digits) / 100; // divide por 100 para ter centavos
+    return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
 
-const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const rawValue = e.target.value; 
-  const digits = rawValue.replace(/\D/g, "");
- 
-  const numberValue = (Number(digits) / 100).toFixed(2); 
-  setCurrentService({
-    ...currentService,
-    price: numberValue,
-  });
-};
+  const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value;
+    const digits = rawValue.replace(/\D/g, "");
+
+    const numberValue = (Number(digits) / 100).toFixed(2);
+    setCurrentService({
+      ...currentService,
+      price: numberValue,
+    });
+  };
   const [basicInfo, setBasicInfo] = useState({
     name: "",
     whatsapp: "",
@@ -141,7 +141,7 @@ const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const [currentService, setCurrentService] = useState({
     category: "",
     name: "",
-    duration: String(minDuration), 
+    duration: String(minDuration),
     price: "",
     description: "",
   })
@@ -623,8 +623,8 @@ const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                     placeholder="Ex: Corte feminino"
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-2">
+                <div className="grid grid-cols-4 gap-4 items-center">
+                  <div className="space-y-2 col-span-3">
                     <Label htmlFor="duration">Duração <span className="text-red-600">*</span></Label>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm font-medium w-16 text-center text-muted-foreground">
@@ -637,31 +637,35 @@ const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
                         max={maxDuration}
                         step={stepDuration}
                         value={currentService.duration}
-                        onChange={(e) => setCurrentService({ ...currentService, duration: e.target.value })}
-
+                        onChange={(e) => setCurrentService({ ...currentService, duration: e.target.value })} 
                         className="cursor-pointer custom-range-slider"
                       />
-                      <span className="text-sm font-medium w-16 text-center text-muted-foreground">
+                      <span className="text-sm font-medium  text-center text-muted-foreground">
                         {formatDuration(maxDuration)}
                       </span>
-                    </div>
-                    {/* Valor Selecionado */}
-                    <p className="text-center text-primary font-semibold mt-1">
-
-                      {formatDuration(Number(currentService.duration))}
-                    </p>
+                    </div> 
                   </div>
                   <div className="space-y-2 col-span-1">
-                    <Label htmlFor="price">Preço (R$) <span className="text-red-600">*</span></Label>
-                    <Input
-                      id="price"
-                      type="text"
-                      value={formatPriceInput(currentService.price)}
-                      onChange={handlePriceChange}
-                      placeholder="50,00"
-                    />
+                    <div 
+                      className="flex h-10 w-full rounded-md border border-input bg-background/30 px-3 py-2 text-base ring-offset-background  text-sm mt-4"
+                    >{formatDuration(Number(currentService.duration))} 
+                      </div>
+                
                   </div>
+
+
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="price">Preço (R$) <span className="text-red-600">*</span></Label>
+                  <Input
+                    id="price"
+                    type="text"
+                    value={formatPriceInput(currentService.price)}
+                    onChange={handlePriceChange}
+                    placeholder="50,00"
+                  />
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="description">Observação</Label>
                   <Input
@@ -848,6 +852,6 @@ const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
           </div>
         </Card>
       </main>
-    </div>
+    </div >
   )
 }
