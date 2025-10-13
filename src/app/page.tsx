@@ -71,11 +71,23 @@ const Explorar = () => {
     return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
   };
 
+  // 🚨 Função getServices ATUALIZADA para listar serviços ÚNICOS
   const getServices = (prof: Professional) => {
     if (!prof.services || prof.services.length === 0) return "Serviços não informados";
-    // Limita a exibição a 3 serviços para evitar textos longos
-    return prof.services.slice(0, 3).map((s: any) => s.category).join(", ") + (prof.services.length > 3 ? "..." : "");
+
+    // 1. Extrai as categorias de todos os serviços
+    const allCategories = prof.services.map((s: any) => s.category);
+
+    // 2. Cria um Set para obter apenas as categorias únicas
+    const uniqueCategories = Array.from(new Set(allCategories));
+
+    // 3. Limita a exibição a 3 categorias únicas para evitar textos longos
+    const displayedCategories = uniqueCategories.slice(0, 3);
+
+    // 4. Junta as categorias com vírgula, adicionando '...' se houver mais de 3
+    return displayedCategories.join(", ") + (uniqueCategories.length > 3 ? "..." : "");
   };
+ 
 
   const filteredProfessionals = professionals.filter((prof) => {
     // A busca agora também pode incluir pesquisa dentro do nome do serviço
@@ -92,7 +104,17 @@ const Explorar = () => {
 
     return matchesSearch && matchesCategory;
   });
+ const capitalizeWords = (text: string | null | undefined): string => {
+  if (!text) return "";
 
+  return text
+    .split(' ')
+    .map(word => {
+      if (!word) return '';
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
   return (
     <div className="min-h-screen bg-background">
 
@@ -137,6 +159,7 @@ const Explorar = () => {
         <section className="mt-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Categorias</h2>
+            {/* Botão de filtro removido da visualização para simplificação */}
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -151,7 +174,7 @@ const Explorar = () => {
                     rounded-full p-4 text-center text-2xl
                     hover:shadow-lg transition-all cursor-pointer 
                     border-2 
-                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
                       : "bg-card text-foreground border-border hover:border-primary/50"} 
                   `}
                 >
@@ -202,7 +225,7 @@ const Explorar = () => {
                     </Link>
                     <div className="flex-1 min-w-0">
                       <Link href={`/profissional/${professional.id}`}>
-                        <h3 className="font-bold text-lg text-foreground mb-0">{professional.name}</h3>
+                        <h3 className="font-bold text-lg text-foreground mb-0">{capitalizeWords(professional.name)}</h3>
                         <p className="text-sm text-muted-foreground mb-1 truncate">{getServices(professional)}</p>
                         <div className="rounded-sm bg-primary/50 w-auto px-2 inline-block"><p className="text-sm font-semibold">{getPriceRange(professional)}</p></div>
                       </Link>
