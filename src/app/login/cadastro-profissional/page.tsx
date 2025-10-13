@@ -18,13 +18,13 @@ import {
   type Service,
   type User,
   type WorkingHoursMap,
-  type DayOfWeek, // Importar DayOfWeek
+  type DayOfWeek,
 } from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { Card } from "@/components/ui/card"
 
-const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [ // Usar DayOfWeek aqui
+const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [
   { key: "monday", label: "Segunda-feira" },
   { key: "tuesday", label: "Terça-feira" },
   { key: "wednesday", label: "Quarta-feira" },
@@ -34,9 +34,8 @@ const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [ // Usar DayOfWeek aq
   { key: "sunday", label: "Domingo" },
 ]
 
-// ✅ Tipagem segura para garantir intervals sempre definido
 type SafeWorkingHoursMap = {
-  [K in DayOfWeek]: WorkingHoursMap[K] & { // Usar DayOfWeek aqui
+  [K in DayOfWeek]: WorkingHoursMap[K] & {
     intervals: { start: string; end: string }[]
   }
 }
@@ -48,7 +47,16 @@ export default function CadastroProfissionalPage() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
 
-  // Step 1: Basic Info
+  // Função de formatação de WhatsApp
+  const formatWhatsapp = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11)
+    if (digits.length <= 2) return digits
+    if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+    if (digits.length <= 11)
+      return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+    return value
+  }
+
   const [basicInfo, setBasicInfo] = useState({
     name: "",
     whatsapp: "",
@@ -57,7 +65,11 @@ export default function CadastroProfissionalPage() {
     confirmPassword: "",
   })
 
-  // Step 2: Address
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatWhatsapp(e.target.value)
+    setBasicInfo({ ...basicInfo, whatsapp: formatted })
+  }
+
   const [address, setAddress] = useState({
     street: "",
     number: "",
@@ -67,7 +79,6 @@ export default function CadastroProfissionalPage() {
     zipCode: "",
   })
 
-  // Step 3: Services
   const [services, setServices] = useState<Service[]>([])
   const [currentService, setCurrentService] = useState({
     category: "",
@@ -77,7 +88,6 @@ export default function CadastroProfissionalPage() {
     description: "",
   })
 
-  // Step 4: Working Hours
   const [workingHours, setWorkingHours] = useState<SafeWorkingHoursMap>({
     monday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     tuesday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
@@ -87,6 +97,7 @@ export default function CadastroProfissionalPage() {
     saturday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
     sunday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
   })
+
   const categories = getCategories()
 
   const handleAddService = () => {
@@ -121,38 +132,31 @@ export default function CadastroProfissionalPage() {
     setServices(services.filter((s) => s.id !== id))
   }
 
-  const handleAddInterval = (day: DayOfWeek) => { // Usar DayOfWeek aqui
-    setWorkingHours((prevWorkingHours) => ({
-      ...prevWorkingHours,
+  const handleAddInterval = (day: DayOfWeek) => {
+    setWorkingHours((prev) => ({
+      ...prev,
       [day]: {
-        ...prevWorkingHours[day],
-        intervals: [...prevWorkingHours[day].intervals, { start: "12:00", end: "13:00" }],
+        ...prev[day],
+        intervals: [...prev[day].intervals, { start: "12:00", end: "13:00" }],
       },
     }))
   }
 
-  const handleRemoveInterval = (day: DayOfWeek, index: number) => { // Usar DayOfWeek aqui
-    setWorkingHours((prevWorkingHours) => {
-      const newIntervals = [...prevWorkingHours[day].intervals];
-      newIntervals.splice(index, 1);
-      return {
-        ...prevWorkingHours,
-        [day]: { ...prevWorkingHours[day], intervals: newIntervals },
-      };
-    });
-  };
+  const handleRemoveInterval = (day: DayOfWeek, index: number) => {
+    setWorkingHours((prev) => {
+      const updated = [...prev[day].intervals]
+      updated.splice(index, 1)
+      return { ...prev, [day]: { ...prev[day], intervals: updated } }
+    })
+  }
 
-  const handleUpdateInterval = (day: DayOfWeek, index: number, field: "start" | "end", value: string) => { // Usar DayOfWeek aqui
-    setWorkingHours((prevWorkingHours) => {
-      const newIntervals = [...prevWorkingHours[day].intervals];
-      newIntervals[index][field] = value;
-      return {
-        ...prevWorkingHours,
-        [day]: { ...prevWorkingHours[day], intervals: newIntervals },
-      };
-    });
-  };
-
+  const handleUpdateInterval = (day: DayOfWeek, index: number, field: "start" | "end", value: string) => {
+    setWorkingHours((prev) => {
+      const updated = [...prev[day].intervals]
+      updated[index][field] = value
+      return { ...prev, [day]: { ...prev[day], intervals: updated } }
+    })
+  }
 
   const validateStep1 = () => {
     if (!basicInfo.name || !basicInfo.whatsapp || !basicInfo.email || !basicInfo.password) {
@@ -213,53 +217,41 @@ export default function CadastroProfissionalPage() {
         password: basicInfo.password,
         address,
         services,
-        // Garante que workingHours tenha o tipo WorkingHoursMap esperado pelo mockData
         workingHours: Object.fromEntries(
           Object.entries(workingHours).map(([day, data]) => [
             day,
-            {
-              enabled: data.enabled,
-              start: data.start,
-              end: data.end,
-              intervals: data.intervals, // Inclui intervals
-            },
+            { enabled: data.enabled, start: data.start, end: data.end, intervals: data.intervals },
           ])
-        ) as WorkingHoursMap, // Faz o cast para WorkingHoursMap
+        ) as WorkingHoursMap,
         createdAt: new Date().toISOString(),
         status: "active",
-        specialty: "Geral", // Exemplo, pode ser um campo no Step 1
-        description: "Profissional de beleza e bem-estar", // Exemplo
-        experience_years: 0, // Exemplo
+        specialty: "Geral",
+        description: "Profissional de beleza e bem-estar",
+        experience_years: 0,
         social_instagram: "",
         social_facebook: "",
         phone: basicInfo.whatsapp.replace(/\D/g, ""),
       }
+
       saveProfessional(newProfessional)
 
       const availability = getDefaultAvailability(professionalId)
       availability.workingDays = Object.fromEntries(
-        DAYS_OF_WEEK.map((day) => [day.key, workingHours[day.key].enabled]) // Mapeia corretamente DayOfWeek
-      ) as { [key in DayOfWeek]: boolean };
+        DAYS_OF_WEEK.map((day) => [day.key, workingHours[day.key].enabled])
+      ) as { [key in DayOfWeek]: boolean }
 
+      const firstEnabledDayKey = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)?.key
+      availability.workingHours = firstEnabledDayKey
+        ? { start: workingHours[firstEnabledDayKey].start, end: workingHours[firstEnabledDayKey].end }
+        : { start: "09:00", end: "18:00" }
 
-      const firstEnabledDayKey = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)?.key;
-
-      if (firstEnabledDayKey) {
-        availability.workingHours = {
-          start: workingHours[firstEnabledDayKey].start,
-          end: workingHours[firstEnabledDayKey].end,
-        };
-      } else {
-        // Se nenhum dia estiver habilitado, defina um valor padrão ou lance um erro
-        availability.workingHours = { start: "09:00", end: "18:00" };
-      }
       saveProfessionalAvailability(availability)
 
       await login(basicInfo.email, basicInfo.password)
       toast({ title: "Cadastro realizado!", description: "Bem-vindo ao sistema." })
       router.push("/admin/dashboard")
     } catch (error) {
-      console.error("Erro no cadastro:", error);
+      console.error("Erro no cadastro:", error)
       toast({ title: "Erro", description: "Não foi possível realizar o cadastro.", variant: "destructive" })
     } finally {
       setLoading(false)
@@ -284,9 +276,8 @@ export default function CadastroProfissionalPage() {
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
-                    s < step ? "bg-green-500 text-white" : s === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                  }`}
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${s < step ? "bg-green-500 text-white" : s === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    }`}
                 >
                   {s < step ? <Check className="w-5 h-5" /> : s}
                 </div>
@@ -303,42 +294,62 @@ export default function CadastroProfissionalPage() {
         </div>
 
         <Card className="p-6">
-          {/* Passos (Steps) */}
+       
           {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-6">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold mb-2">Dados Básicos</h2>
-                <p className="text-muted-foreground">Informações principais do profissional</p>
+              <h2 className="text-2xl font-bold text-center mb-4">Dados Básicos</h2>
+
+              <div className="space-y-2">
+                <Label>Nome completo *</Label>
+                <Input
+                  value={basicInfo.name}
+                  onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
+                  placeholder="Seu nome"
+                />
               </div>
-              {["name", "whatsapp", "email", "password", "confirmPassword"].map((field) => {
-                const labels: Record<string, string> = {
-                  name: "Nome completo *",
-                  whatsapp: "WhatsApp *",
-                  email: "E-mail *",
-                  password: "Senha *",
-                  confirmPassword: "Confirmar senha *",
-                }
-                const placeholders: Record<string, string> = {
-                  name: "Seu nome",
-                  whatsapp: "(11) 98765-4321",
-                  email: "seu@email.com",
-                  password: "••••••••",
-                  confirmPassword: "••••••••",
-                }
-                return (
-                  <div key={field} className="space-y-2">
-                    <Label htmlFor={field}>{labels[field]}</Label>
-                    <Input
-                      id={field}
-                      type={field.includes("password") ? "password" : field === "email" ? "email" : field === "whatsapp" ? "tel" : "text"}
-                      value={basicInfo[field as keyof typeof basicInfo]}
-                      onChange={(e) => setBasicInfo({ ...basicInfo, [field]: e.target.value })}
-                      placeholder={placeholders[field]}
-                    />
-                  </div>
-                )
-              })}
+
+              <div className="space-y-2">
+                <Label>WhatsApp *</Label>
+                <Input
+                  type="tel"
+                  value={basicInfo.whatsapp}
+                  onChange={handleWhatsappChange}
+                  placeholder="(11) 99999-9999"
+                  maxLength={15}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>E-mail *</Label>
+                <Input
+                  type="email"
+                  value={basicInfo.email}
+                  onChange={(e) => setBasicInfo({ ...basicInfo, email: e.target.value })}
+                  placeholder="seu@email.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Senha *</Label>
+                  <Input
+                    type="password"
+                    value={basicInfo.password}
+                    onChange={(e) => setBasicInfo({ ...basicInfo, password: e.target.value })}
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar Senha *</Label>
+                  <Input
+                    type="password"
+                    value={basicInfo.confirmPassword}
+                    onChange={(e) => setBasicInfo({ ...basicInfo, confirmPassword: e.target.value })}
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
             </div>
           )}
 
