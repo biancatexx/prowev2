@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Plus, Trash2, Check } from "lucide-react"
+import { ArrowLeft, Plus, Trash2, Check, EyeOff, Eye, Camera } from "lucide-react" // 🆕 Importado 'Camera'
 import {
   saveProfessional,
   saveUser,
@@ -18,8 +18,7 @@ import {
   type User,
   type WorkingHoursMap,
   type DayOfWeek,
-  // Importante: Assumindo que o mockData.ts foi atualizado para incluir 'operationType' em Professional
-} from "@/data/mockData" // Supondo que você atualizou este arquivo
+} from "@/data/mockData"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { Card } from "@/components/ui/card"
@@ -46,9 +45,12 @@ export default function CadastroProfissionalPage() {
   const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(true)
+  const [operationType, setOperationType] = useState<"agendamento" | "fila">("agendamento")
 
-  // 1. NOVO ESTADO: Tipo de Funcionamento
-  const [operationType, setOperationType] = useState<"agendamento" | "fila">("agendamento") 
+  // 🆕 NOVOS ESTADOS PARA A FOTO DE PERFIL
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
 
   // Função de formatação de WhatsApp
   const formatWhatsapp = (value: string) => {
@@ -59,18 +61,34 @@ export default function CadastroProfissionalPage() {
       return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
     return value
   }
-
+  const formatCep = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 8) // mantém só números (até 8 dígitos)
+    if (digits.length <= 5) return digits
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`
+  }
   const [basicInfo, setBasicInfo] = useState({
     name: "",
     whatsapp: "",
     email: "",
     password: "",
-    confirmPassword: "",
   })
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatWhatsapp(e.target.value)
     setBasicInfo({ ...basicInfo, whatsapp: formatted })
+  }
+
+  // 🆕 NOVO MANIPULADOR DE UPLOAD DA FOTO
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setProfileImageFile(file)
+      // Cria uma URL temporária para pré-visualização. Na vida real, você faria o upload para um servidor aqui.
+      setProfileImageUrl(URL.createObjectURL(file))
+    } else {
+      setProfileImageFile(null)
+      setProfileImageUrl(null)
+    }
   }
 
   const [address, setAddress] = useState({
@@ -163,10 +181,7 @@ export default function CadastroProfissionalPage() {
       toast({ title: "Campos obrigatórios", description: "Preencha todos os campos.", variant: "destructive" })
       return false
     }
-    if (basicInfo.password !== basicInfo.confirmPassword) {
-      toast({ title: "Senhas não conferem", description: "As senhas devem ser iguais.", variant: "destructive" })
-      return false
-    }
+
     return true
   }
 
@@ -197,6 +212,10 @@ export default function CadastroProfissionalPage() {
       const professionalId = Date.now().toString()
       const userId = `user-${professionalId}`
 
+      // ⚠️ SIMULAÇÃO DE UPLOAD: Na vida real, você enviaria profileImageFile para um servidor
+      // e receberia uma URL de volta, salvando essa URL (profileImageUrl)
+      const simulatedImageUrl = profileImageUrl || "https://picsum.photos/200/200?random=" + professionalId;
+
       const newUser: User = {
         id: userId,
         name: basicInfo.name,
@@ -205,6 +224,7 @@ export default function CadastroProfissionalPage() {
         password: basicInfo.password,
         createdAt: new Date().toISOString(),
         type: "professional",
+        profileImage: simulatedImageUrl, // 🆕 SALVA A IMAGEM NO USER
       }
       saveUser(newUser)
 
@@ -231,8 +251,8 @@ export default function CadastroProfissionalPage() {
         social_instagram: "",
         social_facebook: "",
         phone: basicInfo.whatsapp.replace(/\D/g, ""),
-        // 2. ADICIONADO: operationType
-        operationType: operationType, 
+        operationType: operationType,
+        profileImage: simulatedImageUrl, // 🆕 SALVA A IMAGEM NO PROFESSIONAL
       }
       saveProfessional(newProfessional)
 
@@ -260,45 +280,80 @@ export default function CadastroProfissionalPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-gradient-to-br from-primary via-primary to-accent p-6">
-        <div className="container mx-auto max-w-2xl">
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+        <div className="container mx-auto max-w-screen-lg text-center">
           <Link href="/login" className="flex items-center gap-2 text-primary-foreground hover:opacity-80">
             <ArrowLeft className="h-5 w-5" />
             <span className="font-semibold">Voltar</span>
           </Link>
         </div>
       </header>
+
       <main className="container mx-auto max-w-2xl px-4 py-8">
         {/* Etapas de progresso */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 w-full">
             {[1, 2, 3, 4].map((s) => (
               <div key={s} className="flex items-center flex-1">
                 <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${s < step ? "bg-green-500 text-white" : s === step ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${s < step ? "bg-green-500 text-white" : s === step ? "bg-zinc-900 text-white" : "bg-primary text-primary-foreground"
                     }`}
                 >
                   {s < step ? <Check className="w-5 h-5" /> : s}
                 </div>
-                {s < 4 && <div className={`flex-1 h-1 mx-2 ${s < step ? "bg-green-500" : "bg-muted"}`} />}
+                {s < 4 && <div className={`flex-1 h-1 mx-2 ${s < step ? "bg-green-500" : "bg-primary"}`} />}
               </div>
             ))}
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Dados Básicos</span>
+            <span>Profissional</span>
             <span>Endereço</span>
             <span>Serviços</span>
             <span>Horários</span>
+
           </div>
         </div>
         <Card className="p-6">
-       
+
           {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-center mb-4">Dados Básicos</h2>
+              <h2 className="text-2xl font-bold mb-2">Profissional</h2>
+              <p className="text-muted-foreground">Suas informações pessoais</p>
+
+              {/* 🆕 NOVO CAMPO: UPLOAD DE FOTO DE PERFIL */}
+              <div className="flex flex-col items-center gap-2 mb-6">
+                <Label htmlFor="profile-upload" className="cursor-pointer">
+                  <div className="relative w-32 h-32 rounded-full border-2 border-primary overflow-hidden group">
+                    {profileImageUrl ? (
+                      <img
+                        src={profileImageUrl}
+                        alt="Foto de Perfil"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-500">
+                        <Camera className="w-8 h-8" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="text-white text-xs font-semibold">Alterar</span>
+                    </div>
+                  </div>
+                </Label>
+                <Input
+                  id="profile-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                />
+                <p className="text-sm text-muted-foreground">Foto de Perfil (Opcional)</p>
+              </div>
+              {/* FIM: NOVO CAMPO */}
+
               <div className="space-y-2">
-                <Label>Nome completo *</Label>
+                <Label>Nome do estabelecimento  *</Label>
                 <Input
                   value={basicInfo.name}
                   onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
@@ -315,35 +370,39 @@ export default function CadastroProfissionalPage() {
                   maxLength={15}
                 />
               </div>
-              <div className="space-y-2">
+              {/* Campo de email */}
+              <div className="space-y-2 relative">
                 <Label>E-mail *</Label>
                 <Input
                   type="email"
                   value={basicInfo.email}
-                  onChange={(e) => setBasicInfo({ ...basicInfo, email: e.target.value })}
+                  onChange={(e) =>
+                    setBasicInfo({ ...basicInfo, email: e.target.value.toLowerCase() })
+                  }
                   placeholder="seu@email.com"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Senha *</Label>
+              {/* Campo de senha */}
+              <div className="space-y-2 relative">
+                <Label>Senha *</Label>
+                <div className="relative">
                   <Input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={basicInfo.password}
                     onChange={(e) => setBasicInfo({ ...basicInfo, password: e.target.value })}
-                    placeholder="••••••••"
+                    placeholder=""
+                    className="pr-10"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Confirmar Senha *</Label>
-                  <Input
-                    type="password"
-                    value={basicInfo.confirmPassword}
-                    onChange={(e) => setBasicInfo({ ...basicInfo, confirmPassword: e.target.value })}
-                    placeholder="••••••••"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
+
             </div>
           )}
           {/* Step 2 */}
@@ -358,8 +417,11 @@ export default function CadastroProfissionalPage() {
                 <Input
                   id="zipCode"
                   value={address.zipCode}
-                  onChange={(e) => setAddress({ ...address, zipCode: e.target.value })}
-                  placeholder="00000-000"
+                  onChange={(e) =>
+                    setAddress({ ...address, zipCode: formatCep(e.target.value) })
+                  }
+                  placeholder=""
+                  maxLength={9}
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
@@ -516,8 +578,8 @@ export default function CadastroProfissionalPage() {
                 <p className="text-muted-foreground">Configure seus horários de trabalho</p>
               </div>
 
-              {/* 3. NOVO CAMPO: Tipo de Funcionamento */}
-              <div className="space-y-2 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+              {/* Tipo de Funcionamento */}
+              <div className="space-y-2 p-4 border rounded-lg bg-gray-50 ">
                 <Label htmlFor="operationType" className="font-bold">
                   Tipo de Funcionamento *
                 </Label>
@@ -584,7 +646,7 @@ export default function CadastroProfissionalPage() {
                       </div>
                       {dayHours.enabled && (
                         <div className="ml-6 space-y-3">
-                          {dayHours.intervals.map((interval, index) => ( 
+                          {dayHours.intervals.map((interval, index) => (
                             <div key={index} className="flex items-center gap-2">
                               <Input
                                 type="time"
@@ -626,7 +688,7 @@ export default function CadastroProfissionalPage() {
             </div>
           )}
           {/* Botões de navegação */}
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between mt-8 text-end">
             {step > 1 && (
               <Button variant="outline" onClick={() => setStep(step - 1)}>
                 Voltar
