@@ -72,16 +72,14 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             <div className="w-full">
                 <nav className="">
                     <div className="container mx-auto max-w-screen-lg px-4">
-                        <div className="flex items-center justify-between h-16">
-
+                        <div className="flex items-center justify-between h-16"> 
                             <Link href="/" className="flex items-center space-x-2 group">
                                 <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
                                     <Check className="w-6 h-6 text-primary-foreground" />
                                 </div> 
                                 <span className="text-xl text-white font-bold"> Prowe </span>
                             </Link>
-                            <div className="flex gap-3">
-                                {/* 5. Renderização final do conteúdo de autenticação */}
+                            <div className="flex gap-3"> 
                                 {authContent}
                             </div> 
                         </div> 

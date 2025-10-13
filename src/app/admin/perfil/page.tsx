@@ -125,7 +125,7 @@ export default function Perfil() {
     );
     const [originalFormData, setOriginalFormData] = useState<ProfessionalForm>(formData);
 
-    // 🔄 Sincroniza formData e originalFormData quando authProfessional muda
+    //  Sincroniza formData e originalFormData quando authProfessional muda
     useEffect(() => {
         if (authProfessional) {
             const initialData = initializeFormData(authProfessional);
@@ -184,14 +184,15 @@ export default function Perfil() {
         }));
     };
 
-    // 🔑 NOVA FUNÇÃO PARA O SWITCH operationType
-    const handleOperationTypeChange = (checked: boolean) => {
+
+    const handleOperationTypeChange = (
+        value: ProfessionalForm["operationType"]
+    ) => {
         setFormData(prev => ({
             ...prev,
-            operationType: checked ? 'agendamento' : 'fila',
+            operationType: value,
         }));
     };
-    // FIM NOVO CÓDIGO
 
     const handleWorkingHoursChange = (day: DayOfWeek, field: 'start' | 'end',
         value: string) => {
@@ -349,33 +350,12 @@ export default function Perfil() {
                                 <Input id="state" value={formData.address.state} onChange={handleAddressChange} />
                             </div>
 
-                            {/* 🔑 NOVO SWITCH operationType: Fila / Agendamento */}
-                            <div className="sm:col-span-2 pt-4 border-t mt-4 border-border flex items-center justify-between">
-                                <Label htmlFor="operationType">Tipo de Operação</Label>
-                                <div className="flex items-center space-x-3">
-                                    <span className={`text-sm font-medium ${formData.operationType === 'fila' ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                                        Fila
-                                    </span>
-                                    <Switch
-                                        id="operationType"
-                                        checked={formData.operationType === 'agendamento'} // true = Agendamento, false = Fila
-                                        onCheckedChange={handleOperationTypeChange}
-                                        className="cursor-pointer"
-                                    />
-                                    <span className={`text-sm font-medium ${formData.operationType === 'agendamento' ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
-                                        Agendamento
-                                    </span>
-                                </div>
-                            </div>
-                            {/* FIM NOVO CÓDIGO */}
                         </div>
                     </div>
                 </Card>
 
 
                 <Card className="p-6">
-                    <h2 className="text-lg font-bold">Horário de Funcionamento</h2>
-                    <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana.</p>
                     <div className="">
                         {dayKeys.map((dayKey) => {
                             const day = dayKey as DayOfWeek;
@@ -431,6 +411,64 @@ export default function Perfil() {
                                 </div>
                             );
                         })}
+                    </div>
+                    <div className="sm:col-span-2 pt-4 border-t mt-4 border-border flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <Label htmlFor="operationType" className="text-lg font-bold">
+                                Tipo de Operação
+                            </Label>
+                            <p className="text-sm text-muted-foreground mb-4">
+                                Defina o horário específico para cada dia da semana.
+                            </p>
+                        </div>
+
+                        <div className="flex space-x-6">
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="operationType"
+                                    value="fila"
+                                    checked={formData.operationType === "fila"}
+                                    onChange={(e) =>
+                                        handleOperationTypeChange(
+                                            e.target.value as ProfessionalForm["operationType"]
+                                        )
+                                    }
+                                    className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
+                                />
+                                <span
+                                    className={`text-sm font-medium ${formData.operationType === "fila"
+                                            ? "text-primary font-bold"
+                                            : "text-muted-foreground"
+                                        }`}
+                                >
+                                    Fila
+                                </span>
+                            </label>
+
+                            <label className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="operationType"
+                                    value="agendamento"
+                                    checked={formData.operationType === "agendamento"}
+                                    onChange={(e) =>
+                                        handleOperationTypeChange(
+                                            e.target.value as ProfessionalForm["operationType"]
+                                        )
+                                    }
+                                    className="w-4 h-4 text-primary border-gray-300 focus:ring-primary"
+                                />
+                                <span
+                                    className={`text-sm font-medium ${formData.operationType === "agendamento"
+                                            ? "text-primary font-bold"
+                                            : "text-muted-foreground"
+                                        }`}
+                                >
+                                    Agendamento
+                                </span>
+                            </label>
+                        </div>
                     </div>
                 </Card>
 
