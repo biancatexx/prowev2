@@ -1,27 +1,39 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const lat = searchParams.get('lat');
-  const lng = searchParams.get('lng');
-
-  if (!lat || !lng) {
-    return NextResponse.json({ error: 'Missing lat or lng' }, { status: 400 });
-  }
-
-  const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1&accept-language=pt-BR`;
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const lat = searchParams.get("lat");
+  const lng = searchParams.get("lng");
+  const address = searchParams.get("address");
 
   try {
-    const response = await fetch(nominatimUrl, {
-      headers: {
-        'User-Agent': 'SeuAppName / 1.0 (seuemail@exemplo.com)'
+    if (address) {
+      // geocodificação direta (endereço → coordenadas)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`
+      );
+      const data = await response.json();
+      if (data.length === 0) {
+        return NextResponse.json({ error: "Endereço não encontrado" }, { status: 404 });
       }
-    });
+      return NextResponse.json(data[0]);
+    }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    if (lat && lng) {
+      // geocodificação reversa (coordenadas → endereço)
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      );
+      const data = await response.json();
+      if (!data) {
+        return NextResponse.json({ error: "Não foi possível encontrar endereço" }, { status: 404 });
+      }
+      return NextResponse.json(data);
+    }
+
+    return NextResponse.json({ error: "Parâmetros inválidos" }, { status: 400 });
   } catch (error) {
-    console.error("Geocodificação Reversa falhou no servidor:", error);
-    return NextResponse.json({ error: 'Failed to fetch geocode data' }, { status: 500 });
+    console.error("Erro na API de geocodificação:", error);
+    return NextResponse.json({ error: "Erro interno no servidor" }, { status: 500 });
   }
 }
