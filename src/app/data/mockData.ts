@@ -97,6 +97,7 @@ export interface Professional {
   social_facebook?: string
   phone: string
   address: Address
+  coords?: { lat: number; lng: number } // 👈 MANTER: Campo de Coordenadas
   services: Service[]
   operationType: "agendamento" | "fila"
   workingHours: WorkingHoursMap
@@ -193,10 +194,19 @@ const initialMockUsers: User[] = [
     createdAt: new Date().toISOString(),
     type: "professional",
   },
+  {
+    id: "user-2",
+    name: "Salão Fashion Hair",
+    whatsapp: "85999998888",
+    email: "fashion@email.com",
+    createdAt: new Date().toISOString(),
+    type: "professional",
+  },
 ]
 
 // --- MOCK PROFESSIONALS ---
 const initialMockProfessionals: Professional[] = [
+  // 👑 PROFISSIONAL 1 (Studio Beleza Premium)
   {
     id: "1",
     userId: "user-1",
@@ -205,7 +215,7 @@ const initialMockProfessionals: Professional[] = [
     email: "s@email.com",
     password: "123456",
     specialty: "Multiserviços",
-    description: "Studio de estética e beleza.",
+    description: "Studio de estética e beleza. Especialistas em corte e unhas.",
     experience_years: 5,
     social_instagram: "@studiobeleza",
     social_facebook: "/studiobeleza",
@@ -218,9 +228,12 @@ const initialMockProfessionals: Professional[] = [
       state: "SP",
       zipCode: "01000-000",
     },
+    // 📍 COORDENADAS SIMULADAS
+    coords: { lat: -23.5505, lng: -46.6333 }, // Simula Centro de SP
     services: [
       { id: "s1", category: "Cabelo", name: "Corte Feminino", duration: 60, price: 80.0 },
       { id: "s2", category: "Unha", name: "Manicure", duration: 45, price: 30.0 },
+      { id: "s3", category: "Estética", name: "Limpeza de Pele", duration: 90, price: 150.0 },
     ],
     operationType: "agendamento",
     workingHours: {
@@ -229,7 +242,47 @@ const initialMockProfessionals: Professional[] = [
       wednesday: { enabled: true, start: "09:00", end: "18:00" },
       thursday: { enabled: true, start: "09:00", end: "18:00" },
       friday: { enabled: true, start: "09:00", end: "18:00" },
-      saturday: { enabled: false, start: "09:00", end: "14:00" },
+      saturday: { enabled: true, start: "09:00", end: "14:00" },
+      sunday: { enabled: false, start: "00:00", end: "00:00" },
+    },
+    createdAt: new Date().toISOString(),
+    status: "active",
+  },
+  // ✂️ PROFISSIONAL 2 (Salão Fashion Hair)
+  {
+    id: "2",
+    userId: "user-2",
+    name: "Salão Fashion Hair",
+    whatsapp: "85999998888",
+    email: "fashion@email.com",
+    specialty: "Cabeleireiro",
+    description: "Salão especializado em cortes e coloração.",
+    experience_years: 10,
+    social_instagram: "@fashionhair",
+    phone: "85999998888",
+    address: {
+      street: "Rua Dom Luís",
+      number: "600",
+      neighborhood: "Aldeota",
+      city: "Fortaleza",
+      state: "CE",
+      zipCode: "60110-000",
+    },
+    // 📍 COORDENADAS SIMULADAS
+    coords: { lat: -3.7371, lng: -38.5209 }, // Simula Aldeota, Fortaleza
+    services: [
+      { id: "s4", category: "Cabelo", name: "Corte Masculino", duration: 45, price: 60.0 },
+      { id: "s5", category: "Cabelo", name: "Coloração", duration: 120, price: 250.0 },
+      { id: "s6", category: "Barba", name: "Barba Clássica", duration: 30, price: 40.0 },
+    ],
+    operationType: "fila",
+    workingHours: {
+      monday: { enabled: true, start: "08:00", end: "19:00" },
+      tuesday: { enabled: true, start: "08:00", end: "19:00" },
+      wednesday: { enabled: true, start: "08:00", end: "19:00" },
+      thursday: { enabled: true, start: "08:00", end: "19:00" },
+      friday: { enabled: true, start: "08:00", end: "20:00" },
+      saturday: { enabled: true, start: "08:00", end: "17:00" },
       sunday: { enabled: false, start: "00:00", end: "00:00" },
     },
     createdAt: new Date().toISOString(),
@@ -661,9 +714,6 @@ const isTimeSlotBooked = (professionalId: string, date: string, time: string): b
   )
 }
 
-/**
- * Gera os slots de horário disponíveis para um profissional em uma data específica.
- */
 /**
  * Gera os slots de horário disponíveis para um profissional em uma data específica.
  */
