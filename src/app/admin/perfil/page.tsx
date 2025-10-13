@@ -71,10 +71,29 @@ export default function Perfil() {
     };
 
     const initialProfessionalData: ProfessionalForm = {
-        id: '', name: '', description: '', phone: '', email: '', profileImage: '', specialty: '',
-        status: 'active', whatsapp: '', userId: '', createdAt: "", experience_years: 0, services: [],
+        id: '',
+        name: '',
+        description: '',
+        phone: '',
+        email: '',
+        profileImage: '',
+        specialty: '',
+        status: 'active',
+        whatsapp: '',
+        userId: '',
+        createdAt: "",
+        experience_years: 0,
+        services: [],
         workingHours: defaultWorkingHours,
-        address: { street: '', number: '', city: '', state: '', neighborhood: '', zipCode: '' },
+        operationType: 'agendamento', // 🔑 VALOR INICIAL PARA O NOVO CAMPO
+        address: {
+            street: '',
+            number: '',
+            city: '',
+            state: '',
+            neighborhood: '',
+            zipCode: ''
+        },
     }
 
     const initializeFormData = (professional: Professional): ProfessionalForm => {
@@ -87,10 +106,15 @@ export default function Perfil() {
             ...(professional.address || {})
         };
 
+        // Garante que operationType tenha um fallback se estiver faltando
+        const operationType = professional.operationType || initialProfessionalData.operationType;
+
+
         return {
             ...professional,
             address: mergedAddress,
-            workingHours: mergedWorkingHours
+            workingHours: mergedWorkingHours,
+            operationType: operationType, // Usa o valor do profissional ou o fallback
         } as ProfessionalForm;
     };
 
@@ -160,7 +184,17 @@ export default function Perfil() {
         }));
     };
 
-    const handleWorkingHoursChange = (day: DayOfWeek, field: 'start' | 'end', value: string) => {
+    // 🔑 NOVA FUNÇÃO PARA O SWITCH operationType
+    const handleOperationTypeChange = (checked: boolean) => {
+        setFormData(prev => ({
+            ...prev,
+            operationType: checked ? 'agendamento' : 'fila',
+        }));
+    };
+    // FIM NOVO CÓDIGO
+
+    const handleWorkingHoursChange = (day: DayOfWeek, field: 'start' | 'end',
+        value: string) => {
         setFormData(prev => ({
             ...prev,
             workingHours: {
@@ -314,6 +348,26 @@ export default function Perfil() {
                                 <Label htmlFor="state">Estado</Label>
                                 <Input id="state" value={formData.address.state} onChange={handleAddressChange} />
                             </div>
+
+                            {/* 🔑 NOVO SWITCH operationType: Fila / Agendamento */}
+                            <div className="sm:col-span-2 pt-4 border-t mt-4 border-border flex items-center justify-between">
+                                <Label htmlFor="operationType">Tipo de Operação</Label>
+                                <div className="flex items-center space-x-3">
+                                    <span className={`text-sm font-medium ${formData.operationType === 'fila' ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                                        Fila
+                                    </span>
+                                    <Switch
+                                        id="operationType"
+                                        checked={formData.operationType === 'agendamento'} // true = Agendamento, false = Fila
+                                        onCheckedChange={handleOperationTypeChange}
+                                        className="cursor-pointer"
+                                    />
+                                    <span className={`text-sm font-medium ${formData.operationType === 'agendamento' ? 'text-primary font-bold' : 'text-muted-foreground'}`}>
+                                        Agendamento
+                                    </span>
+                                </div>
+                            </div>
+                            {/* FIM NOVO CÓDIGO */}
                         </div>
                     </div>
                 </Card>
@@ -334,7 +388,7 @@ export default function Perfil() {
                                     <div className="grid grid-cols-1 sm:grid-cols-2">
 
                                         {/* Switch Habilita/Desabilita */}
-                                        <div className="flex items-center space-x-2"> 
+                                        <div className="flex items-center space-x-2">
                                             <Label
                                                 htmlFor={`switch-${day}`}
                                                 className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} `}
@@ -355,7 +409,8 @@ export default function Perfil() {
                                                 type="time"
                                                 value={schedule.start}
                                                 disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
+                                                onChange={(e) => handleWorkingHoursChange(day, 'start',
+                                                    e.target.value)}
                                                 className="w-24 text-center"
                                             />
                                             <span className="text-muted-foreground">até</span>
@@ -364,7 +419,8 @@ export default function Perfil() {
                                                 type="time"
                                                 value={schedule.end}
                                                 disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
+                                                onChange={(e) => handleWorkingHoursChange(day, 'end',
+                                                    e.target.value)}
                                                 className="w-24 text-center"
                                             />
                                         </div>
@@ -408,7 +464,7 @@ export default function Perfil() {
                         </AlertDialog>
                     ) : (
                         /* Botão SALVAR DESABILITADO */
-                        <Button disabled={true} variant="secondary"   >
+                        <Button disabled={true} variant="secondary"   >
                             <Save className="w-5 h-5 mr-1" /> Salvar Edição
                         </Button>
                     )}

@@ -1,5 +1,4 @@
 "use client"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
@@ -19,7 +18,8 @@ import {
   type User,
   type WorkingHoursMap,
   type DayOfWeek,
-} from "@/data/mockData"
+  // Importante: Assumindo que o mockData.ts foi atualizado para incluir 'operationType' em Professional
+} from "@/data/mockData" // Supondo que você atualizou este arquivo
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { Card } from "@/components/ui/card"
@@ -46,6 +46,9 @@ export default function CadastroProfissionalPage() {
   const { toast } = useToast()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
+
+  // 1. NOVO ESTADO: Tipo de Funcionamento
+  const [operationType, setOperationType] = useState<"agendamento" | "fila">("agendamento") 
 
   // Função de formatação de WhatsApp
   const formatWhatsapp = (value: string) => {
@@ -109,7 +112,6 @@ export default function CadastroProfissionalPage() {
       })
       return
     }
-
     const newService: Service = {
       id: Date.now().toString(),
       category: currentService.category,
@@ -118,10 +120,8 @@ export default function CadastroProfissionalPage() {
       price: Number.parseFloat(currentService.price),
       description: currentService.description,
     }
-
     setServices([...services, newService])
     setCurrentService({ category: "", name: "", duration: "", price: "", description: "" })
-
     toast({
       title: "Serviço adicionado!",
       description: "Continue adicionando ou avance para a próxima etapa.",
@@ -231,15 +231,15 @@ export default function CadastroProfissionalPage() {
         social_instagram: "",
         social_facebook: "",
         phone: basicInfo.whatsapp.replace(/\D/g, ""),
+        // 2. ADICIONADO: operationType
+        operationType: operationType, 
       }
-
       saveProfessional(newProfessional)
 
       const availability = getDefaultAvailability(professionalId)
       availability.workingDays = Object.fromEntries(
         DAYS_OF_WEEK.map((day) => [day.key, workingHours[day.key].enabled])
       ) as { [key in DayOfWeek]: boolean }
-
       const firstEnabledDayKey = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)?.key
       availability.workingHours = firstEnabledDayKey
         ? { start: workingHours[firstEnabledDayKey].start, end: workingHours[firstEnabledDayKey].end }
@@ -268,7 +268,6 @@ export default function CadastroProfissionalPage() {
           </Link>
         </div>
       </header>
-
       <main className="container mx-auto max-w-2xl px-4 py-8">
         {/* Etapas de progresso */}
         <div className="mb-8">
@@ -292,14 +291,12 @@ export default function CadastroProfissionalPage() {
             <span>Horários</span>
           </div>
         </div>
-
         <Card className="p-6">
        
           {/* Step 1 */}
           {step === 1 && (
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-center mb-4">Dados Básicos</h2>
-
               <div className="space-y-2">
                 <Label>Nome completo *</Label>
                 <Input
@@ -308,7 +305,6 @@ export default function CadastroProfissionalPage() {
                   placeholder="Seu nome"
                 />
               </div>
-
               <div className="space-y-2">
                 <Label>WhatsApp *</Label>
                 <Input
@@ -319,7 +315,6 @@ export default function CadastroProfissionalPage() {
                   maxLength={15}
                 />
               </div>
-
               <div className="space-y-2">
                 <Label>E-mail *</Label>
                 <Input
@@ -329,7 +324,6 @@ export default function CadastroProfissionalPage() {
                   placeholder="seu@email.com"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Senha *</Label>
@@ -352,7 +346,6 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
           )}
-
           {/* Step 2 */}
           {step === 2 && (
             <div className="space-y-6">
@@ -421,7 +414,6 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
           )}
-
           {/* Step 3 */}
           {step === 3 && (
             <div className="space-y-6">
@@ -516,7 +508,6 @@ export default function CadastroProfissionalPage() {
               )}
             </div>
           )}
-
           {/* Step 4 */}
           {step === 4 && (
             <div className="space-y-6">
@@ -524,6 +515,26 @@ export default function CadastroProfissionalPage() {
                 <h2 className="text-2xl font-bold mb-2">Horários de Atendimento</h2>
                 <p className="text-muted-foreground">Configure seus horários de trabalho</p>
               </div>
+
+              {/* 3. NOVO CAMPO: Tipo de Funcionamento */}
+              <div className="space-y-2 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+                <Label htmlFor="operationType" className="font-bold">
+                  Tipo de Funcionamento *
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Escolha como seus clientes serão atendidos.
+                </p>
+                <select
+                  id="operationType"
+                  value={operationType}
+                  onChange={(e) => setOperationType(e.target.value as "agendamento" | "fila")}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                >
+                  <option value="agendamento">📅 Agendamento (Reservas de horário)</option>
+                  <option value="fila">🚶 Fila (Atendimento por ordem de chegada)</option>
+                </select>
+              </div>
+              {/* FIM: NOVO CAMPO */}
 
               <div className="space-y-4">
                 {DAYS_OF_WEEK.map((day) => {
@@ -571,10 +582,9 @@ export default function CadastroProfissionalPage() {
                           </div>
                         )}
                       </div>
-
                       {dayHours.enabled && (
                         <div className="ml-6 space-y-3">
-                          {dayHours.intervals.map((interval, index) => ( // Removido 'any'
+                          {dayHours.intervals.map((interval, index) => ( 
                             <div key={index} className="flex items-center gap-2">
                               <Input
                                 type="time"
@@ -615,7 +625,6 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
           )}
-
           {/* Botões de navegação */}
           <div className="flex justify-between mt-8">
             {step > 1 && (

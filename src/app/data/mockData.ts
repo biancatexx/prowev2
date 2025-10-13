@@ -98,6 +98,7 @@ export interface Professional {
   phone: string
   address: Address
   services: Service[]
+  operationType: "agendamento" | "fila"
   workingHours: WorkingHoursMap
 }
 
@@ -221,6 +222,7 @@ const initialMockProfessionals: Professional[] = [
       { id: "s1", category: "Cabelo", name: "Corte Feminino", duration: 60, price: 80.0 },
       { id: "s2", category: "Unha", name: "Manicure", duration: 45, price: 30.0 },
     ],
+    operationType: "agendamento",
     workingHours: {
       monday: { enabled: true, start: "09:00", end: "18:00" },
       tuesday: { enabled: true, start: "09:00", end: "18:00" },

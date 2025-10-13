@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CustomCalendar } from "@/components/CustomCalendar"
 import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin, CalendarCheck } from "lucide-react"
+import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin, CalendarCheck, Clock8 } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import {
   getProfessionals,
@@ -18,8 +18,70 @@ import {
   generateTimeSlots,
   getUnavailableReason,
   type Favorite,
+  type DayOfWeek,
+  type WorkingHoursMap, // 🔑 IMPORTAÇÃO ADICIONADA
 } from "@/data/mockData"
 import { useToast } from "@/hooks/use-toast"
+
+// ===============================================
+// 💡 NOVO COMPONENTE/FUNÇÃO PARA HORÁRIOS GERAIS
+// ===============================================
+
+/**
+ * Componente que renderiza o horário de funcionamento de forma formatada.
+ */
+const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) => {
+  // Mapeamento para nomes de dias em português
+  const dayNamesPt: { [key in DayOfWeek]: string } = {
+    sunday: 'Domingo',
+    monday: 'Segunda-feira',
+    tuesday: 'Terça-feira',
+    wednesday: 'Quarta-feira',
+    thursday: 'Quinta-feira',
+    friday: 'Sexta-feira',
+    saturday: 'Sábado',
+  };
+
+  // Obter o índice do dia de hoje (0=Dom, 1=Seg, ..., 6=Sáb)
+  const todayIndex = new Date().getDay();
+
+  // Ordem dos dias para exibição (Começa no Domingo para mapear 0-6)
+  const dayKeys: DayOfWeek[] = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+  return (
+    <div className="bg-card rounded-2xl p-4 border border-border mb-4">
+      <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">
+        <Clock className="w-4 h-4" /> Horário de Atendimento Geral
+      </h3>
+      <div className="space-y-2 text-sm">
+        {dayKeys.map((day, index) => {
+          const isToday = index === todayIndex;
+          const hours = workingHours[day];
+
+          // 🛑 Regra: Não mostrar o horário de hoje
+          if (isToday) {
+            return null;
+          }
+
+          return (
+            <div key={day} className="flex justify-between items-center text-muted-foreground">
+              <span className="font-medium capitalize">
+                {dayNamesPt[day]}
+              </span>
+              <span>
+                {hours?.enabled ? `${hours.start} às ${hours.end}` : "Fechado"}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// ===============================================
+// ⚙️ COMPONENTE PRINCIPAL
+// ===============================================
 
 export default function ProfessionalDetails() {
   const params = useParams()
@@ -64,6 +126,8 @@ export default function ProfessionalDetails() {
     )
   }
   const services = professional.services
+  // Adicionando uma variável para checagem do tipo de operação
+  const isQueueOperation = professional.operationType === 'fila'
 
   const toggleService = (serviceId: string) => {
     setSelectedServices((prev) =>
@@ -93,14 +157,17 @@ export default function ProfessionalDetails() {
             address: professional.address,
           },
           selectedServices: selectedServicesData,
-          selectedDate: selectedDate?.toISOString(),
-          selectedTime,
+          // Não envia data e hora se for fila
+          selectedDate: isQueueOperation ? undefined : selectedDate?.toISOString(),
+          selectedTime: isQueueOperation ? undefined : selectedTime,
           totalPrice,
           totalDuration,
         }),
       )
     }
 
+    // Se for fila, talvez o fluxo de agendamento precise ser diferente ou o botão apenas confirma os serviços.
+    // Por simplicidade, mantemos o fluxo, mas sem a necessidade de data/hora no agendamento final.
     router.push(`/agendamento/${id}`)
   }
 
@@ -178,7 +245,21 @@ export default function ProfessionalDetails() {
     })
   }
 
+  // Função auxiliar para obter o horário de funcionamento de hoje
+  const getTodayWorkingHours = () => {
+    const today = new Date()
+    const dayIndex = today.getDay()
+    // Mapeamento de JS getDay() (0=Dom, 6=Sáb) para DayOfWeek (0=Dom, 6=Sáb)
+    const dayMap: DayOfWeek[] = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+    const currentDayKey = dayMap[dayIndex]
 
+    const hours = professional.workingHours[currentDayKey]
+
+    if (hours && hours.enabled) {
+      return `${hours.start} às ${hours.end}`
+    }
+    return "Fechado hoje"
+  }
 
   // Agrupar serviços por categoria
   const groupedServices = services.reduce(
@@ -220,7 +301,7 @@ export default function ProfessionalDetails() {
                 <img
                   src={professional.profileImage}
                   alt={professional.name}
-                  className="w-full h-full object-cover"
+                  className="w-24 h-24 mx-auto rounded-full object-cover"
                 />
               ) : (
                 <div className="w-24 h-24 mx-auto rounded-full bg-zinc-900 text-white flex items-center justify-center text-4xl font-bold">
@@ -290,47 +371,67 @@ export default function ProfessionalDetails() {
               <h2 className="font-bold text-foreground">Dias e horários</h2>
             </div>
             <div className="bg-card rounded-2xl border p-5 mb-4" >
-              <div className="flex justify-between items-center mb-2">
-                <h2 className="text-lg font-semibold"> <CalendarCheck className="inline" /> Data e horário</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-semibold">
+                  {isQueueOperation ? <Clock8 className="inline mr-2 w-5 h-5" /> : <CalendarCheck className="inline mr-2 w-5 h-5" />}
+                  {isQueueOperation ? "Atendimento por Fila" : "Data e horário"}
+                </h2>
               </div>
-              <div className="pl-6">
+
+              {isQueueOperation ? (
+                // 1. MENSAGEM PARA MODO FILA
                 <div className="flex flex-col lg:flex-row gap-4">
+                  <Card className="border flex-1">
+                    <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
+                  </Card>
                   <div className="">
-                    <h2 className="">Selecione o dia</h2>
-                    <Card className="border flex-1">
-                      <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
-                    </Card>
-                  </div>
-                  <div className="flex-1"  >
-                    <h2 className="">Selecione o horário</h2>
-                    <Card className="border flex-1 p-3">
-                      <TimeSlotPicker
-                        professionalId={id}
-                        selectedDate={selectedDate}
-                        selectedTime={selectedTime}
-                        onTimeSelect={setSelectedTime} totalDuration={0}
-                      /></Card>
+                    <div className="space-y-4 p-4 bg-muted/50 rounded-lg text-center">
+
+                      <p className="text-lg font-semibold text-primary">Atendimento por Ordem de Chegada (Fila)</p>
+                      <p className="text-muted-foreground text-sm">
+                        Este profissional não utiliza agendamento. Você será atendido na ordem de chegada durante o horário de funcionamento.
+                      </p>
+                      <div className="flex items-center justify-center gap-2 text-foreground font-medium border-t pt-2 mt-4">
+                        <Clock className="w-4 h-4" />
+                        Horário de hoje: {getTodayWorkingHours()}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-            </div>
-            <div className="bg-card rounded-2xl p-4 border border-border mb-4 hidden">
-              <Card className="border shadow-sm mb-4">
-                <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
-              </Card>
-              <TimeSlotPicker
-                professionalId={id}
-                selectedDate={selectedDate}
-                selectedTime={selectedTime}
-                onTimeSelect={setSelectedTime}
-                totalDuration={0}
-              />
+              ) : (
+                // 2. RENDERIZAÇÃO PADRÃO PARA MODO AGENDAMENTO
+                <div className="pl-0">
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    <div className="">
+                      <h2 className="mb-2">Selecione o dia</h2>
+                      <Card className="border flex-1">
+                        <CustomCalendar selected={selectedDate} onSelect={setSelectedDate} getDateStatus={getDateStatus} />
+                      </Card>
+                    </div>
+                    <div className="flex-1"  >
+                      <h2 className="mb-2">Selecione o horário</h2>
+                      <Card className="border flex-1 p-3">
+                        <TimeSlotPicker
+                          professionalId={id}
+                          selectedDate={selectedDate}
+                          selectedTime={selectedTime}
+                          onTimeSelect={setSelectedTime} totalDuration={0}
+                        /></Card>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </TabsContent>
-
           {/* Sobre */}
           <TabsContent value="sobre">
+
+            {/* NOVO BLOCO: Horário de Atendimento Geral */}
+            {professional.workingHours && (
+              <WorkingHoursCard workingHours={professional.workingHours} />
+            )}
+
             {/* Descrição */}
             {professional.description && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
@@ -406,7 +507,7 @@ export default function ProfessionalDetails() {
                     allowFullScreen
                   ></iframe>
                 </div>
-                <div className="  text-end">
+                <div className="  text-end">
                   <a
                     href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(getAddress())}`}
                     target="_blank"
@@ -426,7 +527,7 @@ export default function ProfessionalDetails() {
       {/* Footer fixo */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-lg z-30 rounded-t-3xl">
         <div className="container mx-auto max-w-screen-lg px-4">
-          {(selectedServices.length > 0 || selectedDate || selectedTime) && (
+          {(selectedServices.length > 0 || (!isQueueOperation && (selectedDate || selectedTime))) && (
             <div className="flex items-center justify-between gap-2 bg-primary/10 p-3 rounded-lg border border-border mb-2">
               {/* Texto */}
               <div className="flex-1 text-sm text-foreground flex flex-col gap-1">
@@ -440,7 +541,7 @@ export default function ProfessionalDetails() {
                     </p>
                   </div>
                 )}
-                {(selectedDate || selectedTime) && (
+                {!isQueueOperation && (selectedDate || selectedTime) && (
                   <div className="flex flex-wrap items-center gap-2 mt-1">
                     {selectedDate && (
                       <div className="flex items-center gap-1">
@@ -470,16 +571,19 @@ export default function ProfessionalDetails() {
           {/* Botão de agendar */}
           <div className="text-center">
             <Button
-
               onClick={handleSchedule}
-              className={`${selectedServices.length === 0 && !selectedDate && !selectedTime
+              // A condição de desabilitar/mudar cor é simplificada se for fila (só precisa de serviços)
+              disabled={!isQueueOperation && (selectedServices.length === 0 || !selectedDate || !selectedTime)}
+              className={`w-full ${selectedServices.length === 0 && !selectedDate && !selectedTime
                 ? "bg-zinc-900 text-white hover:bg-zinc-700"
                 : "bg-primary text-zinc-900 hover:bg-primary/90"
                 }`}
             >
-              {selectedServices.length === 0 && !selectedDate && !selectedTime
-                ? "Agendar atendimento"
-                : "Continuar agendamento"}
+              {isQueueOperation
+                ? (selectedServices.length === 0 ? "Selecionar serviços para a fila" : "Entrar na Fila")
+                : (selectedServices.length === 0 && (!selectedDate || !selectedTime)
+                  ? "Agendar atendimento"
+                  : "Continuar agendamento")}
             </Button>
 
           </div>
