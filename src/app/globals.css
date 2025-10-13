@@ -3,18 +3,24 @@
 
 :root {
   /* Definições de Cores do Usuário */
-  --custom-background: #FBF5E7; /* Fundo de Tela: Creme */
-  --custom-accent: #FCB9DD;     /* Botões/Destaques: Rosa */
-  --custom-zinc-900: #09090B;   /* Títulos/Texto: zinc-900 (#09090B) */
+  --custom-background: #FBF5E7;
+  /* Fundo de Tela: Creme */
+  --custom-accent: #FCB9DD;
+  /* Botões/Destaques: Rosa */
+  --custom-zinc-900: #09090B;
+  /* Títulos/Texto: zinc-900 (#09090B) */
 
   /* Cores Principais Atualizadas */
-  --background: var(--custom-background); /* Fundo da tela usa o creme */
+  --background: var(--custom-background);
+  /* Fundo da tela usa o creme */
   --foreground: var(--custom-zinc-900);
 
   /* Cartões (Cards) e Popovers AGORA SÃO BRANCO PURO para contraste */
-  --card: #FFFFFF; /* Fundo Branco Puro para os Cards */
+  --card: #FFFFFF;
+  /* Fundo Branco Puro para os Cards */
   --card-foreground: var(--custom-zinc-900);
-  --popover: #FFFFFF; /* Fundo Branco Puro para os Popovers */
+  --popover: #FFFFFF;
+  /* Fundo Branco Puro para os Popovers */
   --popover-foreground: var(--custom-zinc-900);
 
   /* Primary (Botões, Destaques) */
@@ -32,12 +38,14 @@
   --muted-foreground: oklch(0.556 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0); /* Mantenha uma borda levemente acinzentada */
+  --border: oklch(0.922 0 0);
+  /* Mantenha uma borda levemente acinzentada */
   --input: oklch(0.922 0 0);
-  --ring: var(--custom-accent); 
-  
+  --ring: var(--custom-accent);
+
   /* Cores da Barra Lateral (Sidebar) */
-  --sidebar: #FFFFFF; /* Sidebar também em branco */
+  --sidebar: #FFFFFF;
+  /* Sidebar também em branco */
   --sidebar-foreground: var(--custom-zinc-900);
   --sidebar-primary: var(--custom-accent);
   --sidebar-primary-foreground: var(--custom-zinc-900);
@@ -63,7 +71,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.145 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0); 
+  --primary: oklch(0.985 0 0);
   --primary-foreground: oklch(0.205 0 0);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -137,11 +145,58 @@
   * {
     border-color: var(--border);
   }
+
   body {
     background: var(--background);
     color: var(--foreground);
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     color: var(--foreground);
   }
+}
+
+  /* barra range */
+.custom-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px; 
+  background: var(--background); 
+  cursor: pointer;
+  border-radius: 12px; 
+  border: 1px solid var(--border); 
+}
+
+/* A bolinha  */
+.custom-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px; 
+  height: 16px; 
+  background: var(--primary); 
+  cursor: pointer;
+  border-radius: 50%; 
+}
+
+/* A bolinha (thumb) do Moz (Firefox) */
+.custom-range-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--primary); 
+  cursor: pointer;
+  border-radius: 50%;
+  border: none; 
+}
+
+/* O preenchimento da barra até a bolinha (Opcional, mas comum) */
+.custom-range-slider::-webkit-slider-runnable-track {
+  background: var(--background);
+  /* Mantém o fundo */
+  border-radius: 16px;
 }

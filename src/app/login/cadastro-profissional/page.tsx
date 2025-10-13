@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Plus, Trash2, Check, EyeOff, Eye, Camera } from "lucide-react" // 🆕 Importado 'Camera'
+import { ArrowLeft, Plus, Trash2, Check, EyeOff, Eye, Camera } from "lucide-react"
 import {
   saveProfessional,
   saveUser,
@@ -18,11 +18,12 @@ import {
   type User,
   type WorkingHoursMap,
   type DayOfWeek,
-} from "@/data/mockData"
-import { useAuth } from "@/contexts/AuthContext"
-import { useToast } from "@/hooks/use-toast"
+} from "@/data/mockData" // Supondo que você tenha este arquivo de mock data
+import { useAuth } from "@/contexts/AuthContext" // Supondo que você tenha este contexto de autenticação 
 import { Card } from "@/components/ui/card"
+import { toast } from "sonner"
 
+// --- Constantes
 const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [
   { key: "monday", label: "Segunda-feira" },
   { key: "tuesday", label: "Terça-feira" },
@@ -33,26 +34,31 @@ const DAYS_OF_WEEK: { key: DayOfWeek; label: string }[] = [
   { key: "sunday", label: "Domingo" },
 ]
 
+// --- Tipagem customizada para o estado de WorkingHours
 type SafeWorkingHoursMap = {
   [K in DayOfWeek]: WorkingHoursMap[K] & {
     intervals: { start: string; end: string }[]
   }
 }
 
+// --- Componente Principal
 export default function CadastroProfissionalPage() {
   const router = useRouter()
   const { login } = useAuth()
-  const { toast } = useToast()
+
+  // --- Estados de Controle de Fluxo
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(true)
+  const [showPassword, setShowPassword] = useState(false)
+
   const [operationType, setOperationType] = useState<"agendamento" | "fila">("agendamento")
 
-  // 🆕 NOVOS ESTADOS PARA A FOTO DE PERFIL
   const [profileImageFile, setProfileImageFile] = useState<File | null>(null)
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null)
-
-  // Função de formatação de WhatsApp
+  const minDuration = 5;
+  const maxDuration = 240;
+  const stepDuration = 5;
+  // --- Funções de Formatação
   const formatWhatsapp = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11)
     if (digits.length <= 2) return digits
@@ -66,6 +72,39 @@ export default function CadastroProfissionalPage() {
     if (digits.length <= 5) return digits
     return `${digits.slice(0, 5)}-${digits.slice(5)}`
   }
+  const formatDuration = (minutes: number): string => {
+    if (minutes < 60) {
+      return `${minutes} min`;
+    }
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+
+    if (remainingMinutes === 0) {
+      return `${hours}h`;
+    }
+    return `${hours}h ${remainingMinutes}m`;
+  };
+
+ const formatPriceInput = (value: string): string => {
+  if (!value) return "";
+  // remove tudo que não seja número
+  const digits = value.replace(/\D/g, "");
+  const number = Number(digits) / 100; // divide por 100 para ter centavos
+  return number.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
+const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const rawValue = e.target.value;
+
+ 
+  const digits = rawValue.replace(/\D/g, "");
+ 
+  const numberValue = (Number(digits) / 100).toFixed(2); 
+  setCurrentService({
+    ...currentService,
+    price: numberValue,
+  });
+};
   const [basicInfo, setBasicInfo] = useState({
     name: "",
     whatsapp: "",
@@ -77,13 +116,11 @@ export default function CadastroProfissionalPage() {
     const formatted = formatWhatsapp(e.target.value)
     setBasicInfo({ ...basicInfo, whatsapp: formatted })
   }
-
-  // 🆕 NOVO MANIPULADOR DE UPLOAD DA FOTO
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setProfileImageFile(file)
-      // Cria uma URL temporária para pré-visualização. Na vida real, você faria o upload para um servidor aqui.
+      // Cria uma URL temporária para pré-visualização.
       setProfileImageUrl(URL.createObjectURL(file))
     } else {
       setProfileImageFile(null)
@@ -91,6 +128,7 @@ export default function CadastroProfissionalPage() {
     }
   }
 
+  // Passo 2: Endereço
   const [address, setAddress] = useState({
     street: "",
     number: "",
@@ -100,6 +138,7 @@ export default function CadastroProfissionalPage() {
     zipCode: "",
   })
 
+  // Passo 3: Serviços
   const [services, setServices] = useState<Service[]>([])
   const [currentService, setCurrentService] = useState({
     category: "",
@@ -109,25 +148,24 @@ export default function CadastroProfissionalPage() {
     description: "",
   })
 
+  const categories = getCategories() // Função mockada para obter categorias
+
+  // Passo 4: Horários de Atendimento
   const [workingHours, setWorkingHours] = useState<SafeWorkingHoursMap>({
     monday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     tuesday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     wednesday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     thursday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
     friday: { enabled: true, start: "09:00", end: "18:00", intervals: [] },
+    // Finais de semana desabilitados por padrão
     saturday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
     sunday: { enabled: false, start: "09:00", end: "18:00", intervals: [] },
   })
 
-  const categories = getCategories()
-
+  // --- Funções de Manipulação de Serviços (Passo 3)
   const handleAddService = () => {
     if (!currentService.category || !currentService.name || !currentService.duration || !currentService.price) {
-      toast({
-        title: "Campos obrigatórios",
-        description: "Preencha todos os campos do serviço.",
-        variant: "destructive",
-      })
+      toast.error("Campos obrigatórios");
       return
     }
     const newService: Service = {
@@ -140,16 +178,15 @@ export default function CadastroProfissionalPage() {
     }
     setServices([...services, newService])
     setCurrentService({ category: "", name: "", duration: "", price: "", description: "" })
-    toast({
-      title: "Serviço adicionado!",
-      description: "Continue adicionando ou avance para a próxima etapa.",
-    })
+    toast.success("Serviço adicionado! ✅")
   }
 
   const handleRemoveService = (id: string) => {
     setServices(services.filter((s) => s.id !== id))
   }
 
+  // --- Funções de Manipulação de Horários (Passo 4)
+  // Adicionar intervalo (almoço, pausa, etc.) - Atualmente oculto (hidden) no JSX, mas a função existe
   const handleAddInterval = (day: DayOfWeek) => {
     setWorkingHours((prev) => ({
       ...prev,
@@ -176,18 +213,22 @@ export default function CadastroProfissionalPage() {
     })
   }
 
+  // --- Funções de Validação
   const validateStep1 = () => {
     if (!basicInfo.name || !basicInfo.whatsapp || !basicInfo.email || !basicInfo.password) {
-      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos.", variant: "destructive" })
+      toast.error("Preencha todos os campos obrigatórios");
       return false
     }
-
+    if (!/\S+@\S+\.\S+/.test(basicInfo.email)) {
+      toast.error("E-mail inválido");
+      return false;
+    }
     return true
   }
 
   const validateStep2 = () => {
     if (!address.street || !address.number || !address.neighborhood || !address.city || !address.state || !address.zipCode) {
-      toast({ title: "Campos obrigatórios", description: "Preencha todos os campos do endereço.", variant: "destructive" })
+      toast.error("Preencha todos os campos obrigatórios");
       return false
     }
     return true
@@ -195,27 +236,88 @@ export default function CadastroProfissionalPage() {
 
   const validateStep3 = () => {
     if (services.length === 0) {
-      toast({ title: "Adicione pelo menos um serviço", description: "É necessário cadastrar pelo menos um serviço.", variant: "destructive" })
+      toast.error("Adicione pelo menos um serviço");
       return false
     }
     return true
   }
 
+  // 🆕 FUNÇÃO DE VALIDAÇÃO PARA O PASSO 4
+  const validateStep4 = () => {
+    // 1. Verifica o tipo de operação (agendamento ou fila)
+    if (!operationType) {
+      toast.error("Preencha os campos obrigatórios");
+      return false
+    }
+
+    // 2. Verifica se pelo menos um dia de trabalho está habilitado
+    const hasEnabledDay = DAYS_OF_WEEK.some(day => workingHours[day.key].enabled);
+    if (!hasEnabledDay) {
+      toast.error("Os horários são campos obrigatórios");
+      return false;
+    }
+
+    // 3. Validação dos horários (Início e Fim) para dias habilitados
+    let isValidTimeRange = true;
+    DAYS_OF_WEEK.forEach(day => {
+      const dayHours = workingHours[day.key];
+      if (dayHours.enabled) {
+        if (!dayHours.start || !dayHours.end) {
+          isValidTimeRange = false;
+          toast.error("Horários obrigatórios");
+        }
+        else if (dayHours.start >= dayHours.end) {
+          isValidTimeRange = false;
+          toast.error("Horários inválidos");
+        }
+        // Validação de intervalos (opcional, mas bom ter)
+        dayHours.intervals.forEach(interval => {
+          if (interval.start >= interval.end) {
+            isValidTimeRange = false;
+            toast.error("Intervalo inválido");
+          }
+        });
+      }
+    });
+
+    if (!isValidTimeRange) return false;
+
+    return true
+  }
+  // FIM 🆕 FUNÇÃO DE VALIDAÇÃO PARA O PASSO 4
+
+  // --- Navegação e Submissão
   const handleNext = () => {
-    if ((step === 1 && !validateStep1()) || (step === 2 && !validateStep2()) || (step === 3 && !validateStep3())) return
-    setStep(step + 1)
+    let isValid = true
+    if (step === 1) isValid = validateStep1()
+    if (step === 2) isValid = validateStep2()
+    if (step === 3) isValid = validateStep3()
+    if (step === 4) isValid = validateStep4() // 🆕 Adiciona a validação do passo 4
+
+    if (!isValid) return
+
+    if (step < 4) {
+      setStep(step + 1)
+    } else {
+      // Se for o passo 4 e for válido, chama o handleSubmit
+      handleSubmit();
+    }
   }
 
   const handleSubmit = async () => {
+    // ⚠️ Garantir que a validação do passo 4 seja feita se o botão de finalizar for clicado diretamente
+    if (!validateStep4()) return;
+
     setLoading(true)
     try {
       const professionalId = Date.now().toString()
       const userId = `user-${professionalId}`
 
-      // ⚠️ SIMULAÇÃO DE UPLOAD: Na vida real, você enviaria profileImageFile para um servidor
-      // e receberia uma URL de volta, salvando essa URL (profileImageUrl)
+      // ⚠️ SIMULAÇÃO DE UPLOAD:
+      // Na vida real, você enviaria profileImageFile para um servidor
       const simulatedImageUrl = profileImageUrl || "https://picsum.photos/200/200?random=" + professionalId;
 
+      // 1. Salvar Usuário (conta de login)
       const newUser: User = {
         id: userId,
         name: basicInfo.name,
@@ -228,6 +330,7 @@ export default function CadastroProfissionalPage() {
       }
       saveUser(newUser)
 
+      // 2. Salvar Profissional (dados de negócio)
       const newProfessional: Professional = {
         id: professionalId,
         userId,
@@ -237,10 +340,11 @@ export default function CadastroProfissionalPage() {
         password: basicInfo.password,
         address,
         services,
+        // Converte SafeWorkingHoursMap para WorkingHoursMap para salvar no mockData
         workingHours: Object.fromEntries(
           Object.entries(workingHours).map(([day, data]) => [
             day,
-            { enabled: data.enabled, start: data.start, end: data.end, intervals: data.intervals },
+            { enabled: data.enabled, start: data.start, end: data.end, intervals: data.intervals.map(i => ({ start: i.start, end: i.end })) },
           ])
         ) as WorkingHoursMap,
         createdAt: new Date().toISOString(),
@@ -251,15 +355,18 @@ export default function CadastroProfissionalPage() {
         social_instagram: "",
         social_facebook: "",
         phone: basicInfo.whatsapp.replace(/\D/g, ""),
-        operationType: operationType,
+        operationType: operationType, // 🆕 SALVA O TIPO DE OPERAÇÃO
         profileImage: simulatedImageUrl, // 🆕 SALVA A IMAGEM NO PROFESSIONAL
       }
       saveProfessional(newProfessional)
 
+      // 3. Salvar Disponibilidade (para o sistema de agendamento)
       const availability = getDefaultAvailability(professionalId)
       availability.workingDays = Object.fromEntries(
         DAYS_OF_WEEK.map((day) => [day.key, workingHours[day.key].enabled])
       ) as { [key in DayOfWeek]: boolean }
+
+      // Define as horas de trabalho padrão (simplificado para o mock)
       const firstEnabledDayKey = DAYS_OF_WEEK.find((day) => workingHours[day.key].enabled)?.key
       availability.workingHours = firstEnabledDayKey
         ? { start: workingHours[firstEnabledDayKey].start, end: workingHours[firstEnabledDayKey].end }
@@ -267,19 +374,22 @@ export default function CadastroProfissionalPage() {
 
       saveProfessionalAvailability(availability)
 
+      // 4. Logar e Redirecionar
       await login(basicInfo.email, basicInfo.password)
-      toast({ title: "Cadastro realizado!", description: "Bem-vindo ao sistema." })
+      toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/dashboard")
     } catch (error) {
       console.error("Erro no cadastro:", error)
-      toast({ title: "Erro", description: "Não foi possível realizar o cadastro.", variant: "destructive" })
+      toast.error("Não foi possível realizar o cadastro. Verifique os dados.")
     } finally {
       setLoading(false)
     }
   }
 
+  // --- Renderização do Componente
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg text-center">
           <Link href="/login" className="flex items-center gap-2 text-primary-foreground hover:opacity-80">
@@ -289,7 +399,9 @@ export default function CadastroProfissionalPage() {
         </div>
       </header>
 
+      {/* Main Content */}
       <main className="container mx-auto max-w-2xl px-4 py-8">
+
         {/* Etapas de progresso */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4 w-full">
@@ -310,18 +422,20 @@ export default function CadastroProfissionalPage() {
             <span>Endereço</span>
             <span>Serviços</span>
             <span>Horários</span>
-
           </div>
         </div>
+
         <Card className="p-6">
 
-          {/* Step 1 */}
+          {/* Step 1: Informações Básicas */}
           {step === 1 && (
-            <div className="space-y-6">
-              <h2 className="text-2xl font-bold mb-2">Profissional</h2>
-              <p className="text-muted-foreground">Suas informações pessoais</p>
+            <div className="space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold mb-2">Profissional</h2>
+                <p className="text-muted-foreground">Suas informações pessoais</p>
+              </div>
 
-              {/* 🆕 NOVO CAMPO: UPLOAD DE FOTO DE PERFIL */}
+              {/* 🆕 CAMPO: UPLOAD DE FOTO DE PERFIL */}
               <div className="flex flex-col items-center gap-2 mb-6">
                 <Label htmlFor="profile-upload" className="cursor-pointer">
                   <div className="relative w-32 h-32 rounded-full border-2 border-primary overflow-hidden group">
@@ -353,44 +467,42 @@ export default function CadastroProfissionalPage() {
               {/* FIM: NOVO CAMPO */}
 
               <div className="space-y-2">
-                <Label>Nome do estabelecimento  *</Label>
+                <Label>Nome do estabelecimento <span className="text-red-600">*</span></Label>
                 <Input
                   value={basicInfo.name}
                   onChange={(e) => setBasicInfo({ ...basicInfo, name: e.target.value })}
-                  placeholder="Seu nome"
+                  placeholder="Seu Salão/Estúdio"
                 />
               </div>
               <div className="space-y-2">
-                <Label>WhatsApp *</Label>
+                <Label>WhatsApp  <span className="text-red-600">*</span></Label>
                 <Input
                   type="tel"
                   value={basicInfo.whatsapp}
                   onChange={handleWhatsappChange}
-                  placeholder="(11) 99999-9999"
+                  placeholder="(99) 99999-9999"
                   maxLength={15}
                 />
               </div>
-              {/* Campo de email */}
               <div className="space-y-2 relative">
-                <Label>E-mail *</Label>
+                <Label>E-mail  <span className="text-red-600">*</span></Label>
                 <Input
                   type="email"
                   value={basicInfo.email}
                   onChange={(e) =>
                     setBasicInfo({ ...basicInfo, email: e.target.value.toLowerCase() })
                   }
-                  placeholder="seu@email.com"
+                  placeholder="seu.email@exemplo.com"
                 />
               </div>
-              {/* Campo de senha */}
               <div className="space-y-2 relative">
-                <Label>Senha *</Label>
+                <Label>Senha  <span className="text-red-600">*</span></Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
                     value={basicInfo.password}
                     onChange={(e) => setBasicInfo({ ...basicInfo, password: e.target.value })}
-                    placeholder=""
+                    placeholder="Sua senha secreta"
                     className="pr-10"
                   />
                   <button
@@ -405,28 +517,29 @@ export default function CadastroProfissionalPage() {
 
             </div>
           )}
-          {/* Step 2 */}
+
+          {/* Step 2: Endereço */}
           {step === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Endereço</h2>
                 <p className="text-muted-foreground">Onde você atende seus clientes</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zipCode">CEP *</Label>
+                <Label htmlFor="zipCode">CEP  <span className="text-red-600">*</span></Label>
                 <Input
                   id="zipCode"
                   value={address.zipCode}
                   onChange={(e) =>
                     setAddress({ ...address, zipCode: formatCep(e.target.value) })
                   }
-                  placeholder=""
+                  placeholder="99999-999"
                   maxLength={9}
                 />
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-2">
-                  <Label htmlFor="street">Rua *</Label>
+                  <Label htmlFor="street">Rua  <span className="text-red-600">*</span></Label>
                   <Input
                     id="street"
                     value={address.street}
@@ -435,7 +548,7 @@ export default function CadastroProfissionalPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="number">Número *</Label>
+                  <Label htmlFor="number">Número  <span className="text-red-600">*</span></Label>
                   <Input
                     id="number"
                     value={address.number}
@@ -445,7 +558,7 @@ export default function CadastroProfissionalPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="neighborhood">Bairro *</Label>
+                <Label htmlFor="neighborhood">Bairro  <span className="text-red-600">*</span></Label>
                 <Input
                   id="neighborhood"
                   value={address.neighborhood}
@@ -455,7 +568,7 @@ export default function CadastroProfissionalPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade *</Label>
+                  <Label htmlFor="city">Cidade  <span className="text-red-600">*</span></Label>
                   <Input
                     id="city"
                     value={address.city}
@@ -464,7 +577,7 @@ export default function CadastroProfissionalPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado *</Label>
+                  <Label htmlFor="state">Estado  <span className="text-red-600">*</span></Label>
                   <Input
                     id="state"
                     value={address.state}
@@ -476,16 +589,19 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
           )}
-          {/* Step 3 */}
+
+          {/* Step 3: Serviços */}
           {step === 3 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold mb-2">Serviços</h2>
                 <p className="text-muted-foreground">Adicione pelo menos um serviço</p>
               </div>
+
+              {/* Formulário para Adicionar Serviço */}
               <div className="space-y-4 p-4 bg-muted rounded-lg">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria *</Label>
+                  <Label htmlFor="category">Categoria  <span className="text-red-600">*</span></Label>
                   <select
                     id="category"
                     value={currentService.category}
@@ -501,7 +617,7 @@ export default function CadastroProfissionalPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="serviceName">Nome do serviço *</Label>
+                  <Label htmlFor="serviceName">Nome do serviço  <span className="text-red-600">*</span></Label>
                   <Input
                     id="serviceName"
                     value={currentService.name}
@@ -509,26 +625,42 @@ export default function CadastroProfissionalPage() {
                     placeholder="Ex: Corte feminino"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duração (min) *</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={currentService.duration}
-                      onChange={(e) => setCurrentService({ ...currentService, duration: e.target.value })}
-                      placeholder="60"
-                    />
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2 col-span-2">
+                    <Label htmlFor="duration">Duração <span className="text-red-600">*</span></Label>
+                    <div className="flex items-center space-x-4">
+                      <span className="text-sm font-medium w-16 text-center text-muted-foreground">
+                        {formatDuration(minDuration)}
+                      </span>
+                      <Input
+                        id="duration"
+                        type="range"
+                        min={minDuration}
+                        max={maxDuration}
+                        step={stepDuration}
+                        value={currentService.duration}
+                        onChange={(e) => setCurrentService({ ...currentService, duration: e.target.value })}
+
+                        className="cursor-pointer custom-range-slider"
+                      />
+                      <span className="text-sm font-medium w-16 text-center text-muted-foreground">
+                        {formatDuration(maxDuration)}
+                      </span>
+                    </div>
+                    {/* Valor Selecionado */}
+                    <p className="text-center text-primary font-semibold mt-1">
+
+                      {formatDuration(Number(currentService.duration))}
+                    </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Preço (R$) *</Label>
+                  <div className="space-y-2 col-span-1">
+                    <Label htmlFor="price">Preço (R$) <span className="text-red-600">*</span></Label>
                     <Input
                       id="price"
-                      type="number"
-                      step="0.01"
-                      value={currentService.price}
-                      onChange={(e) => setCurrentService({ ...currentService, price: e.target.value })}
-                      placeholder="50.00"
+                      type="text"
+                      value={formatPriceInput(currentService.price)}
+                      onChange={handlePriceChange}
+                      placeholder="50,00"
                     />
                   </div>
                 </div>
@@ -545,6 +677,8 @@ export default function CadastroProfissionalPage() {
                   <Plus className="w-4 h-4 mr-2" /> Adicionar Serviço
                 </Button>
               </div>
+
+              {/* Lista de Serviços Adicionados */}
               {services.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="font-semibold">Serviços adicionados ({services.length})</h3>
@@ -570,7 +704,8 @@ export default function CadastroProfissionalPage() {
               )}
             </div>
           )}
-          {/* Step 4 */}
+
+          {/* Step 4: Horários de Atendimento */}
           {step === 4 && (
             <div className="space-y-6">
               <div className="text-center mb-6">
@@ -578,7 +713,7 @@ export default function CadastroProfissionalPage() {
                 <p className="text-muted-foreground">Configure seus horários de trabalho</p>
               </div>
 
-              {/* Tipo de Funcionamento */}
+              {/* 🆕 Tipo de Funcionamento */}
               <div className="space-y-2 p-4 border rounded-lg bg-gray-50 ">
                 <Label htmlFor="operationType" className="font-bold">
                   Tipo de Funcionamento *
@@ -598,6 +733,7 @@ export default function CadastroProfissionalPage() {
               </div>
               {/* FIM: NOVO CAMPO */}
 
+              {/* Configuração de Horários por Dia */}
               <div className="space-y-4">
                 {DAYS_OF_WEEK.map((day) => {
                   const dayHours = workingHours[day.key]
@@ -613,8 +749,9 @@ export default function CadastroProfissionalPage() {
                                 [day.key]: { ...dayHours, enabled: checked as boolean },
                               }))
                             }
+                            id={`day-${day.key}`}
                           />
-                          <span className="font-medium">{day.label}</span>
+                          <Label htmlFor={`day-${day.key}`} className="font-medium cursor-pointer">{day.label}</Label>
                         </div>
                         {dayHours.enabled && (
                           <div className="flex items-center gap-2">
@@ -644,8 +781,11 @@ export default function CadastroProfissionalPage() {
                           </div>
                         )}
                       </div>
+
+                      {/* Blocos de Intervalo (Opcional, geralmente para almoço) */}
                       {dayHours.enabled && (
-                        <div className="ml-6 space-y-3">
+                        <div className="ml-6 space-y-3 pt-3 border-t mt-3">
+                          <p className="text-sm font-medium text-muted-foreground">Intervalos (Ex: Almoço)</p>
                           {dayHours.intervals.map((interval, index) => (
                             <div key={index} className="flex items-center gap-2">
                               <Input
@@ -675,9 +815,11 @@ export default function CadastroProfissionalPage() {
                             type="button"
                             variant="outline"
                             size="sm"
+                            // NOTE: Mantido como 'hidden' como no seu código original. Para habilitar, remova 'hidden'.
+                            className="text-sm h-8 mt-2 hidden"
                             onClick={() => handleAddInterval(day.key)}
                           >
-                            <Plus className="w-4 h-4 mr-2" /> Adicionar Intervalo
+                            <Plus className="w-4 h-4 mr-1" /> Adicionar Intervalo
                           </Button>
                         </div>
                       )}
@@ -687,17 +829,21 @@ export default function CadastroProfissionalPage() {
               </div>
             </div>
           )}
+
           {/* Botões de navegação */}
-          <div className="flex justify-between mt-8 text-end">
+          <div className="flex justify-between mt-8">
             {step > 1 && (
               <Button variant="outline" onClick={() => setStep(step - 1)}>
-                Voltar
+                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
               </Button>
             )}
+            {/* Adiciona um botão fantasma para alinhar o botão "Próximo" à direita no passo 1 */}
+            {step === 1 && <div />}
+
             {step < 4 ? (
               <Button onClick={handleNext}>Próximo</Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={loading}>
+              <Button onClick={handleNext} disabled={loading}>
                 {loading ? "Cadastrando..." : "Finalizar Cadastro"}
               </Button>
             )}
