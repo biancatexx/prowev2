@@ -227,7 +227,7 @@ export default function Perfil() {
     }
 
     return (
-        <div className="min-h-screen bg-background pb-20">
+        <div className="">
             <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
                 <div className="container mx-auto max-w-screen-lg px-4">
                     <h1 className="text-2xl font-bold text-primary-foreground text-center">Perfil Profissional</h1>
@@ -318,7 +318,7 @@ export default function Perfil() {
                     </div>
                 </Card>
 
-          
+
                 <Card className="p-6">
                     <h2 className="text-lg font-bold">Horário de Funcionamento</h2>
                     <p className="text-sm text-muted-foreground mb-4">Defina o horário específico para cada dia da semana.</p>
@@ -328,16 +328,16 @@ export default function Perfil() {
                             const schedule = formData.workingHours[day] || defaultWorkingHours[day];
 
                             return (
-                                <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 pb-3 pt-1">
+                                <div key={day} className="border-b last:border-b-0 py-2" >
                                     <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
 
-                                    <div className="flex items-center space-x-4 w-full sm:w-auto">
-                                        {/* Switch Habilita/Desabilita */}
-                                        <div className="flex items-center space-x-2 w-[100px] justify-end relative">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2">
 
+                                        {/* Switch Habilita/Desabilita */}
+                                        <div className="flex items-center space-x-2"> 
                                             <Label
                                                 htmlFor={`switch-${day}`}
-                                                className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4 cursor-pointer`}
+                                                className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} `}
                                             >
                                                 {schedule.enabled ? "Aberto" : "Fechado"}
                                             </Label><Switch
@@ -349,25 +349,25 @@ export default function Perfil() {
 
                                         </div>
 
-                                        {/* Horário de Início */}
-                                        <Input
-                                            type="time"
-                                            value={schedule.start}
-                                            disabled={!schedule.enabled}
-                                            onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
-                                            className="w-24 text-center"
-                                        />
-
-                                        <span className="text-muted-foreground">até</span>
-
-                                        {/* Horário de Fim */}
-                                        <Input
-                                            type="time"
-                                            value={schedule.end}
-                                            disabled={!schedule.enabled}
-                                            onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
-                                            className="w-24 text-center"
-                                        />
+                                        <div className="flex items-center space-x-2 mt-2 ml-auto text-end">
+                                            {/* Horário de Início */}
+                                            <Input
+                                                type="time"
+                                                value={schedule.start}
+                                                disabled={!schedule.enabled}
+                                                onChange={(e) => handleWorkingHoursChange(day, 'start', e.target.value)}
+                                                className="w-24 text-center"
+                                            />
+                                            <span className="text-muted-foreground">até</span>
+                                            {/* Horário de Fim */}
+                                            <Input
+                                                type="time"
+                                                value={schedule.end}
+                                                disabled={!schedule.enabled}
+                                                onChange={(e) => handleWorkingHoursChange(day, 'end', e.target.value)}
+                                                className="w-24 text-center"
+                                            />
+                                        </div>
                                     </div>
 
                                     {/* Mensagem "Fechado" */}
@@ -377,7 +377,7 @@ export default function Perfil() {
                         })}
                     </div>
                 </Card>
-           
+
                 {/* Botões de Ação */}
                 <div className="flex justify-end items-center space-x-2">
                     {/* Botão SALVAR HABILITADO / MODAL */}

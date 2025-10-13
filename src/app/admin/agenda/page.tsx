@@ -157,7 +157,7 @@ export default function Agenda() {
 
 
   return (
-    <div className="min-h-screen bg-background pb-20 relative">
+    <div className=" relative">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg px-4">
           <h1 className="text-2xl font-bold text-primary-foreground text-center">Agenda</h1>
@@ -166,20 +166,20 @@ export default function Agenda() {
 
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
         <div className="flex justify-center gap-2">
-          <div className="inline-flex h-10 items-center justify-center w-full bg-card border border-border rounded-xl p-2 mb-6 gap-2">
+          <div className="inline-flex h-full items-center justify-center w-full bg-card border border-border rounded-xl p-2 mb-6 ">
             <button
               onClick={() => setTab("hora")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === "hora" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              className={`flex-1 rounded-lg  p-1.5 text-sm font-medium gap-1 ${tab === "hora" ? "bg-zinc-900 text-white" : ""
                 }`}
             >
-              <List className="inline w-3 h-3 mr-2" /> Visão diária
+              <List className="inline w-3 h-3" /> Visão diária
             </button>
             <button
               onClick={() => setTab("dia")}
-              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium ${tab === "dia" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              className={`flex-1 rounded-lg p-1.5 text-sm font-medium gap-1  ${tab === "dia" ? "bg-zinc-900 text-white" : " "
                 }`}
             >
-              <Rows3 className="inline w-3 h-3 mr-2" /> Visão mensal
+              <Rows3 className="inline w-3 h-3" /> Visão mensal
             </button>
           </div>
         </div>

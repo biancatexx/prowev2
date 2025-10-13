@@ -267,13 +267,13 @@ export default function AjustesPage() {
      * - 'day-off': Dia de folga semanal (configurado no workingHoursMap)
      * - 'available': Dia normal de trabalho
      */
-    
+
     const getDateStatus = (date: Date) => {
         const dateStr = formatDateString(date);
 
         // 1. Verificar se é uma data bloqueada manualmente
         if (currentAvailability.closedDates.includes(dateStr)) {
-            return "closed"; 
+            return "closed";
         }
 
         // 2. Verificar se o dia da semana está desabilitado no horário de trabalho padrão
@@ -288,11 +288,11 @@ export default function AjustesPage() {
         return "available";
     };
 
-    
+
     // --- Componente de Renderização ---
 
     return (
-        <div className="min-h-screen bg-background pb-20">
+        <div className="">
             <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
                 <div className="container mx-auto max-w-screen-lg px-4">
                     <h1 className="text-2xl font-bold text-primary-foreground text-center">Configuração da Agenda</h1>
@@ -344,8 +344,8 @@ export default function AjustesPage() {
                                             <p className="text-sm font-semibold">Data selecionada:</p>
                                             <div className='flex flex-wrap justify-between itens-center'>
                                                 <p className="text-lg font-bold text-red-600">{selectedDate.toLocaleDateString('pt-BR')}</p>
-                                                <Button 
-                                                    onClick={handleBlockDate} 
+                                                <Button
+                                                    onClick={handleBlockDate}
                                                     className=" "
                                                     disabled={getDateStatus(selectedDate) === "closed"} // Não deixa bloquear uma data já bloqueada manualmente
                                                 >
@@ -370,7 +370,7 @@ export default function AjustesPage() {
                     <h2 className="text-lg font-bold"><Clock className="w-5 h-5 mr-2 inline" />Intervalo de agendamentos</h2>
 
                     <p className="text-xs text-muted-foreground">Define o tempo de duração que o cliente poderá selecionar.</p>
-                    
+
 
                     {/* Intervalo */}
                     <div className="space-y-2 pb-4 border-b mt-2">
@@ -387,7 +387,7 @@ export default function AjustesPage() {
                             />
                             <span className="text-sm text-muted-foreground">minutos. (Mín: 5, Máx: 120).</span>
                         </div>
-                        </div>
+                    </div>
 
                     {/* Horário Granular por Dia da Semana (Adaptado da página Perfil) */}
                     <div className="pt-2">
@@ -401,15 +401,15 @@ export default function AjustesPage() {
                                 const schedule = currentAvailability.workingHoursMap[day] || defaultWorkingHours[day];
 
                                 return (
-                                    <div key={day} className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b last:border-b-0 py-2">
+                                    <div key={day} className="border-b last:border-b-0 py-2" >
                                         <span className="font-medium w-32 text-left mb-2 sm:mb-0">{dayNames[day]}</span>
 
-                                        <div className="flex items-center space-x-4 w-full sm:w-auto">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2">
                                             {/* Switch Habilita/Desabilita */}
-                                            <div className="flex items-center space-x-2 w-[100px] justify-end relative">
+                                            <div className="flex items-center space-x-2">
                                                 <Label
                                                     htmlFor={`switch-${day}`}
-                                                    className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"} sm:w-24 sm:text-right mt-2 sm:mt-0 absolute sm:static right-4 cursor-pointer`}
+                                                    className={`text-sm ${schedule.enabled ? "text-green-600" : "text-red-500"}`}
                                                 >
                                                     {schedule.enabled ? "Aberto" : "Fechado"}
                                                 </Label>
@@ -420,26 +420,25 @@ export default function AjustesPage() {
                                                     className="cursor-pointer"
                                                 />
                                             </div>
-
-                                            {/* Horário de Início */}
-                                            <Input
-                                                type="time"
-                                                value={schedule.start}
-                                                disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHourChange(day, 'start', e.target.value)}
-                                                className="w-24 text-center"
-                                            />
-
-                                            <span className="text-muted-foreground">até</span>
-
-                                            {/* Horário de Fim */}
-                                            <Input
-                                                type="time"
-                                                value={schedule.end}
-                                                disabled={!schedule.enabled}
-                                                onChange={(e) => handleWorkingHourChange(day, 'end', e.target.value)}
-                                                className="w-24 text-center"
-                                            />
+                                            <div className="flex items-center space-x-2 mt-2 ml-auto text-end">
+                                                {/* Horário de Início */}
+                                                <Input
+                                                    type="time"
+                                                    value={schedule.start}
+                                                    disabled={!schedule.enabled}
+                                                    onChange={(e) => handleWorkingHourChange(day, 'start', e.target.value)}
+                                                    className="w-24 text-center"
+                                                /> 
+                                                <span className="text-muted-foreground">até</span> 
+                                                {/* Horário de Fim */}
+                                                <Input
+                                                    type="time"
+                                                    value={schedule.end}
+                                                    disabled={!schedule.enabled}
+                                                    onChange={(e) => handleWorkingHourChange(day, 'end', e.target.value)}
+                                                    className="w-24 text-center"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 );

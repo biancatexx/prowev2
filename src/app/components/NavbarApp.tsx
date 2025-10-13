@@ -24,7 +24,7 @@ const NavbarApp = () => {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-zinc-900 border-t border-zinc-800 safe-area-bottom z-50 rounded-t-3xl">
       <div className="container mx-auto max-w-md">
-        <div className="flex items-center justify-around py-2">
+        <div className="flex items-center justify-around">
           {navLinks.map((link) => {
             const Icon = link.icon;
             const active = isActive(link.path);

@@ -87,7 +87,7 @@ const LayoutContent: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         </div> 
                     </div>
                 </nav>
-                <main className="bg-background flex-1 overflow-y-auto rounded-[calc(var(--radius)*4)] px-4">
+                <main className="bg-background flex-1 overflow-y-auto rounded-[calc(var(--radius)*4)] px-4 pb-26">
                     {children}
                 </main>
             </div>

@@ -146,7 +146,7 @@ const Explorar = () => {
             
           </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-between">
             {categories.map((category) => (
               <button
                 key={category.name}

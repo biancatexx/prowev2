@@ -112,7 +112,7 @@ export default function DetalhesServicoPage() {
   if (!serviceData) return null
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="">
       <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-6 pt-8 px-4 mb-6">
         <div className="container mx-auto max-w-screen-lg flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-primary-foreground">

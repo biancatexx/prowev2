@@ -338,7 +338,6 @@ export default function ProfessionalDetails() {
                 <p className="text-sm text-muted-foreground leading-relaxed">{professional.description}</p>
               </div>
             )}
-
             {/* Experiência */}
             {professional.experience_years && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
@@ -346,7 +345,6 @@ export default function ProfessionalDetails() {
                 <p className="text-sm text-muted-foreground">{professional.experience_years} anos</p>
               </div>
             )}
-
             {/* Redes Sociais */}
             {(professional.social_instagram || professional.social_facebook) && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
@@ -380,7 +378,6 @@ export default function ProfessionalDetails() {
                 </div>
               </div>
             )}
-
             {/* Contato */}
             {professional.phone && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
