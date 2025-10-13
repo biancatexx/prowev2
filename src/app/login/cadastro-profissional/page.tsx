@@ -94,9 +94,7 @@ export default function CadastroProfissionalPage() {
 };
 
 const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const rawValue = e.target.value;
-
- 
+  const rawValue = e.target.value; 
   const digits = rawValue.replace(/\D/g, "");
  
   const numberValue = (Number(digits) / 100).toFixed(2); 
@@ -143,7 +141,7 @@ const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
   const [currentService, setCurrentService] = useState({
     category: "",
     name: "",
-    duration: "",
+    duration: String(minDuration), 
     price: "",
     description: "",
   })
