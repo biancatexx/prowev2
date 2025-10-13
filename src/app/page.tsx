@@ -1,20 +1,26 @@
 "use client";
 import { useState, useEffect } from "react";
-// Removida importação Navbar, já que NavbarApp é usada
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Heart, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
+// Assumindo que você tem essas importações
 import { getProfessionals, getMockServices } from "@/data/mockData";
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
+
+// 1. Interface para Coordenadas
+interface Coords {
+  lat: number;
+  lng: number;
+}
 
 interface Professional {
   id: string;
   name: string;
   specialty: string | null;
-  profileImage: string | null; // Usando 'profileImage' como no mockData
+  profileImage: string | null;
   services?: Array<{ category: string; price: number }>;
-  address: { street: string; neighborhood: string; city: string; state: string; }; // Adicionado 'state' para consistência
+  address: { street: string; neighborhood: string; city: string; state: string; };
 }
 
 const categories = [
@@ -27,13 +33,12 @@ const categories = [
   { name: "Massagem", icon: "💆‍♀️" }
 ];
 
-// REMOVIDA A CHAVE DO GOOGLE PARA USAR O SERVIÇO GRATUITO
+// --- 📍 FUNÇÕES DE CÁLCULO DE DISTÂNCIA E GEOCODIFICAÇÃO ---
 
 /**
  * Converte coordenadas (lat, lng) em um endereço legível usando a API gratuita Nominatim (OpenStreetMap).
  */
 const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<string> => {
-  // Usamos o Nominatim. 
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&addressdetails=1&zoom=18&accept-language=pt`;
 
   try {
@@ -45,27 +50,21 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<string
 
     if (data && data.address) {
       const address = data.address;
-
-      // Extração de componentes específicos do Nominatim
       const street = address.road || address.pedestrian;
       const number = address.house_number || '';
       const neighborhood = address.suburb || address.quarter || '';
       const city = address.city || address.town || address.village;
       const state = address.state_abbr || address.state;
 
-      // Formatação no padrão brasileiro (Logradouro, Nº - Bairro - Cidade/UF)
       let formattedAddress = '';
-
       if (street) {
         formattedAddress += street + (number ? `, ${number}` : '');
       } else {
         formattedAddress += 'Endereço sem logradouro';
       }
-
       if (neighborhood) {
         formattedAddress += `, ${neighborhood}`;
       }
-
       if (city || state) {
         formattedAddress += ` - ${city || 'Cidade'}/${state || 'UF'}`;
       }
@@ -80,11 +79,70 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<string
 
   } catch (error) {
     console.error("Erro na geocodificação reversa (Nominatim): ", error);
-    // Em caso de erro de rede ou de API, exibe as coordenadas como fallback
     return `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)} (Erro ao buscar endereço)`;
   }
 };
 
+
+/**
+ * 2. Geocodificação: Converte um endereço completo (string) em coordenadas (lat, lng) 
+ * usando a API gratuita Nominatim (OpenStreetMap).
+ * Retorna as coordenadas ou null em caso de falha.
+ * NOTA: Nominatim tem limites de uso rigorosos. Evite chamar muitas vezes seguidas.
+ */
+const geocodeNominatim = async (address: string): Promise<Coords | null> => {
+  const encodedAddress = encodeURIComponent(address);
+  // Buscar o primeiro resultado (limit=1) e em formato json
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Erro HTTP! Status: ${response.status}`);
+    }
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lng = parseFloat(data[0].lon);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return { lat, lng };
+      }
+    }
+
+    return null;
+
+  } catch (error) {
+    console.error(`Erro na geocodificação de "${address}": `, error);
+    return null;
+  }
+};
+
+
+/**
+ * 3. Distância: Calcula a distância em quilômetros (km) entre dois pontos de coordenadas (Lat/Lng) 
+ * usando a Fórmula de Haversine.
+ */
+const calculateDistance = (coord1: Coords, coord2: Coords): number => {
+  // Raio da Terra em quilômetros
+  const R = 6371;
+
+  // Converte graus para radianos
+  const dLat = (coord2.lat - coord1.lat) * (Math.PI / 180);
+  const dLon = (coord2.lng - coord1.lng) * (Math.PI / 180);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(coord1.lat * (Math.PI / 180)) * Math.cos(coord2.lat * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distance = R * c; // Distância em km
+
+  return distance;
+};
+
+// --- COMPONENTE PRINCIPAL ---
 
 const Explorar = () => {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
@@ -94,47 +152,48 @@ const Explorar = () => {
   const [loading, setLoading] = useState(true);
 
   // 📍 ESTADOS PARA GEOLOCALIZAÇÃO
-  const [userLocationDisplay, setUserLocationDisplay] = useState("Buscando sua localização..."); // Texto a ser exibido
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null); // Coordenadas
+  const [userLocationDisplay, setUserLocationDisplay] = useState("Buscando sua localização...");
+  const [userCoords, setUserCoords] = useState<Coords | null>(null);
+
+  // 📍 NOVO ESTADO PARA COORDENADAS DOS PROFISSIONAIS (Cache)
+  // Armazena as coordenadas { [professionalId]: { lat, lng } | null }
+  const [professionalCoords, setProfessionalCoords] = useState<{ [key: string]: Coords | null }>({});
 
   // Efeito para carregar dados do mockData
   useEffect(() => {
     const rawProfessionals = getProfessionals();
     const allMockServices = getMockServices();
 
-    // Mapeamento e tipagem correta dos dados
     const loadedProfessionals: Professional[] = rawProfessionals.map((prof: any) => {
       const profServices = allMockServices.filter((s: any) => s.professionalId === prof.id);
       return {
         ...prof,
         address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A", state: "N/A" },
         services: profServices,
-        // Garante que a foto lida do mockData (profileImage) seja usada
         profileImage: prof.profileImage || null,
       };
     }) as Professional[];
 
     setProfessionals(loadedProfessionals);
     setLoading(false);
-  }, []); // Roda apenas na montagem
+  }, []);
 
-  // 📍 EFEITO ATUALIZADO PARA OBTER A LOCALIZAÇÃO DO USUÁRIO E CONVERTER EM ENDEREÇO (USANDO NOMINATIM)
+  // 📍 EFEITO 1: OBTER LOCALIZAÇÃO DO USUÁRIO
   useEffect(() => {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       setUserLocationDisplay("Buscando sua localização...");
 
       navigator.geolocation.getCurrentPosition(
-        async (position) => { // Tornando a função assíncrona
+        async (position) => {
           const { latitude, longitude } = position.coords;
 
           setUserCoords({ lat: latitude, lng: longitude });
 
-          // ✅ CHAMADA DA API DE GEOCODIFICAÇÃO REVERSA (NOMINATIM)
           try {
             const address = await reverseGeocodeNominatim(latitude, longitude);
             setUserLocationDisplay(address);
           } catch (e) {
-            console.error("Falha ao buscar endereço. Exibindo Lat/Lng.", e);
+            console.error("Falha ao buscar endereço.", e);
             setUserLocationDisplay(`Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`);
           }
         },
@@ -147,7 +206,44 @@ const Explorar = () => {
     } else {
       setUserLocationDisplay("Geolocalização não suportada.");
     }
-  }, []); // Roda apenas na montagem
+  }, []);
+
+  // 📍 EFEITO 2: GEOCODIFICAR ENDEREÇOS DOS PROFISSIONAIS
+  // O Nominatim exige um delay entre as chamadas (recomendado 1s)
+  useEffect(() => {
+    const geocodeAllProfessionals = async () => {
+      const coordsMap: { [key: string]: Coords | null } = {};
+
+      // Filtra apenas os profissionais que ainda não foram geocodificados
+      const professionalsToGeocode = professionals.filter(p => professionalCoords[p.id] === undefined);
+
+      if (professionalsToGeocode.length === 0) return;
+
+      console.log(`Iniciando geocodificação de ${professionalsToGeocode.length} profissionais...`);
+
+      for (const prof of professionalsToGeocode) {
+        const addressString = getAddress(prof);
+        if (addressString !== "Endereço não informado") {
+          const coords = await geocodeNominatim(addressString);
+          coordsMap[prof.id] = coords;
+
+          // CRUCIAL: Atraso para respeitar o limite de uso do Nominatim (1s)
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        } else {
+          coordsMap[prof.id] = null;
+        }
+      }
+
+      setProfessionalCoords(prev => ({ ...prev, ...coordsMap }));
+    };
+
+    if (professionals.length > 0) {
+      // Pequeno atraso inicial para não competir com a chamada de geolocalização do usuário
+      const timeout = setTimeout(() => geocodeAllProfessionals(), 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [professionals]);
+
 
   const toggleFavorite = (id: string) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
@@ -166,7 +262,6 @@ const Explorar = () => {
     return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
   };
 
-  // Função getServices para listar serviços ÚNICOS
   const getServices = (prof: Professional) => {
     if (!prof.services || prof.services.length === 0) return "Serviços não informados";
 
@@ -177,16 +272,47 @@ const Explorar = () => {
     return displayedCategories.join(", ") + (uniqueCategories.length > 3 ? "..." : "");
   };
 
+  /**
+   * Função para calcular e exibir a distância
+   */
+  const getDistance = (profId: string): string => {
+    const profCoords = professionalCoords[profId];
+
+    if (!userCoords) {
+      return "Aguardando sua localização...";
+    }
+
+    // Verifica se a geocodificação do profissional já foi tentada
+    if (profCoords === undefined) {
+      return "Calculando distância...";
+    }
+
+    // Verifica se a geocodificação retornou coordenadas válidas
+    if (profCoords) {
+      const distance = calculateDistance(userCoords, profCoords); // Distância em km
+
+      // 💡 LÓGICA DE FORMATAÇÃO DE DISTÂNCIA
+      if (distance < 1) {
+        // Se for menor que 1km, converte para metros
+        const distanceInMeters = distance * 1000;
+        return `${distanceInMeters.toFixed(0)} m `; // Sem casas decimais para metros
+      } else {
+        // Se for 1km ou mais, exibe em km
+        return `${distance.toFixed(1)} km `; // 1 casa decimal para km
+      }
+    }
+
+    // Se profCoords foi null (erro na geocodificação)
+    return "Distância indisponível";
+  };
+
 
   const filteredProfessionals = professionals.filter((prof) => {
-    // A busca agora também pode incluir pesquisa dentro do nome do serviço
     const matchesSearch =
       prof.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       prof.specialty?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       prof.services?.some(s => s.category.toLowerCase().includes(searchQuery.toLowerCase()));
 
-    // O filtro de categoria verifica se PELO MENOS um serviço do profissional
-    // inclui o nome da categoria selecionada.
     const matchesCategory =
       selectedCategory === "Todos" ||
       prof.services?.some(s => s.category.toLowerCase().includes(selectedCategory.toLowerCase()));
@@ -216,12 +342,12 @@ const Explorar = () => {
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-2 w-full max-w-4xl">
-            {/* Endereço */}
+            {/* Endereço do Usuário (Localização) */}
             <div className="relative flex-1">
               <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input
                 type="text"
-                value={userLocationDisplay} // <-- AGORA MOSTRA O ENDEREÇO OBTIDO
+                value={userLocationDisplay}
                 readOnly
                 name="Localizacao"
                 className="pl-12 pr-10 py-4 text-lg rounded-xl border-2 border-zinc-300 focus:border-primary w-full shadow-sm"
@@ -250,7 +376,6 @@ const Explorar = () => {
         <section className="mt-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Categorias</h2>
-            {/* Botão de filtro removido da visualização para simplificação */}
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -297,12 +422,11 @@ const Explorar = () => {
                 <div key={professional.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex gap-3">
                     <Link href={`/profissional/${professional.id}`} className="flex-shrink-0 w-18 h-18 rounded-full overflow-hidden border-primary">
-                      {professional.profileImage ? ( // USANDO profileImage AGORA
+                      {professional.profileImage ? (
                         <img
                           src={professional.profileImage}
                           alt={professional.name}
                           className="w-full h-full object-cover border-2 rounded-full border-primary "
-                          // Fallback caso a imagem falhe ao carregar
                           onError={(e) => {
                             (e.target as HTMLImageElement).style.display = 'none';
                             (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-avatar')?.classList.remove('hidden');
@@ -330,9 +454,16 @@ const Explorar = () => {
                     </button>
                   </div>
                   <div className="border-t border-border mt-3 pt-3">
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <MapPin className="w-3 h-3 mr-1 flex-shrink-0" />
-                      <span className="truncate">{getAddress(professional)}</span>
+                    <div className="flex flex-col text-xs">
+                      {/* 📍 LINHA DA DISTÂNCIA CALCULADA */}
+
+                      {/* LINHA DO ENDEREÇO COMPLETO */}
+                      <div className="flex items-center text-muted-foreground gap-2">
+                        <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" /> <span className="  truncate">{getAddress(professional)}</span>
+                        <div className="flex items-center font-bold text-primary inline">
+                          <span className="truncate"> ● {getDistance(professional.id)}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
