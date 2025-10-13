@@ -166,7 +166,7 @@ export default function Agenda() {
 
       <div className="container mx-auto max-w-screen-lg px-4 py-4">
         <div className="flex justify-center gap-2">
-          <div className="inline-flex h-full items-center justify-center w-full bg-card border border-border rounded-xl p-2 mb-6 ">
+          <div className="inline-flex h-full items-center justify-center w-full bg-card border border-border rounded-xl p-1 mb-2 ">
             <button
               onClick={() => setTab("hora")}
               className={`flex-1 rounded-lg  p-1.5 text-sm font-medium gap-1 ${tab === "hora" ? "bg-zinc-900 text-white" : ""

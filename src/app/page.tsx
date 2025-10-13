@@ -70,10 +70,21 @@ const Explorar = () => {
     return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
   };
 
+  // MODIFICAÇÃO APLICADA AQUI: Mostrar apenas as categorias de serviço únicas
   const getServices = (prof: Professional) => {
     if (!prof.services || prof.services.length === 0) return "Serviços não informados";
-    // Limita a exibição a 3 serviços para evitar textos longos
-    return prof.services.slice(0, 3).map((s: any) => s.category).join(", ") + (prof.services.length > 3 ? "..." : "");
+
+    // 1. Extrai todas as categorias
+    const allCategories = prof.services.map((s: any) => s.category);
+
+    // 2. Remove as duplicatas usando Set
+    const uniqueCategories = Array.from(new Set(allCategories));
+
+    // 3. Limita a exibição a 3 categorias
+    const displayCategories = uniqueCategories.slice(0, 3);
+
+    // 4. Junta as categorias e adiciona "..." se houver mais de 3
+    return displayCategories.join(", ") + (uniqueCategories.length > 3 ? "..." : "");
   };
 
   const filteredProfessionals = professionals.filter((prof) => {
@@ -94,18 +105,18 @@ const Explorar = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      
+
       <header className="bg-primary rounded-b-3xl pb-6 pt-12 px-4">
         <div className="container mx-auto max-w-screen-lg px-4">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-zinc-900 leading-snug">Encontre o profissional disponível mais perto de você</h1>
             {/* Botão de Notificação removido por não ter lógica funcional */}
             {/* <div className="flex gap-2 hidden">
-              <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
-                <Bell className="w-5 h-5" />
-              </button>
-            </div> */}
-            
+              <button className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-md">
+                <Bell className="w-5 h-5" />
+              </button>
+            </div> */}
+
           </div>
 
           <div className="flex flex-col md:flex-row gap-4 mb-2 w-full max-w-4xl">
@@ -143,7 +154,7 @@ const Explorar = () => {
         <section className="mt-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Categorias</h2>
-            
+
           </div>
 
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide justify-between">
@@ -155,13 +166,13 @@ const Explorar = () => {
               >
                 <div
                   className={`
-                    rounded-full p-4 text-center text-2xl
-                    hover:shadow-lg transition-all cursor-pointer 
-                    border-2 
-                    ${selectedCategory === category.name
+                    rounded-full p-4 text-center text-2xl
+                    hover:shadow-lg transition-all cursor-pointer 
+                    border-2 
+                    ${selectedCategory === category.name
                       ? "bg-primary text-primary-foreground border-primary shadow-lg" // Estilo Ativo
                       : "bg-card text-foreground border-border hover:border-primary/50"} // Estilo Inativo
-                  `}
+                  `}
                 >
                   {category.icon}
                 </div>
