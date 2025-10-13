@@ -564,7 +564,7 @@ export default function ProfessionalDetails() {
             <Button
               onClick={handleSchedule}
               // A condição de desabilitar/mudar cor é simplificada se for fila (só precisa de serviços)
-              disabled={!isQueueOperation && (selectedServices.length === 0 || !selectedDate || !selectedTime)}
+             
               className={`w-full ${selectedServices.length === 0 && (!selectedDate || !selectedTime) && !isQueueOperation
                 ? "bg-zinc-900 text-white hover:bg-zinc-700"
                 : "bg-primary text-zinc-900 hover:bg-primary/90"

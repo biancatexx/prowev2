@@ -352,7 +352,7 @@ const Explorar = () => {
                 name="Localizacao"
                 className="pl-12 pr-10 py-4 text-lg rounded-xl border-2 border-zinc-300 focus:border-primary w-full shadow-sm"
               />
-              <ChevronDown className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+              <ChevronDown className=" hidden absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
             </div>
 
             {/* Busca */}
@@ -454,8 +454,7 @@ const Explorar = () => {
                     </button>
                   </div>
                   <div className="border-t border-border mt-3 pt-3">
-                    <div className="flex flex-col text-xs">
-                      {/* 📍 LINHA DA DISTÂNCIA CALCULADA */}
+                    <div className="flex flex-col text-xs"> 
 
                       {/* LINHA DO ENDEREÇO COMPLETO */}
                       <div className="flex items-center text-muted-foreground gap-2">
