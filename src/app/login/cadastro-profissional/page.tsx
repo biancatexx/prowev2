@@ -44,7 +44,8 @@ type SafeWorkingHoursMap = {
 // --- Componente Principal
 export default function CadastroProfissionalPage() {
   const router = useRouter()
-  const { login } = useAuth()
+  // CORREÇÃO: Adicionado 'logout' para garantir que o usuário anterior seja deslogado
+  const { login, logout } = useAuth() // <--- MODIFICAÇÃO AQUI
 
   // --- Estados de Controle de Fluxo
   const [step, setStep] = useState(1)
@@ -373,6 +374,9 @@ export default function CadastroProfissionalPage() {
       saveProfessionalAvailability(availability)
 
       // 4. Logar e Redirecionar
+      // 🚨 CORREÇÃO APLICADA: Desloga a sessão atual (se houver) antes de logar o novo usuário
+      await logout(); // <--- CHAMA O LOGOUT
+      
       await login(basicInfo.email, basicInfo.password)
       toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/dashboard")
@@ -473,7 +477,7 @@ export default function CadastroProfissionalPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>WhatsApp  <span className="text-red-600">*</span></Label>
+                <Label>WhatsApp  <span className="text-red-600">*</span></Label>
                 <Input
                   type="tel"
                   value={basicInfo.whatsapp}
@@ -483,7 +487,7 @@ export default function CadastroProfissionalPage() {
                 />
               </div>
               <div className="space-y-2 relative">
-                <Label>E-mail  <span className="text-red-600">*</span></Label>
+                <Label>E-mail  <span className="text-red-600">*</span></Label>
                 <Input
                   type="email"
                   value={basicInfo.email}
@@ -494,7 +498,7 @@ export default function CadastroProfissionalPage() {
                 />
               </div>
               <div className="space-y-2 relative">
-                <Label>Senha  <span className="text-red-600">*</span></Label>
+                <Label>Senha  <span className="text-red-600">*</span></Label>
                 <div className="relative">
                   <Input
                     type={showPassword ? "text" : "password"}
@@ -524,7 +528,7 @@ export default function CadastroProfissionalPage() {
                 <p className="text-muted-foreground">Onde você atende seus clientes</p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="zipCode">CEP  <span className="text-red-600">*</span></Label>
+                <Label htmlFor="zipCode">CEP  <span className="text-red-600">*</span></Label>
                 <Input
                   id="zipCode"
                   value={address.zipCode}
@@ -537,7 +541,7 @@ export default function CadastroProfissionalPage() {
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div className="col-span-2 space-y-2">
-                  <Label htmlFor="street">Rua  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="street">Rua  <span className="text-red-600">*</span></Label>
                   <Input
                     id="street"
                     value={address.street}
@@ -546,7 +550,7 @@ export default function CadastroProfissionalPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="number">Número  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="number">Número  <span className="text-red-600">*</span></Label>
                   <Input
                     id="number"
                     value={address.number}
@@ -556,7 +560,7 @@ export default function CadastroProfissionalPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="neighborhood">Bairro  <span className="text-red-600">*</span></Label>
+                <Label htmlFor="neighborhood">Bairro  <span className="text-red-600">*</span></Label>
                 <Input
                   id="neighborhood"
                   value={address.neighborhood}
@@ -566,7 +570,7 @@ export default function CadastroProfissionalPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="city">Cidade  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="city">Cidade  <span className="text-red-600">*</span></Label>
                   <Input
                     id="city"
                     value={address.city}
@@ -575,7 +579,7 @@ export default function CadastroProfissionalPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="state">Estado  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="state">Estado  <span className="text-red-600">*</span></Label>
                   <Input
                     id="state"
                     value={address.state}
@@ -599,7 +603,7 @@ export default function CadastroProfissionalPage() {
               {/* Formulário para Adicionar Serviço */}
               <div className="space-y-4 p-4 bg-muted rounded-lg">
                 <div className="space-y-2">
-                  <Label htmlFor="category">Categoria  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="category">Categoria  <span className="text-red-600">*</span></Label>
                   <select
                     id="category"
                     value={currentService.category}
@@ -615,7 +619,7 @@ export default function CadastroProfissionalPage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="serviceName">Nome do serviço  <span className="text-red-600">*</span></Label>
+                  <Label htmlFor="serviceName">Nome do serviço  <span className="text-red-600">*</span></Label>
                   <Input
                     id="serviceName"
                     value={currentService.name}
