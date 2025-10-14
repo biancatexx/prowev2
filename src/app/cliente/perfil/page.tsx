@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog" // Componentes do Modal
+} from "@/components/ui/alert-dialog"
 import { UserIcon, LogOut, Save } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { saveUser, type User } from "@/data/mockData"
@@ -26,7 +26,7 @@ import { toast } from "sonner"
 
 interface FormDataState {
   name: string;
-  whatsapp: string;
+  whatsapp: string; // sempre armazenado apenas números
   email?: string;
   birthDate: string;
 }
@@ -41,6 +41,15 @@ const Header = () => (
   </header>
 )
 
+const formatWhatsappDisplay = (value: string) => {
+  const digits = value.replace(/\D/g, "")
+  if (!digits) return ""
+  if (digits.length <= 2) return `(${digits}`
+  if (digits.length <= 6) return `(${digits.substring(0, 2)}) ${digits.substring(2)}`
+  if (digits.length <= 10) return `(${digits.substring(0, 2)}) ${digits.substring(2, 6)}-${digits.substring(6)}`
+  return `(${digits.substring(0, 2)}) ${digits.substring(2, 7)}-${digits.substring(7, 11)}`
+}
+
 interface MainContentProps {
   user: User | null;
   formData: FormDataState;
@@ -48,14 +57,26 @@ interface MainContentProps {
   loading: boolean;
   handleSubmit: (e: React.FormEvent) => void;
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleWhatsappChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleLogout: () => void;
   router: any;
-  // NOVO: Props para controlar o modal
   isModalOpen: boolean;
   setIsModalOpen: (open: boolean) => void;
 }
 
-const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handleInputChange, handleLogout, router, isModalOpen, setIsModalOpen }: MainContentProps) => {
+const MainContent = ({
+  user,
+  formData,
+  hasChanges,
+  loading,
+  handleSubmit,
+  handleInputChange,
+  handleWhatsappChange,
+  handleLogout,
+  router,
+  isModalOpen,
+  setIsModalOpen
+}: MainContentProps) => {
   if (!user) {
     return (
       <main className="container mx-auto max-w-screen-lg px-4">
@@ -78,8 +99,6 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
   return (
     <main className="container mx-auto max-w-screen-lg px-4">
       <div className="space-y-6">
-
-        {/* Imagem de Perfil */}
         <div className="text-center flex justify-center -mb-4">
           <div className="w-24 h-24 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-4xl font-bold shadow-lg border-4 border-white z-10">
             <span>{formData.name ? formData.name.charAt(0).toUpperCase() : 'P'}</span>
@@ -93,13 +112,20 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
           </div>
           <div className="space-y-2">
             <Label htmlFor="whatsapp">WhatsApp *</Label>
-            <Input id="whatsapp" type="tel" value={formData.whatsapp} onChange={handleInputChange} required />
+            <Input
+              id="whatsapp"
+              type="tel"
+              value={formatWhatsappDisplay(formData.whatsapp)}
+              onChange={handleWhatsappChange}
+              required
+              maxLength={15}
+            />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 hidden">
             <Label htmlFor="email">E-mail</Label>
             <Input id="email" type="email" value={formData.email} onChange={handleInputChange} />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 hidden">
             <Label htmlFor="birthDate">Data de nascimento</Label>
             <Input id="birthDate" type="date" value={formData.birthDate} onChange={handleInputChange} />
           </div>
@@ -147,10 +173,6 @@ const MainContent = ({ user, formData, hasChanges, loading, handleSubmit, handle
           Sair da Conta
         </Button>
       </div>
-
-
-
-
     </main>
   )
 }
@@ -160,19 +182,15 @@ export default function PerfilPage() {
   const { user, updateUser, logout } = useAuth()
 
   const [loading, setLoading] = useState(false)
-  // NOVO ESTADO: Controla a abertura/fechamento do modal
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState<FormDataState>({
     name: "",
     whatsapp: "",
     email: "",
     birthDate: "",
   })
-
   const [originalFormData, setOriginalFormData] = useState<FormDataState | null>(null)
 
-  // 1. Inicializa o formulário e os dados originais
   useEffect(() => {
     if (user) {
       const initialData: FormDataState = {
@@ -189,10 +207,8 @@ export default function PerfilPage() {
     }
   }, [user])
 
-  // 2. Calcula se há alterações no formulário
   const hasChanges = useMemo(() => {
     if (!originalFormData) return false;
-
     return (
       formData.name !== originalFormData.name ||
       formData.whatsapp.replace(/\D/g, "") !== originalFormData.whatsapp.replace(/\D/g, "") ||
@@ -201,7 +217,6 @@ export default function PerfilPage() {
     );
   }, [formData, originalFormData])
 
-  // Função para lidar com a mudança de inputs
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setFormData(prev => ({
@@ -210,11 +225,14 @@ export default function PerfilPage() {
     }));
   };
 
-  // Funçao de submissão (chamada pelo AlertDialogAction)
+  const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "")
+    setFormData(prev => ({ ...prev, whatsapp: value }))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasChanges || loading || !user) {
-      // Garante que se a lógica falhar (e.g., sem usuário), o modal ainda feche
       if (isModalOpen) setIsModalOpen(false);
       return;
     }
@@ -229,12 +247,9 @@ export default function PerfilPage() {
         birthDate: formData.birthDate,
       }
 
-      // 1. Simula a chamada assíncrona (aqui saveUser pode ser assíncrono)
       await saveUser(updatedUser)
-      // 2. Atualiza o contexto global
       updateUser(updatedUser)
 
-      // 3. Atualiza os dados originais após o sucesso do salvamento
       setOriginalFormData({
         name: updatedUser.name,
         whatsapp: updatedUser.whatsapp,
@@ -243,10 +258,9 @@ export default function PerfilPage() {
       })
 
       toast.success("Perfil atualizado! 🎉")
-      // AÇÃO CHAVE: Fechar o modal APENAS após o sucesso do salvamento
       setIsModalOpen(false);
 
-    } catch (error) {
+    } catch {
       toast.error("Não foi possível atualizar o perfil.")
     } finally {
       setLoading(false)
@@ -269,9 +283,9 @@ export default function PerfilPage() {
         loading={loading}
         handleSubmit={handleSubmit}
         handleInputChange={handleInputChange}
+        handleWhatsappChange={handleWhatsappChange}
         handleLogout={handleLogout}
         router={router}
-        // Passando os estados de controle do modal
         isModalOpen={isModalOpen}
         setIsModalOpen={setIsModalOpen}
       />
