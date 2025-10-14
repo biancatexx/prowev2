@@ -92,7 +92,7 @@ export function LoginCliente() {
         </Button>
         <div className="text-center text-sm text-muted-foreground">
           Ainda não tem uma conta?
-          <Link href="/cadastro-cliente" className="text-primary font-semibold hover:underline">
+          <Link href="/cliente/cadastro" className="text-primary font-semibold hover:underline">
             Cadastre-se aqui
           </Link>
         </div>

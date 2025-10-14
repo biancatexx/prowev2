@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label"
 import { useAuth } from "@/contexts/AuthContext"
 import { useToast } from "@/hooks/use-toast"
 import { ensureClientExists, initializeMocks } from "@/data/mockData"
+import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
+import { Card } from "@/components/ui/card"
 
 export default function CadastroCliente() {
   const router = useRouter()
@@ -84,47 +87,62 @@ export default function CadastroCliente() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-      <div className="bg-white p-6 rounded-2xl shadow-lg w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-2 text-primary">
-          Cadastro de Cliente
-        </h1>
-        <p className="text-center text-muted-foreground text-sm mb-6">
-          Informe seu nome e WhatsApp para criar sua conta
-        </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-gradient-to-br from-primary via-primary to-accent rounded-b-3xl pb-8 pt-8 px-4 mb-6">
+        <div className="container mx-auto max-w-screen-lg text-center">
+          <Link href="/cliente" className="flex items-center gap-2 text-primary-foreground hover:opacity-80">
+            <ArrowLeft className="h-5 w-5" />
+            <span className="font-semibold">Voltar</span>
+          </Link>
+        </div>
+      </header>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">Nome completo</Label>
-            <Input
-              id="name"
-              placeholder="Ex: Bianca Teixeira"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="h-10"
-            />
+      {/* Main Content */}
+      <main className="container mx-auto max-w-xl px-4 py-4">
+        <Card className="p-6">
+          <div className="">
+            <div className="text-center mb-4">
+              <h2 className="text-2xl font-bold mb-2">Cadastro de cliente</h2>
+              <p className="text-muted-foreground"> Informe seu nome e WhatsApp para criar sua conta</p>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nome completo</Label>
+                <Input
+                  id="name"
+                  placeholder="Ex: Bianca Teixeira"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="h-10"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="whatsapp">WhatsApp</Label>
+                <Input
+                  id="whatsapp"
+                  type="tel"
+                  placeholder="(11) 98765-4321"
+                  value={whatsapp}
+                  onChange={handleWhatsappChange}
+                  required
+                  className="h-10"
+                  maxLength={15}
+                />
+              </div>
+
+              <Button type="submit" className="w-full h-10" disabled={loading}>
+                {loading ? "Cadastrando..." : "Cadastrar"}
+              </Button>
+            </form>
+
           </div>
-
-          <div>
-            <Label htmlFor="whatsapp">WhatsApp</Label>
-            <Input
-              id="whatsapp"
-              type="tel"
-              placeholder="(11) 98765-4321"
-              value={whatsapp}
-              onChange={handleWhatsappChange}
-              required
-              className="h-10"
-              maxLength={15}
-            />
-          </div>
-
-          <Button type="submit" className="w-full h-10" disabled={loading}>
-            {loading ? "Cadastrando..." : "Cadastrar"}
-          </Button>
-        </form>
-      </div>
+        </Card>
+      </main>
     </div>
+
+
   )
 }

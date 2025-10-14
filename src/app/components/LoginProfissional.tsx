@@ -97,7 +97,7 @@ export function LoginProfissional() {
 
           <div className="text-sm text-muted-foreground">
             Ainda não tem uma conta?{" "}
-            <Link href="/login/cadastro-profissional" className="text-primary font-semibold hover:underline">
+            <Link href="/admin/cadastro" className="text-primary font-semibold hover:underline">
               Cadastre-se aqui
             </Link>
           </div>
