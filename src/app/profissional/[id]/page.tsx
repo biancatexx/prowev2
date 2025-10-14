@@ -156,6 +156,15 @@ const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) =
   );
 };
 
+  const getPriceRange = (prof: Professional) => {
+    if (!prof.services || prof.services.length === 0) return "Consultar preços";
+    const prices = prof.services.map((s: any) => s.price);
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    return `R$ ${min.toFixed(0)} - R$ ${max.toFixed(0)}`;
+  };
+
+ 
 // ===============================================
 // ⚙️ COMPONENTE PRINCIPAL
 // ===============================================
@@ -275,14 +284,22 @@ export default function ProfessionalDetails() {
         toast.success("Removido dos favoritos")
       } else {
         const favorite: Favorite = {
-          professionalId: id,
-          name: professional.name,
-          category: professional.specialty as string,
-          priceRange: "R$ 50 - R$ 300",
-          address: `${professional.address.street}, ${professional.address.number}`,
-          distance: "1.2 km",
-          image: professional.profileImage || "/placeholder.svg",
-        }
+        professionalId: professional.id,
+        name: professional.name,
+        services: (professional.services ?? []).map((s) => ({
+          id: s.id,
+          name: (s as any).name ?? s.category ?? "Serviço",
+          category: s.category,
+          price: s.price,
+          duration: s.duration,
+          professionalId: professional.id,
+        })),
+        category: professional.specialty as string,
+        priceRange: getPriceRange(professional),
+        address: `${professional.address.street}, ${professional.address.number || ''}`,
+        distance: '',
+        image: professional.profileImage || "/placeholder.svg",
+      };
         addFavorite(userWhatsapp, favorite)
         setIsFav(true)
         toast.success(`${professional.name} foi adicionado aos seus favoritos.`)

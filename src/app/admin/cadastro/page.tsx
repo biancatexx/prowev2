@@ -18,8 +18,8 @@ import {
     type User,
     type WorkingHoursMap,
     type DayOfWeek,
-} from "@/data/mockData" // Supondo que você tenha este arquivo de mock data
-import { useAuth } from "@/contexts/AuthContext" // Supondo que você tenha este contexto de autenticação 
+} from "@/data/mockData"  
+import { useAuth } from "@/contexts/AuthContext" 
 import { Card } from "@/components/ui/card"
 import { toast } from "sonner"
 
@@ -817,52 +817,7 @@ export default function CadastroProfissionalPage() {
                                                     </div>
                                                 )}
                                             </div>
-                                            {/*
-                      // Ocultado por solicitação (embora as funções existam):
-                      {dayHours.enabled && dayHours.intervals.length > 0 && (
-                        <div className="pl-6 space-y-2 border-l ml-3 pt-2">
-                          <h4 className="text-sm font-semibold mb-1">Intervalos/Pausas:</h4>
-                          {dayHours.intervals.map((interval, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Input
-                                type="time"
-                                value={interval.start}
-                                onChange={(e) => handleUpdateInterval(day.key, index, "start", e.target.value)}
-                                className="w-24"
-                              />
-                              <span>a</span>
-                              <Input
-                                type="time"
-                                value={interval.end}
-                                onChange={(e) => handleUpdateInterval(day.key, index, "end", e.target.value)}
-                                className="w-24"
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="icon"
-                                className="w-7 h-7"
-                                onClick={() => handleRemoveInterval(day.key, index)}
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {dayHours.enabled && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-3"
-                          onClick={() => handleAddInterval(day.key)}
-                          // hidden // Mantido como referência, mas oculto no layout
-                        >
-                          <Plus className="w-4 h-4 mr-2" /> Adicionar Intervalo
-                        </Button>
-                      )}
-                      */}
+                                           
                                         </div>
                                     )
                                 })}
