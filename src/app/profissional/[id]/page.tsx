@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CustomCalendar } from "@/components/CustomCalendar"
 import { TimeSlotPicker } from "@/components/TimeSlotPicker"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin, CalendarCheck, Clock8 } from "lucide-react"
+import { Heart, ChevronLeft, CalendarIcon, Clock, Trash2, Instagram, Facebook, Phone, MapPin, CalendarCheck, Clock8, CircleQuestionMark, X } from "lucide-react" // 💡 Adicionado 'X' para o tooltip
 import { Card } from "@/components/ui/card"
 import {
   getProfessionals,
@@ -22,12 +22,94 @@ import {
 import { useToast } from "@/hooks/use-toast"
 
 // ===============================================
-// 💡 NOVO COMPONENTE/FUNÇÃO PARA HORÁRIOS GERAIS
+// 💡 NOVO COMPONENTE: Tooltip para Descrição de Serviço
 // ===============================================
 
-/**
- * Componente que renderiza o horário de funcionamento de forma formatada.
- */
+interface ServiceDescriptionTooltipProps {
+  description: string;
+}
+
+const ServiceDescriptionTooltip = ({ description }: ServiceDescriptionTooltipProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Fecha o tooltip se o usuário clicar fora (útil para mobile/overlay)
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      // Verifica se o clique não foi no botão de abrir/fechar e nem dentro do conteúdo do tooltip
+      if (
+        isOpen &&
+        event.target instanceof Element &&
+        !event.target.closest('[data-tooltip-container]') &&
+        !event.target.closest('[data-tooltip-trigger]')
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    // Adicionado um pequeno delay para evitar fechar imediatamente após abrir
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }, 100);
+
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className="relative inline-block align-top ml-1" data-tooltip-container>
+      {/* Gatilho (Trigger) */}
+      <button
+        type="button"
+        onClick={(e) => {
+          e.preventDefault(); // Impede o toggle do checkbox ao clicar no botão
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="rounded-full hover:bg-zinc-200 w-5 h-5 dark:hover:bg-zinc-800 transition-colors text-center flex justify-center items-center"
+        aria-expanded={isOpen}
+        aria-label="Ver descrição do serviço"
+        data-tooltip-trigger
+      >
+        <CircleQuestionMark className=" w-5 h-5 text-muted-foreground hover:text-primary transition-colors" />
+      </button>
+
+      {/* Conteúdo do Tooltip */}
+      {isOpen && (
+        // Overlay (Para mobile/Melhor acessibilidade)
+        <div
+          className="fixed top-0 left-0 w-full h-full bg-black/40 z-50 flex items-center justify-center p-4 sm:absolute sm:inset-auto sm:top-full sm:left-1/2 sm:-translate-x-1/2 sm:w-auto sm:max-w-sm sm:h-auto sm:bg-transparent"
+          onClick={() => setIsOpen(false)} // Fecha ao clicar no overlay
+        >
+          <div
+            className="bg-popover text-popover-foreground p-6 rounded-xl shadow-2xl border border-border w-full max-w-sm sm:w-80 relative"
+            onClick={(e) => e.stopPropagation()} // Impede que o clique no conteúdo feche o tooltip
+            role="tooltip"
+          >
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="absolute top-2 right-2 p-1 rounded-full text-muted-foreground hover:bg-accent"
+              aria-label="Fechar descrição"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h5 className="font-bold mb-2 text-primary">Descrição do Serviço</h5>
+            <p className="text-sm">{description}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+// ===============================================
+// 💡 NOVO COMPONENTE/FUNÇÃO PARA HORÁRIOS GERAIS
+// ===============================================
+ 
 const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) => {
   // Mapeamento para nomes de dias em português
   const dayNamesPt: { [key in DayOfWeek]: string } = {
@@ -48,7 +130,7 @@ const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) =
 
   return (
     <div className="bg-card rounded-2xl p-4 border border-border mb-4">
-      
+
       <div className="space-y-2 text-sm">
         {dayKeys.map((day, index) => {
           const isToday = index === todayIndex;
@@ -57,7 +139,7 @@ const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) =
           return (
             <div
               key={day}
-              className={`flex justify-between items-center  ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}
+              className={`flex justify-between items-center ${isToday ? 'text-primary font-bold' : 'text-muted-foreground'}`}
             >
               <span className="font-medium capitalize">
                 {dayNamesPt[day]} {isToday && '(Hoje)'}
@@ -346,11 +428,23 @@ export default function ProfessionalDetails() {
                           className="mt-1"
                         />
                         <div className="flex-1">
-                          <div className="flex justify-between items-start mb-1">
-                            <h4 className="font-semibold text-foreground">{service.name}</h4>
-                            <span className="text-xs text-muted-foreground">{service.duration}min</span>
+                          <div className="flex justify-between items-start mb-1 ">
+
+                            <h4 className="flex text-foreground items-start">
+                              {service.name}
+                              {service.description ? (
+                                <ServiceDescriptionTooltip description={service.description} />
+                              ) : (
+                                ""
+                              )}
+                            </h4>
+
+                            <span className="text-xs text-muted-foreground ml-1">{service.duration}min</span>
                           </div>
-                          <span className="text-sm font-semibold text-green-600">R$ {service.price.toFixed(2)}</span>
+                          {/* CORREÇÃO APLICADA AQUI: Formatação do preço individual */}
+                          <span className="text-sm font-semibold text-green-600">
+                            {service.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                          </span>
                         </div>
                       </label>
                     ))}
@@ -382,7 +476,7 @@ export default function ProfessionalDetails() {
                     </Card>
                   </div>
                   <div className="col-1">
-                    <div className=" "> 
+                    <div className=" ">
                       <p className="text-lg font-semibold text-primary">Atendimento por Ordem de Chegada (Fila)</p>
                       <p className="text-muted-foreground text-sm">
                         Este profissional não utiliza agendamento. <br />Você será atendido na ordem de chegada durante o horário de funcionamento.
@@ -494,13 +588,13 @@ export default function ProfessionalDetails() {
                     width="100%"
                     height="100%"
                     frameBorder="0"
-                    src={`https://maps.google.com/maps?q=${encodeURIComponent(getAddress())}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    src={`https://maps.google.com/maps?q=$${encodeURIComponent(getAddress())}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                     allowFullScreen
                   ></iframe>
                 </div>
                 <div className="text-end">
                   <a
-                    href={`https://maps.google.com/maps?q=${encodeURIComponent(getAddress())}`}
+                    href={`https://maps.google.com/maps?q=$${encodeURIComponent(getAddress())}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-primary font-sm font-semibold hover:underline mt-2 inline-block"
@@ -527,8 +621,9 @@ export default function ProfessionalDetails() {
                     <p className="font-medium">
                       {selectedServices.length} serviço(s) • {totalDuration} min
                     </p>
+                    {/* CORREÇÃO APLICADA AQUI: Formatação do preço total */}
                     <p className="text-primary font-bold">
-                      Total: R$ {totalPrice.toFixed(2)}
+                      Total: {totalPrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </p>
                   </div>
                 )}
@@ -564,12 +659,10 @@ export default function ProfessionalDetails() {
             <Button
               onClick={handleSchedule}
               // A condição de desabilitar/mudar cor é simplificada se for fila (só precisa de serviços)
-             
-              className={`w-full ${selectedServices.length === 0 && (!selectedDate || !selectedTime) && !isQueueOperation
-                ? "bg-zinc-900 text-white hover:bg-zinc-700"
+
+              className={`w-full ${selectedServices.length === 0 && (!selectedDate || !selectedTime) && !isQueueOperation ? "bg-zinc-900 text-white hover:bg-zinc-700"
                 : "bg-primary text-zinc-900 hover:bg-primary/90"
-                }`}
-            >
+                }`}            >
               {isQueueOperation
                 ? (selectedServices.length === 0 ? "Selecionar serviços para a fila" : "Entrar na Fila")
                 : (selectedServices.length === 0 && (!selectedDate || !selectedTime)

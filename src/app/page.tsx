@@ -332,6 +332,36 @@ const Explorar = () => {
       .join(' ');
   };
 
+  // 📍 NOVO COMPONENTE PARA O AVATAR E FALLBACK
+  const ProfessionalAvatar = ({ professional }: { professional: Professional }) => {
+    const [imgError, setImgError] = useState(!professional.profileImage);
+
+    useEffect(() => {
+      // Resetar o estado de erro quando o professional mudar ou a imagem for carregada/atualizada
+      setImgError(!professional.profileImage);
+    }, [professional.profileImage]);
+
+    if (imgError) {
+      // FALLBACK: Exibe a inicial do nome
+      return (
+        <div className="w-18 h-18 mx-auto rounded-full border-primary bg-zinc-900 text-white flex items-center justify-center text-xl font-bold border-2 fallback-avatar">
+          <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
+        </div>
+      );
+    }
+
+    // TENTA CARREGAR A IMAGEM
+    return (
+      <img
+        src={professional.profileImage as string}
+        alt={professional.name}
+        className="w-full h-full object-cover border-2 rounded-full border-primary"
+        // Se a imagem falhar ao carregar (e.g., URL inválida/quebrada), exibe o fallback
+        onError={() => setImgError(true)}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
 
@@ -387,12 +417,12 @@ const Explorar = () => {
               >
                 <div
                   className={`
-                    rounded-full p-4 text-center text-2xl
-                    hover:shadow-lg transition-all cursor-pointer 
-                    border-2 
-                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                    rounded-full p-4 text-center text-2xl
+                    hover:shadow-lg transition-all cursor-pointer 
+                    border-2 
+                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
                       : "bg-card text-foreground border-border hover:border-primary/50"} 
-                  `}
+                  `}
                 >
                   {category.icon}
                 </div>
@@ -421,23 +451,11 @@ const Explorar = () => {
               filteredProfessionals.map(professional => (
                 <div key={professional.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex gap-3">
+                    {/* ALTERAÇÃO PRINCIPAL AQUI: USANDO O NOVO COMPONENTE AVATAR */}
                     <Link href={`/profissional/${professional.id}`} className="flex-shrink-0 w-18 h-18 rounded-full overflow-hidden border-primary">
-                      {professional.profileImage ? (
-                        <img
-                          src={professional.profileImage}
-                          alt={professional.name}
-                          className="w-full h-full object-cover border-2 rounded-full border-primary "
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).parentElement?.querySelector('.fallback-avatar')?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : (
-                        <div className="w-18 h-18 mx-auto rounded-full border-primary bg-zinc-900 text-white flex items-center justify-center text-xl font-bold border fallback-avatar">
-                          <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
-                        </div>
-                      )}
+                      <ProfessionalAvatar professional={professional} />
                     </Link>
+
                     <div className="flex-1 min-w-0">
                       <Link href={`/profissional/${professional.id}`}>
                         <h3 className="font-bold text-lg text-foreground mb-0">{capitalizeWords(professional.name)}</h3>
@@ -454,11 +472,11 @@ const Explorar = () => {
                     </button>
                   </div>
                   <div className="border-t border-border mt-3 pt-3">
-                    <div className="flex flex-col text-xs"> 
+                    <div className="flex flex-col text-xs">
 
                       {/* LINHA DO ENDEREÇO COMPLETO */}
                       <div className="flex items-center text-muted-foreground gap-2">
-                        <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" /> <span className="  truncate">{getAddress(professional)}</span>
+                        <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" /> <span className="  truncate">{getAddress(professional)}</span>
                         <div className="flex items-center font-bold text-primary inline">
                           <span className="truncate"> ● {getDistance(professional.id)}</span>
                         </div>
