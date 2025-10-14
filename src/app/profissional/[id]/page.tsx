@@ -19,7 +19,7 @@ import {
   type DayOfWeek,
   type WorkingHoursMap,
 } from "@/data/mockData"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 
 // ===============================================
 // 💡 NOVO COMPONENTE: Tooltip para Descrição de Serviço
@@ -109,7 +109,7 @@ const ServiceDescriptionTooltip = ({ description }: ServiceDescriptionTooltipPro
 // ===============================================
 // 💡 NOVO COMPONENTE/FUNÇÃO PARA HORÁRIOS GERAIS
 // ===============================================
- 
+
 const WorkingHoursCard = ({ workingHours }: { workingHours: WorkingHoursMap }) => {
   // Mapeamento para nomes de dias em português
   const dayNamesPt: { [key in DayOfWeek]: string } = {
@@ -163,8 +163,6 @@ export default function ProfessionalDetails() {
   const params = useParams()
   const router = useRouter()
   const id = params?.id as string
-  const { toast } = useToast()
-
   const [isFav, setIsFav] = useState(false)
   const [userWhatsapp, setUserWhatsapp] = useState<string>("")
   const [selectedDate, setSelectedDate] = useState<Date | undefined>()
@@ -264,11 +262,8 @@ export default function ProfessionalDetails() {
 
   const handleFavoriteToggle = () => {
     if (!userWhatsapp) {
-      toast({
-        title: "WhatsApp necessário",
-        description: "Por favor, cadastre seu WhatsApp no perfil para adicionar favoritos.",
-        variant: "destructive",
-      })
+      toast.error("Por favor, cadastre seu WhatsApp no perfil para adicionar favoritos.")
+
       return
     }
 
@@ -276,10 +271,7 @@ export default function ProfessionalDetails() {
       if (isFav) {
         removeFavorite(userWhatsapp, id)
         setIsFav(false)
-        toast({
-          title: "Removido dos favoritos",
-          description: `${professional.name} foi removido dos seus favoritos.`,
-        })
+        toast.success("Removido dos favoritos")
       } else {
         const favorite: Favorite = {
           professionalId: id,
@@ -292,17 +284,10 @@ export default function ProfessionalDetails() {
         }
         addFavorite(userWhatsapp, favorite)
         setIsFav(true)
-        toast({
-          title: "Adicionado aos favoritos",
-          description: `${professional.name} foi adicionado aos seus favoritos.`,
-        })
+        toast.success(`${professional.name} foi adicionado aos seus favoritos.`)
       }
     } catch {
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar os favoritos.",
-        variant: "destructive",
-      })
+      toast.error("Não foi possível atualizar os favoritos.")
     }
   }
 
@@ -315,10 +300,7 @@ export default function ProfessionalDetails() {
     setSelectedServices([])
     setSelectedDate(undefined)
     setSelectedTime("")
-    toast({
-      title: "Informações removidas",
-      description: "Todos os serviços foram desmarcados.",
-    })
+    toast.success("Informações removidas")
   }
 
   // Função auxiliar para obter o horário de funcionamento de hoje
@@ -525,12 +507,12 @@ export default function ProfessionalDetails() {
               </div>
             )}
             {/* Experiência */}
-            {professional.experience_years && (
+            {/* {professional.experience_years && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">
                 <h3 className="font-bold text-foreground mb-3">Experiência</h3>
                 <p className="text-sm text-muted-foreground">{professional.experience_years} anos</p>
               </div>
-            )}
+            )} */}
             {/* Redes Sociais */}
             {(professional.social_instagram || professional.social_facebook) && (
               <div className="bg-card rounded-2xl p-4 border border-border mb-4">

@@ -273,8 +273,8 @@ const Explorar = () => {
   };
 
   /**
-   * Função para calcular e exibir a distância
-   */
+    * Função para calcular e exibir a distância
+    */
   const getDistance = (profId: string): string => {
     const profCoords = professionalCoords[profId];
 
@@ -284,7 +284,7 @@ const Explorar = () => {
 
     // Verifica se a geocodificação do profissional já foi tentada
     if (profCoords === undefined) {
-      return "Calculando distância...";
+      return "Calculando...";
     }
 
     // Verifica se a geocodificação retornou coordenadas válidas
@@ -417,12 +417,12 @@ const Explorar = () => {
               >
                 <div
                   className={`
-                    rounded-full p-4 text-center text-2xl
-                    hover:shadow-lg transition-all cursor-pointer 
-                    border-2 
-                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
+                    rounded-full p-4 text-center text-2xl
+                    hover:shadow-lg transition-all cursor-pointer 
+                    border-2 
+                    ${selectedCategory === category.name ? "bg-primary text-primary-foreground border-primary shadow-lg"
                       : "bg-card text-foreground border-border hover:border-primary/50"} 
-                  `}
+                  `}
                 >
                   {category.icon}
                 </div>
@@ -476,7 +476,9 @@ const Explorar = () => {
 
                       {/* LINHA DO ENDEREÇO COMPLETO */}
                       <div className="flex items-center text-muted-foreground gap-2">
-                        <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" /> <span className="  truncate">{getAddress(professional)}</span>
+                        <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+                        {/* CORREÇÃO: Adicionando min-w-0 para o truncate funcionar corretamente em flexbox */}
+                        <span className="truncate min-w-0">{getAddress(professional)}</span>
                         <div className="flex items-center font-bold text-primary inline">
                           <span className="truncate"> ● {getDistance(professional.id)}</span>
                         </div>

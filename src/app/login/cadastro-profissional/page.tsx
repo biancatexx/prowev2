@@ -104,11 +104,13 @@ export default function CadastroProfissionalPage() {
       price: numberValue,
     });
   };
+  // 💡 MODIFICAÇÃO 1: Adicionar instagramProfile ao estado basicInfo
   const [basicInfo, setBasicInfo] = useState({
     name: "",
     whatsapp: "",
     email: "",
     password: "",
+    instagramProfile: "", // 🆕 Campo adicionado
   })
 
   const handleWhatsappChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -214,6 +216,7 @@ export default function CadastroProfissionalPage() {
 
   // --- Funções de Validação
   const validateStep1 = () => {
+    // ⚠️ instagramProfile é opcional, então não é verificado aqui.
     if (!basicInfo.name || !basicInfo.whatsapp || !basicInfo.email || !basicInfo.password) {
       toast.error("Preencha todos os campos obrigatórios");
       return false
@@ -326,6 +329,8 @@ export default function CadastroProfissionalPage() {
         createdAt: new Date().toISOString(),
         type: "professional",
         profileImage: simulatedImageUrl, // 🆕 SALVA A IMAGEM NO USER
+        // ❌ Não salvamos o Instagram aqui, pois o mock User não possui este campo,
+        // mas ele é salvo em 'Professional'
       }
       saveUser(newUser)
 
@@ -351,7 +356,8 @@ export default function CadastroProfissionalPage() {
         specialty: "Geral",
         description: "Profissional de beleza e bem-estar",
         experience_years: 0,
-        social_instagram: "",
+        // 💡 MODIFICAÇÃO 3: Salvar o nome do perfil do Instagram
+        social_instagram: basicInfo.instagramProfile || "", // 🆕 Salva o nome do perfil
         social_facebook: "",
         phone: basicInfo.whatsapp.replace(/\D/g, ""),
         operationType: operationType, // 🆕 SALVA O TIPO DE OPERAÇÃO
@@ -376,7 +382,7 @@ export default function CadastroProfissionalPage() {
       // 4. Logar e Redirecionar
       // 🚨 CORREÇÃO APLICADA: Desloga a sessão atual (se houver) antes de logar o novo usuário
       await logout(); // <--- CHAMA O LOGOUT
-      
+
       await login(basicInfo.email, basicInfo.password)
       toast.success("Cadastro realizado com sucesso!");
       router.push("/admin/dashboard")
@@ -476,6 +482,22 @@ export default function CadastroProfissionalPage() {
                   placeholder="Seu Salão/Estúdio"
                 />
               </div>
+
+              {/* 💡 MODIFICAÇÃO 2: Adicionar campo para nome do perfil do Instagram */}
+              <div className="space-y-2">
+                <Label>Nome de Perfil do Instagram (Opcional)</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">@</span>
+                  <Input
+                    value={basicInfo.instagramProfile}
+                    onChange={(e) => setBasicInfo({ ...basicInfo, instagramProfile: e.target.value })}
+                    placeholder="seunome.profissional"
+                    className="pl-8" // Aumenta o padding esquerdo para o "@"
+                  />
+                </div>
+              </div>
+              {/* FIM DA MODIFICAÇÃO */}
+
               <div className="space-y-2">
                 <Label>WhatsApp  <span className="text-red-600">*</span></Label>
                 <Input
@@ -797,48 +819,52 @@ export default function CadastroProfissionalPage() {
                           </div>
                         )}
                       </div>
-
-                      {/* Blocos de Intervalo (Opcional, geralmente para almoço) */}
-                      {dayHours.enabled && (
-                        <div className="ml-6 space-y-3 pt-3 border-t mt-3">
-                          <p className="text-sm font-medium text-muted-foreground">Intervalos (Ex: Almoço)</p>
+                      {/*
+                      // Ocultado por solicitação (embora as funções existam):
+                      {dayHours.enabled && dayHours.intervals.length > 0 && (
+                        <div className="pl-6 space-y-2 border-l ml-3 pt-2">
+                          <h4 className="text-sm font-semibold mb-1">Intervalos/Pausas:</h4>
                           {dayHours.intervals.map((interval, index) => (
                             <div key={index} className="flex items-center gap-2">
                               <Input
                                 type="time"
                                 value={interval.start}
                                 onChange={(e) => handleUpdateInterval(day.key, index, "start", e.target.value)}
-                                className="w-28"
+                                className="w-24"
                               />
-                              <span>até</span>
+                              <span>a</span>
                               <Input
                                 type="time"
                                 value={interval.end}
                                 onChange={(e) => handleUpdateInterval(day.key, index, "end", e.target.value)}
-                                className="w-28"
+                                className="w-24"
                               />
                               <Button
                                 type="button"
-                                variant="ghost"
+                                variant="destructive"
                                 size="icon"
+                                className="w-7 h-7"
                                 onClick={() => handleRemoveInterval(day.key, index)}
                               >
-                                <Trash2 className="w-4 h-4 text-destructive" />
+                                <Trash2 className="w-3 h-3" />
                               </Button>
                             </div>
                           ))}
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            // NOTE: Mantido como 'hidden' como no seu código original. Para habilitar, remova 'hidden'.
-                            className="text-sm h-8 mt-2 hidden"
-                            onClick={() => handleAddInterval(day.key)}
-                          >
-                            <Plus className="w-4 h-4 mr-1" /> Adicionar Intervalo
-                          </Button>
                         </div>
                       )}
+                      {dayHours.enabled && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-3"
+                          onClick={() => handleAddInterval(day.key)}
+                          // hidden // Mantido como referência, mas oculto no layout
+                        >
+                          <Plus className="w-4 h-4 mr-2" /> Adicionar Intervalo
+                        </Button>
+                      )}
+                      */}
                     </div>
                   )
                 })}
@@ -846,26 +872,38 @@ export default function CadastroProfissionalPage() {
             </div>
           )}
 
-          {/* Botões de navegação */}
-          <div className="flex justify-between mt-8">
-            {step > 1 && (
-              <Button variant="outline" onClick={() => setStep(step - 1)}>
-                <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
-              </Button>
-            )}
-            {/* Adiciona um botão fantasma para alinhar o botão "Próximo" à direita no passo 1 */}
-            {step === 1 && <div />}
-
-            {step < 4 ? (
-              <Button onClick={handleNext}>Próximo</Button>
-            ) : (
-              <Button onClick={handleNext} disabled={loading}>
-                {loading ? "Cadastrando..." : "Finalizar Cadastro"}
-              </Button>
-            )}
+          {/* Botões de Navegação */}
+          <div className="mt-8 flex justify-between">
+            <Button
+              variant="outline"
+              onClick={() => setStep(step - 1)}
+              disabled={step === 1 || loading}
+              className="w-1/3"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+            </Button>
+            <Button onClick={handleNext} disabled={loading} className="w-2/3 ml-4">
+              {loading ? (
+                "Finalizando..."
+              ) : step < 4 ? (
+                "Próximo Passo"
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" /> Concluir Cadastro
+                </>
+              )}
+            </Button>
           </div>
         </Card>
+
+        {/* Link para Login */}
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          Já tem uma conta?{" "}
+          <Link href="/login" className="text-primary hover:underline font-semibold">
+            Faça login
+          </Link>
+        </p>
       </main>
-    </div >
+    </div>
   )
 }
