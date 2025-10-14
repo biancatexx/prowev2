@@ -9,11 +9,53 @@ import { useToast } from "@/hooks/use-toast"
 import NavbarApp from "@/components/NavbarApp"
 import { useAuth } from "@/contexts/AuthContext" // Importado useAuth
 
+// 💡 NOVO COMPONENTE: Avatar com Fallback (Simulação simplificada do Explorar)
+// A página de Explorar usa um componente mais complexo, mas esta é uma versão
+// simplificada baseada no que foi encontrado no código original de Favoritos.
+const ProfessionalAvatar = ({ professional }: { professional: Favorite }) => {
+  // Nota: Não é ideal, pois o estado de erro de imagem deve ser mantido
+  // dentro do componente, mas para fins de replicação do layout:
+  const imgUrl = professional.image || "/placeholder.svg";
+
+  if (imgUrl === "/placeholder.svg") {
+    // FALLBACK: Exibe a inicial do nome
+    const initial = professional.name ? professional.name.charAt(0).toUpperCase() : 'P';
+    return (
+      <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary bg-zinc-900 text-white flex items-center justify-center text-xl font-bold flex-shrink-0">
+        <span>{initial}</span>
+      </div>
+    );
+  }
+
+  // TENTA CARREGAR A IMAGEM
+  return (
+    <img
+      src={imgUrl}
+      alt={professional.name}
+      className="w-16 h-16 object-cover rounded-full border-2 border-primary flex-shrink-0"
+    />
+  );
+};
+
+// 💡 FUNÇÃO AUXILIAR: Capitalizar as palavras (Copiada do Explorar)
+const capitalizeWords = (text: string | null | undefined): string => {
+  if (!text) return "";
+
+  return text
+    .split(' ')
+    .map(word => {
+      if (!word) return '';
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+};
+
+
 export default function Favoritos() {
   const router = useRouter()
   const { toast } = useToast()
   // 🔑 Usa o contexto de autenticação para obter o usuário
-  const { user } = useAuth() 
+  const { user } = useAuth()
   const [favorites, setFavorites] = useState<Favorite[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -22,7 +64,7 @@ export default function Favoritos() {
     // 🔑 Usa o user do AuthContext
     if (user && user.whatsapp) {
       const whatsapp = user.whatsapp.replace(/\D/g, "")
-      
+
       const userFavorites = getFavorites(whatsapp)
       setFavorites(userFavorites)
     } else {
@@ -67,7 +109,7 @@ export default function Favoritos() {
   const MainContent = () => {
     if (loading) {
       return (
-          <main className="container mx-auto max-w-screen-lg px-4 text-center">
+        <main className="container mx-auto max-w-screen-lg px-4 text-center">
           <p>Carregando...</p>
         </main>
       )
@@ -76,7 +118,7 @@ export default function Favoritos() {
     // 🔑 Agora verifica se o user está logado no AuthContext
     if (!user) {
       return (
-          <main className="container mx-auto max-w-screen-lg px-4">
+        <main className="container mx-auto max-w-screen-lg px-4">
           <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
             <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Heart className="w-8 h-8 text-zinc-400" />
@@ -90,23 +132,23 @@ export default function Favoritos() {
         </main>
       )
     }
-    
+
     // Se logado mas sem WhatsApp (caso improvável, mas para segurança)
     if (!user.whatsapp) {
-        return (
-            <main className="container mx-auto max-w-screen-lg px-4">
-            <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
-              <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Heart className="w-8 h-8 text-zinc-400" />
-              </div>
-              <h2 className="text-xl font-bold mb-2">WhatsApp pendente</h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                Complete seu perfil com o WhatsApp para salvar e acessar seus favoritos.
-              </p>
-              <Button onClick={() => router.push("/cliente/perfil")}>Ir para o Perfil</Button>
+      return (
+        <main className="container mx-auto max-w-screen-lg px-4">
+          <div className="bg-white rounded-2xl border border-border p-10 text-center shadow-sm">
+            <div className="w-16 h-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-8 h-8 text-zinc-400" />
             </div>
-          </main>
-        )
+            <h2 className="text-xl font-bold mb-2">WhatsApp pendente</h2>
+            <p className="text-sm text-muted-foreground mb-6">
+              Complete seu perfil com o WhatsApp para salvar e acessar seus favoritos.
+            </p>
+            <Button onClick={() => router.push("/cliente/perfil")}>Ir para o Perfil</Button>
+          </div>
+        </main>
+      )
     }
 
     return (
@@ -125,57 +167,55 @@ export default function Favoritos() {
         ) : (
           <section className="space-y-4 mt-6">
             {favorites.map((professional) => (
-              <div
-                key={professional.professionalId}
-                className="bg-white rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow relative"
-              >
+              // 💡 NOVO CARD SIMILAR AO DO EXPLORAR
+              <div key={professional.professionalId} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow relative">
+
+                {/* Botão de Remover (Lixeira) */}
                 <button
                   onClick={() => handleRemoveFavorite(professional.professionalId)}
-                  className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow hover:bg-red-50 transition"
+                  className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white shadow-md hover:bg-red-50 transition z-10"
                   aria-label="Remover dos favoritos"
                 >
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
 
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => router.push(`/profissional/${professional.professionalId}`)}
-                    className="flex-shrink-0"
-                  >
-                    <img
-                      src={professional.image || "/placeholder.svg"}
-                      alt={professional.name}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                  </button>
+
+                  {/* Avatar/Imagem do Profissional */}
+                  <div className="flex-shrink-0 w-16 h-16 rounded-full overflow-hidden">
+                    <ProfessionalAvatar professional={professional} />
+                  </div>
 
                   <div className="flex-1 min-w-0">
                     <button
                       onClick={() => router.push(`/profissional/${professional.professionalId}`)}
                       className="text-left w-full"
                     >
-                      <h3 className="font-bold text-foreground mb-1">{professional.name}</h3>
+                      <h3 className="font-bold text-lg text-foreground mb-0">{capitalizeWords(professional.name)}</h3>
                       <p className="text-sm text-muted-foreground mb-1 truncate">{professional.category}</p>
-                      <p className="text-sm font-semibold text-foreground mb-2">{professional.priceRange}</p>
+
+                      {/* Faixa de Preço (mantendo o estilo do Explorar) */}
+                      <div className="rounded-sm bg-primary/50 w-auto px-2 inline-block"><p className="text-sm font-semibold">{professional.priceRange}</p></div>
                     </button>
                   </div>
-
-                  <button
-                    onClick={() => router.push(`/agendamento/${professional.professionalId}`)}
-                    className="flex-shrink-0 w-8 h-8 flex items-center justify-center"
-                  >
-                    <Heart className="w-5 h-5 text-red-500 fill-red-500" />
-                  </button>
                 </div>
 
-                <div className="-mx-4 mt-3 pt-2 border-t flex items-center justify-between text-xs text-muted-foreground px-4">
-                  <div className="flex items-center truncate">
-                    <MapPin className="w-3 h-3 mr-1" />
-                    <span className="truncate">{professional.address}</span>
+                {/* Seção de Endereço e Distância */}
+                <div className="border-t border-border mt-3 pt-3">
+                  <div className="flex flex-col text-xs">
+                    {/* LINHA DO ENDEREÇO COMPLETO E DISTÂNCIA */}
+                    <div className="flex items-center text-muted-foreground gap-2">
+                      <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
+                      {/* O address do Favoritos parece já estar formatado */}
+                      <span className="truncate min-w-0">{professional.address}</span>
+                      <div className="flex items-center font-bold text-primary inline">
+                        <span className="truncate"> ● {professional.distance}</span>
+                      </div>
+                    </div>
                   </div>
-                  <span className="ml-2 flex-shrink-0">• {professional.distance}</span>
                 </div>
               </div>
+              // 💡 FIM DO NOVO CARD
             ))}
           </section>
         )}

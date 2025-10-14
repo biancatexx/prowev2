@@ -4,9 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Heart, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
 // Assumindo que você tem essas importações
-import { getProfessionals, getMockServices } from "@/data/mockData";
+import {
+  getProfessionals,
+  getMockServices,
+  // 💡 NOVAS IMPORTAÇÕES PARA FAVORITOS
+  isFavorite,
+  addFavorite,
+  removeFavorite,
+  type Favorite, // Usando o tipo Favorite do mockData
+} from "@/data/mockData";
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
+import { toast } from "sonner"; // 💡 IMPORTADO PARA MOSTRAR FEEDBACK
 
 // 1. Interface para Coordenadas
 interface Coords {
@@ -19,8 +28,9 @@ interface Professional {
   name: string;
   specialty: string | null;
   profileImage: string | null;
-  services?: Array<{ category: string; price: number }>;
-  address: { street: string; neighborhood: string; city: string; state: string; };
+  services?: Array<{ category: string; price: number; duration: number; id: string }>; // Adicionado 'duration' e 'id' para consistência
+  address: { street: string; neighborhood: string; city: string; state: string; number?: string; }; // Adicionado 'number'
+  operationType: 'agendamento' | 'fila'; // Adicionado para simular dados completos
 }
 
 const categories = [
@@ -147,9 +157,13 @@ const calculateDistance = (coord1: Coords, coord2: Coords): number => {
 const Explorar = () => {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState<string[]>([]);
+  // 💡 Estado que armazena APENAS os IDs dos favoritos para o estado local
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 💡 NOVO ESTADO: Armazena o WhatsApp do usuário logado (simulando autenticação)
+  const [userWhatsapp, setUserWhatsapp] = useState<string | null>(null);
 
   // 📍 ESTADOS PARA GEOLOCALIZAÇÃO
   const [userLocationDisplay, setUserLocationDisplay] = useState("Buscando sua localização...");
@@ -159,8 +173,10 @@ const Explorar = () => {
   // Armazena as coordenadas { [professionalId]: { lat, lng } | null }
   const [professionalCoords, setProfessionalCoords] = useState<{ [key: string]: Coords | null }>({});
 
-  // Efeito para carregar dados do mockData
+
+  // 💡 EFEITO 0: CARREGAR DADOS E ESTADO DE AUTENTICAÇÃO/FAVORITOS
   useEffect(() => {
+    // 1. Carrega Profissionais
     const rawProfessionals = getProfessionals();
     const allMockServices = getMockServices();
 
@@ -171,11 +187,29 @@ const Explorar = () => {
         address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A", state: "N/A" },
         services: profServices,
         profileImage: prof.profileImage || null,
+        // Garante que operationType exista
+        operationType: prof.operationType || 'agendamento'
       };
     }) as Professional[];
 
     setProfessionals(loadedProfessionals);
     setLoading(false);
+
+    // 2. Simula o Login e Carrega Favoritos Iniciais
+    if (typeof window !== "undefined") {
+      const currentUser = localStorage.getItem("mock_current_user")
+      if (currentUser) {
+        const user = JSON.parse(currentUser)
+        const whatsapp = user.whatsapp || ""
+        if (whatsapp) {
+          setUserWhatsapp(whatsapp);
+          // Carrega todos os favoritos do usuário logado e guarda apenas os IDs
+          const favs: Favorite[] = JSON.parse(localStorage.getItem(`favorites_${whatsapp}`) || '[]');
+          setFavoriteIds(favs.map(f => f.professionalId));
+        }
+      }
+    }
+
   }, []);
 
   // 📍 EFEITO 1: OBTER LOCALIZAÇÃO DO USUÁRIO
@@ -245,9 +279,49 @@ const Explorar = () => {
   }, [professionals]);
 
 
-  const toggleFavorite = (id: string) => {
-    setFavorites(prev => prev.includes(id) ? prev.filter(fav => fav !== id) : [...prev, id]);
+  /**
+   * 💡 FUNÇÃO PARA GERENCIAR FAVORITOS
+   * Esta função replica a lógica de favoritar/desfavoritar da página de detalhes.
+   * Depende do userWhatsapp para funcionar.
+   */
+  const toggleFavorite = (professional: Professional) => {
+    if (!userWhatsapp) {
+      toast.error("Por favor, faça login (cadastre seu WhatsApp) para adicionar favoritos. 😢");
+      return;
+    }
+
+    const isCurrentlyFav = favoriteIds.includes(professional.id);
+
+    try {
+      if (isCurrentlyFav) {
+        // Remove
+        removeFavorite(userWhatsapp, professional.id);
+        setFavoriteIds(prev => prev.filter(favId => favId !== professional.id));
+        toast.success(`Removido dos favoritos. ${professional.name}`);
+      } else {
+        // Adiciona
+        // Criando o objeto Favorite (usando dados mockados como no detalhe)
+        const favorite: Favorite = {
+          professionalId: professional.id,
+          name: professional.name,
+          category: professional.specialty as string,
+          // Esses dados de range/endereço/distância são mockados/simplificados para o mockData
+          priceRange: getPriceRange(professional),
+          address: `${professional.address.street}, ${professional.address.number || ''}`,
+          distance: getDistance(professional.id).trim(), // Simplificando para a simulação
+          image: professional.profileImage || "/placeholder.svg",
+        };
+
+        addFavorite(userWhatsapp, favorite);
+        setFavoriteIds(prev => [...prev, professional.id]);
+        toast.success(`${professional.name} foi adicionado aos seus favoritos! ❤️`);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Não foi possível atualizar os favoritos. Tente novamente.");
+    }
   };
+
 
   const getAddress = (prof: Professional) => {
     if (prof.address && typeof prof.address === 'object') return `${prof.address.street}, ${prof.address.neighborhood} - ${prof.address.city}/${prof.address.state}`;
@@ -273,8 +347,8 @@ const Explorar = () => {
   };
 
   /**
-    * Função para calcular e exibir a distância
-    */
+     * Função para calcular e exibir a distância
+     */
   const getDistance = (profId: string): string => {
     const profCoords = professionalCoords[profId];
 
@@ -451,7 +525,7 @@ const Explorar = () => {
               filteredProfessionals.map(professional => (
                 <div key={professional.id} className="bg-card rounded-2xl p-4 border border-border shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex gap-3">
-                    {/* ALTERAÇÃO PRINCIPAL AQUI: USANDO O NOVO COMPONENTE AVATAR */}
+                    {/* AVATAR COM LINK */}
                     <Link href={`/profissional/${professional.id}`} className="flex-shrink-0 w-18 h-18 rounded-full overflow-hidden border-primary">
                       <ProfessionalAvatar professional={professional} />
                     </Link>
@@ -463,13 +537,23 @@ const Explorar = () => {
                         <div className="rounded-sm bg-primary/50 w-auto px-2 inline-block"><p className="text-sm font-semibold">{getPriceRange(professional)}</p></div>
                       </Link>
                     </div>
-                    <button
-                      onClick={() => toggleFavorite(professional.id)}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-start"
-                      aria-label="Adicionar aos favoritos"
-                    >
-                      <Heart className={`w-5 h-5 transition-colors ${favorites.includes(professional.id) ? "fill-red-500 text-red-500" : "text-zinc-400 hover:text-red-400"}`} />
-                    </button>
+                    {/* 💡 BOTÃO DE FAVORITO: SÓ VISÍVEL SE HÁ UM USUÁRIO SIMULADO */}
+                    {userWhatsapp ? (
+                      <button
+                        onClick={() => toggleFavorite(professional)}
+                        className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-start"
+                        aria-label="Adicionar aos favoritos"
+                      >
+                        <Heart
+                          className={`w-5 h-5 transition-colors ${favoriteIds.includes(professional.id) ? "fill-red-500 text-red-500" : "text-zinc-400 hover:text-red-400"}`}
+                        />
+                      </button>
+                    ) : (
+                      // Versão estática se não estiver logado
+                      <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-start">
+                        <Heart className="w-5 h-5 text-zinc-300" />
+                      </div>
+                    )}
                   </div>
                   <div className="border-t border-border mt-3 pt-3">
                     <div className="flex flex-col text-xs">
