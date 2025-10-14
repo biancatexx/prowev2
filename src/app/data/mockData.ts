@@ -110,6 +110,14 @@ export interface Favorite {
   priceRange: string
   address: string
   distance: string
+  services: {
+    id: string
+    name: string
+    category: string
+    price: number
+    duration: number
+    professionalId: string
+  }[]
   image?: string
 }
 
@@ -820,20 +828,24 @@ export const getClientsByProfessional = (professionalId: string): Client[] => {
   const appointments = getAppointmentsByProfessional(professionalId)
   const clientsMap = new Map<string, Client>()
 
-  // --- Clientes a partir de agendamentos ---
+  // --- Clientes vindos de agendamentos ---
   appointments.forEach((apt) => {
-    // Usamos o ID de usuário do cliente do mock, se disponível, para garantir a unicidade
+    // Usa o ID real do usuário (mock) se existir, senão o número do WhatsApp limpo como identificador único
     const clientUser = getUserById(apt.clientId)
     const key = clientUser ? clientUser.id : cleanWhatsappNumber(apt.clientWhatsapp)
 
-    if (!key) return; // Não processa agendamentos sem ID de cliente/whatsapp
+    if (!key) return // Ignora se não há identificador confiável
 
     if (clientsMap.has(key)) {
       const client = clientsMap.get(key)!
       client.totalAppointments++
-      if (apt.status === "concluido") client.totalSpent += apt.totalPrice
 
-      const aptDateTime = new Date(`${apt.date}T${apt.time}:00`)
+      if (apt.status === "concluido") {
+        client.totalSpent += apt.totalPrice
+      }
+
+      // Atualiza a data do último agendamento se for mais recente
+      const aptDateTime = new Date(`${apt.date}T${apt.time || "00:00"}:00`)
       const lastAptDateTime = new Date(client.lastAppointment)
       if (aptDateTime > lastAptDateTime) {
         client.lastAppointment = apt.date
@@ -841,38 +853,50 @@ export const getClientsByProfessional = (professionalId: string): Client[] => {
     } else {
       clientsMap.set(key, {
         id: key,
-        name: apt.clientName,
+        name: apt.clientName || clientUser?.name || "Cliente",
         whatsapp: apt.clientWhatsapp,
-        email: clientUser?.email,
+        email: clientUser?.email || "",
         birthDate: clientUser?.birthDate,
         status: "ativo",
         totalAppointments: 1,
         totalSpent: apt.status === "concluido" ? apt.totalPrice : 0,
         lastAppointment: apt.date,
-        professionalId, // importante para manter referência
+        professionalId, // mantém referência para o profissional
       })
     }
   })
 
-  // --- Clientes manuais do storage (STORAGE_KEYS.CLIENTS) ---
+  // --- Clientes manuais do storage ---
   const storedClients = loadFromStorage<Client[]>(STORAGE_KEYS.CLIENTS, [])
+
   storedClients.forEach((client) => {
-    // adiciona apenas se o professionalId bater
     if (client.professionalId === professionalId) {
-      // Usa o ID do cliente manual para a chave
       const key = client.id
+
       if (!clientsMap.has(key)) {
         clientsMap.set(key, {
           ...client,
-          totalAppointments: client.totalAppointments || 0,
-          totalSpent: client.totalSpent || 0,
+          totalAppointments: client.totalAppointments ?? 0,
+          totalSpent: client.totalSpent ?? 0,
           lastAppointment:
             client.lastAppointment || new Date().toISOString().split("T")[0],
         })
+      } else {
+        // Caso o cliente exista em ambos (manual + agendamento), soma os dados
+        const existing = clientsMap.get(key)!
+        existing.totalAppointments += client.totalAppointments ?? 0
+        existing.totalSpent += client.totalSpent ?? 0
+        if (
+          client.lastAppointment &&
+          new Date(client.lastAppointment) > new Date(existing.lastAppointment)
+        ) {
+          existing.lastAppointment = client.lastAppointment
+        }
       }
     }
   })
 
+  // --- Retorna clientes ordenados por data do último agendamento ---
   return Array.from(clientsMap.values()).sort(
     (a, b) =>
       new Date(b.lastAppointment).getTime() - new Date(a.lastAppointment).getTime()
@@ -947,12 +971,7 @@ export const getLastClientNameByWhatsapp = (whatsapp: string): string | null => 
 }
 const dayKeys: DayOfWeek[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
-// ... (Resto das suas funções de disponibilidade)
 
-/**
- * 🔄 SINCRONIZA a agenda de disponibilidade (ProfessionalAvailability) 
- * com os novos horários granulares (Professional.workingHours) do perfil.
- */
 export const syncAvailabilityFromProfessional = (professional: Professional): void => {
   const storedAvailability = getProfessionalAvailability(professional.id);
   const fallbackAvailability = getDefaultAvailability(professional.id);

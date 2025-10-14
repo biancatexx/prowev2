@@ -199,23 +199,37 @@ export default function HistoricoPage() {
                     <div className="space-y-4 px-4">
                         {appointments.map((appointment) => (
                             <Card key={appointment.id} className="p-5 border-l-4 border-primary shadow-lg hover:shadow-xl transition-shadow">
-                                <div className="flex justify-between items-start mb-3">
-                                    <h3 className="text-lg font-bold">
-                                        {appointment.professionalName}
-                                    </h3>
+                                <div
+                                    className=" flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 "
+                                >
+                                    {/* Coluna esquerda — Data e Profissional */}
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            <span className="text-xl text-primary">• </span>
+                                            {format(new Date(appointment.date), "dd 'de' MMM, yyyy", { locale: ptBR })} - {appointment.time}
+                                        </p>
+                                        <h3 className="text-lg font-bold">{appointment.professionalName}</h3>
+                                    </div>
 
-                                    {/* Container para Status e Botão de Excluir */}
-                                    <div className="flex items-center space-x-2">
-                                        {/* Status do Agendamento */}
-                                        <span className={`text-sm font-medium px-3 py-1 rounded-full ${appointment.status === "agendado" ? "bg-blue-100 text-blue-700" :
-                                            appointment.status === "confirmado" ? "bg-green-100 text-green-700" :
-                                                appointment.status === "cancelado" ? "bg-red-100 text-red-700" :
-                                                    "bg-zinc-100 text-zinc-700"
-                                            }`}>
+                                    {/* Coluna direita — Status + Botão */}
+                                    <div
+                                        className="flex items-center sm:justify-end flex-wrap gap-2"
+                                    >
+                                        {/* Status */}
+                                        <span
+                                            className={`text-sm font-medium px-3 py-1 rounded-full ${appointment.status === "agendado"
+                                                ? "bg-blue-100 text-blue-700"
+                                                : appointment.status === "confirmado"
+                                                    ? "bg-green-100 text-green-700"
+                                                    : appointment.status === "cancelado"
+                                                        ? "bg-red-100 text-red-700"
+                                                        : "bg-zinc-100 text-zinc-700"
+                                                }`}
+                                        >
                                             {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
                                         </span>
 
-                                        {/* Botão de Excluir (Condicional) */}
+                                        {/* Botão de Excluir */}
                                         {(appointment.status === "agendado" || appointment.status === "confirmado") && (
                                             <Button
                                                 variant="ghost"
@@ -223,8 +237,8 @@ export default function HistoricoPage() {
                                                 className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                                                 type="button"
                                                 onClick={() => {
-                                                    setAppointmentToDelete(appointment)
-                                                    setIsModalOpen(true)
+                                                    setAppointmentToDelete(appointment);
+                                                    setIsModalOpen(true);
                                                 }}
                                                 title="Excluir Agendamento"
                                             >
@@ -234,29 +248,23 @@ export default function HistoricoPage() {
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-y-2 text-sm text-muted-foreground border-t pt-3 mt-3">
-                                    <p className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Data:</p>
-                                    <p className="font-medium text-right text-foreground">
-                                        {format(new Date(appointment.date), "dd 'de' MMM, yyyy", { locale: ptBR })}
-                                    </p>
 
-                                    <p className="flex items-center gap-2"><Clock className="w-4 h-4" /> Horário:</p>
-                                    <p className="font-medium text-right text-foreground">{appointment.time}</p>
-
-                                    <p className="flex items-center gap-2"><DollarSign className="w-4 h-4" /> Valor Total:</p>
-                                    <p className="font-medium text-right text-foreground">R$ {appointment.totalPrice.toFixed(2)}</p>
-
-                                    <p>Duração:</p>
-                                    <p className="font-medium text-right text-foreground">{formatDuration(appointment.totalDuration)}</p>
-                                </div>
-
-                                <div className="mt-4 border-t pt-3">
-                                    <p className="text-sm font-semibold mb-2">Serviços:</p>
+                                <div className="mt-4 border-t pt-3 grid grid-cols-2 gap-y-2 ">
+                                    <p className="text-sm font-semibold">Serviços</p>
+                                    <div>
+                                        <p className="font-medium text-right text-foreground">{formatDuration(appointment.totalDuration)}</p>
+                                    </div>
                                     <ul className="list-disc ml-5 text-sm space-y-1">
                                         {appointment.services.map((service, index) => (
                                             <li key={index} className="text-muted-foreground">{service.name}</li>
                                         ))}
                                     </ul>
+
+                                </div>
+                                <div className="mt-4 border-t pt-3 grid grid-cols-2 gap-y-2 ">
+                                    <p className="text-sm font-semibold mb-2"> Valor Total</p>
+                                    <p className="font-medium text-right text-foreground">R$ {appointment.totalPrice.toFixed(2)}</p>
+
                                 </div>
                             </Card>
                         ))}

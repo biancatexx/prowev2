@@ -18,6 +18,7 @@ import {
   type Favorite,
   type DayOfWeek,
   type WorkingHoursMap,
+  Professional,
 } from "@/data/mockData"
 import { toast } from "sonner"
 
@@ -319,6 +320,8 @@ export default function ProfessionalDetails() {
     return "Fechado hoje"
   }
 
+
+
   // Agrupar serviços por categoria
   const groupedServices = services.reduce(
     (acc, service) => {
@@ -332,6 +335,35 @@ export default function ProfessionalDetails() {
   const getDateStatus = (date: Date) => {
     return isDateAvailable(id, date) ? "available" : "unavailable"
   }
+  // 📍 NOVO COMPONENTE PARA O AVATAR E FALLBACK
+  const ProfessionalAvatar = ({ professional }: { professional: Professional }) => {
+    const [imgError, setImgError] = useState(!professional.profileImage);
+
+    useEffect(() => {
+      // Resetar o estado de erro quando o professional mudar ou a imagem for carregada/atualizada
+      setImgError(!professional.profileImage);
+    }, [professional.profileImage]);
+
+    if (imgError) {
+      // FALLBACK: Exibe a inicial do nome
+      return (
+        <div className="w-24 h-24 mx-auto rounded-full border-primary bg-zinc-900 text-white flex items-center justify-center text-xl font-bold border-2 fallback-avatar">
+          <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
+        </div>
+      );
+    }
+
+    // TENTA CARREGAR A IMAGEM
+    return (
+      <img
+        src={professional.profileImage as string}
+        alt={professional.name}
+        className="w-full h-full object-cover border-2 rounded-full border-primary"
+        // Se a imagem falhar ao carregar (e.g., URL inválida/quebrada), exibe o fallback
+        onError={() => setImgError(true)}
+      />
+    );
+  };
 
 
   return (
@@ -356,17 +388,11 @@ export default function ProfessionalDetails() {
 
           <div className="flex flex-col items-center text-center">
             <div className="text-center flex mb-4">
-              {professional.profileImage ? (
-                <img
-                  src={professional.profileImage}
-                  alt={professional.name}
-                  className="w-24 h-24 mx-auto rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 mx-auto rounded-full bg-zinc-900 text-white flex items-center justify-center text-4xl font-bold">
-                  <span>{professional.name ? professional.name.charAt(0).toUpperCase() : 'P'}</span>
-                </div>
-              )}
+              {/* AVATAR COM LINK */}
+              <div className="w-24 h-24 mx-auto rounded-full object-cover">
+                <ProfessionalAvatar professional={professional} />
+              </div>
+ 
             </div>
             <h1 className="text-xl font-bold mb-1">{professional.name}</h1>
           </div>

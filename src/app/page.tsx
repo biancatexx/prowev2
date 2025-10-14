@@ -3,21 +3,18 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Heart, Search, SlidersHorizontal, ChevronDown } from "lucide-react";
-// Assumindo que você tem essas importações
 import {
   getProfessionals,
   getMockServices,
-  // 💡 NOVAS IMPORTAÇÕES PARA FAVORITOS
   isFavorite,
   addFavorite,
   removeFavorite,
-  type Favorite, // Usando o tipo Favorite do mockData
+  type Favorite,
 } from "@/data/mockData";
 import NavbarApp from "@/components/NavbarApp";
 import Link from "next/link";
-import { toast } from "sonner"; // 💡 IMPORTADO PARA MOSTRAR FEEDBACK
+import { toast } from "sonner";
 
-// 1. Interface para Coordenadas
 interface Coords {
   lat: number;
   lng: number;
@@ -28,9 +25,9 @@ interface Professional {
   name: string;
   specialty: string | null;
   profileImage: string | null;
-  services?: Array<{ category: string; price: number; duration: number; id: string }>; // Adicionado 'duration' e 'id' para consistência
-  address: { street: string; neighborhood: string; city: string; state: string; number?: string; }; // Adicionado 'number'
-  operationType: 'agendamento' | 'fila'; // Adicionado para simular dados completos
+  services?: Array<{ category: string; price: number; duration: number; id: string }>;
+  address: { street: string; neighborhood: string; city: string; state: string; number?: string; };
+  operationType: 'agendamento' | 'fila';
 }
 
 const categories = [
@@ -43,10 +40,10 @@ const categories = [
   { name: "Massagem", icon: "💆‍♀️" }
 ];
 
-// --- 📍 FUNÇÕES DE CÁLCULO DE DISTÂNCIA E GEOCODIFICAÇÃO ---
+// --- FUNÇÕES DE CÁLCULO DE DISTÂNCIA E GEOCODIFICAÇÃO ---
 
 /**
- * Converte coordenadas (lat, lng) em um endereço legível usando a API gratuita Nominatim (OpenStreetMap).
+ * Converte coordenadas (lat, lng) em um endereço legível usando a API Nominatim (OpenStreetMap).
  */
 const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<string> => {
   const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=jsonv2&addressdetails=1&zoom=18&accept-language=pt`;
@@ -95,14 +92,11 @@ const reverseGeocodeNominatim = async (lat: number, lng: number): Promise<string
 
 
 /**
- * 2. Geocodificação: Converte um endereço completo (string) em coordenadas (lat, lng) 
- * usando a API gratuita Nominatim (OpenStreetMap).
- * Retorna as coordenadas ou null em caso de falha.
- * NOTA: Nominatim tem limites de uso rigorosos. Evite chamar muitas vezes seguidas.
+ * Converte um endereço completo (string) em coordenadas (lat, lng)
+ * usando a API Nominatim (OpenStreetMap).
  */
 const geocodeNominatim = async (address: string): Promise<Coords | null> => {
   const encodedAddress = encodeURIComponent(address);
-  // Buscar o primeiro resultado (limit=1) e em formato json
   const url = `https://nominatim.openstreetmap.org/search?q=${encodedAddress}&format=json&limit=1`;
 
   try {
@@ -119,9 +113,7 @@ const geocodeNominatim = async (address: string): Promise<Coords | null> => {
         return { lat, lng };
       }
     }
-
     return null;
-
   } catch (error) {
     console.error(`Erro na geocodificação de "${address}": `, error);
     return null;
@@ -130,14 +122,11 @@ const geocodeNominatim = async (address: string): Promise<Coords | null> => {
 
 
 /**
- * 3. Distância: Calcula a distância em quilômetros (km) entre dois pontos de coordenadas (Lat/Lng) 
+ * Calcula a distância em quilômetros (km) entre dois pontos de coordenadas (Lat/Lng)
  * usando a Fórmula de Haversine.
  */
 const calculateDistance = (coord1: Coords, coord2: Coords): number => {
-  // Raio da Terra em quilômetros
   const R = 6371;
-
-  // Converte graus para radianos
   const dLat = (coord2.lat - coord1.lat) * (Math.PI / 180);
   const dLon = (coord2.lng - coord1.lng) * (Math.PI / 180);
 
@@ -147,7 +136,7 @@ const calculateDistance = (coord1: Coords, coord2: Coords): number => {
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c; // Distância em km
+  const distance = R * c;
 
   return distance;
 };
@@ -157,26 +146,24 @@ const calculateDistance = (coord1: Coords, coord2: Coords): number => {
 const Explorar = () => {
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [searchQuery, setSearchQuery] = useState("");
-  // 💡 Estado que armazena APENAS os IDs dos favoritos para o estado local
+  // IDs dos profissionais favoritos do usuário logado
   const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 💡 NOVO ESTADO: Armazena o WhatsApp do usuário logado (simulando autenticação)
+  // WhatsApp do usuário logado (simulação de autenticação)
   const [userWhatsapp, setUserWhatsapp] = useState<string | null>(null);
 
-  // 📍 ESTADOS PARA GEOLOCALIZAÇÃO
+  // Localização do usuário
   const [userLocationDisplay, setUserLocationDisplay] = useState("Buscando sua localização...");
   const [userCoords, setUserCoords] = useState<Coords | null>(null);
 
-  // 📍 NOVO ESTADO PARA COORDENADAS DOS PROFISSIONAIS (Cache)
-  // Armazena as coordenadas { [professionalId]: { lat, lng } | null }
+  // Cache de coordenadas dos profissionais
   const [professionalCoords, setProfessionalCoords] = useState<{ [key: string]: Coords | null }>({});
 
 
-  // 💡 EFEITO 0: CARREGAR DADOS E ESTADO DE AUTENTICAÇÃO/FAVORITOS
+  // EFEITO 0: CARREGAR DADOS E ESTADO DE AUTENTICAÇÃO/FAVORITOS
   useEffect(() => {
-    // 1. Carrega Profissionais
     const rawProfessionals = getProfessionals();
     const allMockServices = getMockServices();
 
@@ -187,32 +174,46 @@ const Explorar = () => {
         address: prof.address || { street: "N/A", neighborhood: "N/A", city: "N/A", state: "N/A" },
         services: profServices,
         profileImage: prof.profileImage || null,
-        // Garante que operationType exista
         operationType: prof.operationType || 'agendamento'
       };
-    }) as Professional[];
+    });
 
     setProfessionals(loadedProfessionals);
     setLoading(false);
 
-    // 2. Simula o Login e Carrega Favoritos Iniciais
+    // Carrega usuário logado (mock)
     if (typeof window !== "undefined") {
-      const currentUser = localStorage.getItem("mock_current_user")
+      const currentUser = localStorage.getItem("mock_current_user");
       if (currentUser) {
-        const user = JSON.parse(currentUser)
-        const whatsapp = user.whatsapp || ""
-        if (whatsapp) {
-          setUserWhatsapp(whatsapp);
-          // Carrega todos os favoritos do usuário logado e guarda apenas os IDs
-          const favs: Favorite[] = JSON.parse(localStorage.getItem(`favorites_${whatsapp}`) || '[]');
-          setFavoriteIds(favs.map(f => f.professionalId));
-        }
+        const user = JSON.parse(currentUser);
+        const whatsapp = user.whatsapp || "";
+        if (whatsapp) setUserWhatsapp(whatsapp);
       }
     }
-
   }, []);
 
-  // 📍 EFEITO 1: OBTER LOCALIZAÇÃO DO USUÁRIO
+  // 2️⃣ Carrega Favoritos assim que souber o WhatsApp do usuário
+  useEffect(() => {
+    if (!userWhatsapp) return;
+
+    const storedFavs: Favorite[] = JSON.parse(localStorage.getItem(`favorites_${userWhatsapp}`) || '[]');
+    setFavoriteIds(storedFavs.map(f => f.professionalId));
+  }, [userWhatsapp]);
+
+ 
+  useEffect(() => {
+    if (!userWhatsapp) return;
+
+    // Atualiza o localStorage com a lista atualizada de favoritos
+    const storedFavs: Favorite[] = JSON.parse(localStorage.getItem(`favorites_${userWhatsapp}`) || '[]');
+
+    // Remove duplicados e mantém apenas os profissionais realmente favoritados
+    const updated = storedFavs.filter(f => favoriteIds.includes(f.professionalId));
+
+    localStorage.setItem(`favorites_${userWhatsapp}`, JSON.stringify(updated));
+  }, [favoriteIds, userWhatsapp]);
+
+  // EFEITO 1: OBTER LOCALIZAÇÃO DO USUÁRIO
   useEffect(() => {
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       setUserLocationDisplay("Buscando sua localização...");
@@ -232,8 +233,10 @@ const Explorar = () => {
           }
         },
         (error) => {
-          console.error("Erro ao obter localização: ", error);
-          setUserLocationDisplay("Localização indisponível. Usando mock.");
+          console.error("Erro ao obter localização:", error);
+          let mensagem = "Localização indisponível. Usando mock.";
+          if (error?.code === 1) mensagem = "Permissão de localização negada.";
+          setUserLocationDisplay(mensagem);
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
@@ -242,27 +245,20 @@ const Explorar = () => {
     }
   }, []);
 
-  // 📍 EFEITO 2: GEOCODIFICAR ENDEREÇOS DOS PROFISSIONAIS
-  // O Nominatim exige um delay entre as chamadas (recomendado 1s)
+  // EFEITO 2: GEOCODIFICAR ENDEREÇOS DOS PROFISSIONAIS (com delay para Nominatim)
   useEffect(() => {
     const geocodeAllProfessionals = async () => {
       const coordsMap: { [key: string]: Coords | null } = {};
-
-      // Filtra apenas os profissionais que ainda não foram geocodificados
       const professionalsToGeocode = professionals.filter(p => professionalCoords[p.id] === undefined);
 
       if (professionalsToGeocode.length === 0) return;
-
-      console.log(`Iniciando geocodificação de ${professionalsToGeocode.length} profissionais...`);
 
       for (const prof of professionalsToGeocode) {
         const addressString = getAddress(prof);
         if (addressString !== "Endereço não informado") {
           const coords = await geocodeNominatim(addressString);
           coordsMap[prof.id] = coords;
-
-          // CRUCIAL: Atraso para respeitar o limite de uso do Nominatim (1s)
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Atraso obrigatório para Nominatim
         } else {
           coordsMap[prof.id] = null;
         }
@@ -272,55 +268,56 @@ const Explorar = () => {
     };
 
     if (professionals.length > 0) {
-      // Pequeno atraso inicial para não competir com a chamada de geolocalização do usuário
       const timeout = setTimeout(() => geocodeAllProfessionals(), 1500);
       return () => clearTimeout(timeout);
     }
   }, [professionals]);
 
 
-  /**
-   * 💡 FUNÇÃO PARA GERENCIAR FAVORITOS
-   * Esta função replica a lógica de favoritar/desfavoritar da página de detalhes.
-   * Depende do userWhatsapp para funcionar.
-   */
-  const toggleFavorite = (professional: Professional) => {
-    if (!userWhatsapp) {
-      toast.error("Por favor, faça login (cadastre seu WhatsApp) para adicionar favoritos. 😢");
-      return;
-    }
+  // FUNÇÃO PARA GERENCIAR FAVORITOS
+ const toggleFavorite = (professional: Professional) => {
+  if (!userWhatsapp) {
+    toast.error("Por favor, faça login (cadastre seu WhatsApp) para gerenciar favoritos. 😢");
+    return;
+  }
 
-    const isCurrentlyFav = favoriteIds.includes(professional.id);
+  const isCurrentlyFav = favoriteIds.includes(professional.id);
 
-    try {
-      if (isCurrentlyFav) {
-        // Remove
-        removeFavorite(userWhatsapp, professional.id);
-        setFavoriteIds(prev => prev.filter(favId => favId !== professional.id));
-        toast.success(`Removido dos favoritos. ${professional.name}`);
-      } else {
-        // Adiciona
-        // Criando o objeto Favorite (usando dados mockados como no detalhe)
-        const favorite: Favorite = {
+  try {
+    if (isCurrentlyFav) {
+      // 👉 Remover dos favoritos
+      removeFavorite(userWhatsapp, professional.id);
+      setFavoriteIds(prev => prev.filter(id => id !== professional.id));
+      toast.success(`Removido dos favoritos: ${professional.name}`);
+    } else {
+      // 👉 Adicionar aos favoritos
+      const favorite: Favorite = {
+        professionalId: professional.id,
+        name: professional.name,
+        services: (professional.services ?? []).map((s) => ({
+          id: s.id,
+          name: (s as any).name ?? s.category ?? "Serviço",
+          category: s.category,
+          price: s.price,
+          duration: s.duration,
           professionalId: professional.id,
-          name: professional.name,
-          category: professional.specialty as string,
-          // Esses dados de range/endereço/distância são mockados/simplificados para o mockData
-          priceRange: getPriceRange(professional),
-          address: `${professional.address.street}, ${professional.address.number || ''}`,
-          distance: getDistance(professional.id).trim(), // Simplificando para a simulação
-          image: professional.profileImage || "/placeholder.svg",
-        };
+        })),
+        category: professional.specialty as string,
+        priceRange: getPriceRange(professional),
+        address: `${professional.address.street}, ${professional.address.number || ''}`,
+        distance: getDistance(professional.id).trim(),
+        image: professional.profileImage || "/placeholder.svg",
+      };
 
-        addFavorite(userWhatsapp, favorite);
-        setFavoriteIds(prev => [...prev, professional.id]);
-        toast.success(`${professional.name} foi adicionado aos seus favoritos! ❤️`);
-      }
-    } catch (e) {
-      console.error(e);
-      toast.error("Não foi possível atualizar os favoritos. Tente novamente.");
+      addFavorite(userWhatsapp, favorite);
+      setFavoriteIds(prev => [...prev, professional.id]);
+      toast.success(`${professional.name} foi adicionado aos favoritos ❤️`);
     }
-  };
+  } catch (error) {
+    console.error(error);
+    toast.error("Erro ao atualizar favoritos. Tente novamente.");
+  }
+};
 
 
   const getAddress = (prof: Professional) => {
@@ -343,41 +340,29 @@ const Explorar = () => {
     const uniqueCategories = Array.from(new Set(allCategories));
     const displayedCategories = uniqueCategories.slice(0, 3);
 
-    return displayedCategories.join(", ") + (uniqueCategories.length > 3 ? "..." : "");
+    return displayedCategories.join(" • ") + (uniqueCategories.length > 3 ? " ..." : "");
   };
 
   /**
-     * Função para calcular e exibir a distância
-     */
+   * Calcula e formata a distância entre o usuário e o profissional.
+   */
   const getDistance = (profId: string): string => {
     const profCoords = professionalCoords[profId];
 
-    if (!userCoords) {
-      return "Aguardando sua localização...";
-    }
-
-    // Verifica se a geocodificação do profissional já foi tentada
-    if (profCoords === undefined) {
-      return "Calculando...";
-    }
-
-    // Verifica se a geocodificação retornou coordenadas válidas
+    if (!userCoords) return "Aguardando sua localização...";
+    if (profCoords === undefined) return "Calculando..."; // Geocodificação ainda não tentada
     if (profCoords) {
-      const distance = calculateDistance(userCoords, profCoords); // Distância em km
+      const distance = calculateDistance(userCoords, profCoords);
 
-      // 💡 LÓGICA DE FORMATAÇÃO DE DISTÂNCIA
       if (distance < 1) {
-        // Se for menor que 1km, converte para metros
         const distanceInMeters = distance * 1000;
-        return `${distanceInMeters.toFixed(0)} m `; // Sem casas decimais para metros
+        return `${distanceInMeters.toFixed(0)} m `;
       } else {
-        // Se for 1km ou mais, exibe em km
-        return `${distance.toFixed(1)} km `; // 1 casa decimal para km
+        return `${distance.toFixed(1)} km `;
       }
     }
 
-    // Se profCoords foi null (erro na geocodificação)
-    return "Distância indisponível";
+    return "Distância indisponível"; // Geocodificação falhou (profCoords foi null)
   };
 
 
@@ -396,7 +381,6 @@ const Explorar = () => {
 
   const capitalizeWords = (text: string | null | undefined): string => {
     if (!text) return "";
-
     return text
       .split(' ')
       .map(word => {
@@ -406,12 +390,11 @@ const Explorar = () => {
       .join(' ');
   };
 
-  // 📍 NOVO COMPONENTE PARA O AVATAR E FALLBACK
+  // Componente para Avatar com Fallback
   const ProfessionalAvatar = ({ professional }: { professional: Professional }) => {
     const [imgError, setImgError] = useState(!professional.profileImage);
 
     useEffect(() => {
-      // Resetar o estado de erro quando o professional mudar ou a imagem for carregada/atualizada
       setImgError(!professional.profileImage);
     }, [professional.profileImage]);
 
@@ -430,7 +413,6 @@ const Explorar = () => {
         src={professional.profileImage as string}
         alt={professional.name}
         className="w-full h-full object-cover border-2 rounded-full border-primary"
-        // Se a imagem falhar ao carregar (e.g., URL inválida/quebrada), exibe o fallback
         onError={() => setImgError(true)}
       />
     );
@@ -476,7 +458,7 @@ const Explorar = () => {
       </header>
 
       <main className="container mx-auto max-w-screen-lg px-4">
-        {/* Categories */}
+        {/* Categorias */}
         <section className="mt-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold">Categorias</h2>
@@ -512,9 +494,7 @@ const Explorar = () => {
               <h2 className="text-xl font-bold">Profissionais Perto de Você</h2>
               <p className="text-sm text-muted-foreground mt-1">{loading ? "Carregando..." : `${filteredProfessionals.length} profissionais encontrados`}</p>
             </div>
-            <Button variant="outline" size="sm" className="rounded-full">
-              <SlidersHorizontal className="mr-2 w-4 h-4" />Filtros
-            </Button>
+
           </div>
           <div className="space-y-4">
             {loading ? (
@@ -537,19 +517,23 @@ const Explorar = () => {
                         <div className="rounded-sm bg-primary/50 w-auto px-2 inline-block"><p className="text-sm font-semibold">{getPriceRange(professional)}</p></div>
                       </Link>
                     </div>
-                    {/* 💡 BOTÃO DE FAVORITO: SÓ VISÍVEL SE HÁ UM USUÁRIO SIMULADO */}
                     {userWhatsapp ? (
                       <button
                         onClick={() => toggleFavorite(professional)}
                         className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-start"
                         aria-label="Adicionar aos favoritos"
                       >
-                        <Heart
-                          className={`w-5 h-5 transition-colors ${favoriteIds.includes(professional.id) ? "fill-red-500 text-red-500" : "text-zinc-400 hover:text-red-400"}`}
-                        />
+
+                        {(() => {
+                          const isFav = !!userWhatsapp && (favoriteIds.includes(professional.id) || isFavorite(userWhatsapp, professional.id));
+                          return (
+                            <Heart
+                              className={`w-5 h-5 transition-colors ${isFav ? "fill-red-500 text-red-500" : "text-zinc-400 hover:text-red-400"}`}
+                            />
+                          );
+                        })()}
                       </button>
                     ) : (
-                      // Versão estática se não estiver logado
                       <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center self-start">
                         <Heart className="w-5 h-5 text-zinc-300" />
                       </div>
@@ -561,7 +545,6 @@ const Explorar = () => {
                       {/* LINHA DO ENDEREÇO COMPLETO */}
                       <div className="flex items-center text-muted-foreground gap-2">
                         <MapPin className="w-3 h-3 flex-shrink-0 text-muted-foreground" />
-                        {/* CORREÇÃO: Adicionando min-w-0 para o truncate funcionar corretamente em flexbox */}
                         <span className="truncate min-w-0">{getAddress(professional)}</span>
                         <div className="flex items-center font-bold text-primary inline">
                           <span className="truncate"> ● {getDistance(professional.id)}</span>
