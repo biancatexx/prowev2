@@ -175,7 +175,7 @@ export default function CadastroProfissionalPage() {
       description: currentService.description,
     }
     setServices([...services, newService])
-    setCurrentService({ category: "", name: "", duration: "", price: "", description: "" })
+    setCurrentService({ category: "", name: "", duration: String(minDuration), price: "", description: "" })
     toast.success("Serviço adicionado! ✅")
   }
 
@@ -623,13 +623,17 @@ export default function CadastroProfissionalPage() {
                     placeholder="Ex: Corte feminino"
                   />
                 </div>
-                <div className="grid grid-cols-4 gap-4 items-center">
-                  <div className="space-y-2 col-span-3">
-                    <Label htmlFor="duration">Duração <span className="text-red-600">*</span></Label>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-sm font-medium w-16 text-center text-muted-foreground">
+                <div className="grid grid-cols-1 sm:grid-cols-6 gap-4 items-center">
+                  <div className="space-y-2 sm:col-span-5">
+                    <Label htmlFor="duration">
+                      Duração <span className="text-red-600">*</span>
+                    </Label>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 space-y-2 sm:space-y-0">
+                      <span className="text-sm font-medium w-full sm:w-16 text-center text-muted-foreground">
                         {formatDuration(minDuration)}
                       </span>
+
                       <Input
                         id="duration"
                         type="range"
@@ -637,24 +641,30 @@ export default function CadastroProfissionalPage() {
                         max={maxDuration}
                         step={stepDuration}
                         value={currentService.duration}
-                        onChange={(e) => setCurrentService({ ...currentService, duration: e.target.value })} 
-                        className="cursor-pointer custom-range-slider"
+                        onChange={(e) =>
+                          setCurrentService({
+                            ...currentService,
+                            duration: e.target.value,
+                          })
+                        }
+                        className="cursor-pointer custom-range-slider w-full"
                       />
-                      <span className="text-sm font-medium  text-center text-muted-foreground">
+
+                      <span className="text-sm font-medium w-full sm:w-auto text-center text-muted-foreground">
                         {formatDuration(maxDuration)}
                       </span>
-                    </div> 
-                  </div>
-                  <div className="space-y-2 col-span-1">
-                    <div 
-                      className="flex h-10 w-full rounded-md border border-input bg-background/30 px-3 py-2 text-base ring-offset-background  text-sm mt-4"
-                    >{formatDuration(Number(currentService.duration))} 
-                      </div>
-                
+                    </div>
                   </div>
 
-
+                  <div className="space-y-2 sm:col-span-1">
+                    <div className="flex items-center justify-center mt-2 sm:mt-4">
+                      <span className="py-1 px-2 w-auto rounded-md font-semibold border border-input bg-primary text-base ring-offset-background text-zinc-900 text-sm">
+                        {formatDuration(Number(currentService.duration))}
+                      </span>
+                    </div>
+                  </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="price">Preço (R$) <span className="text-red-600">*</span></Label>
                   <Input
