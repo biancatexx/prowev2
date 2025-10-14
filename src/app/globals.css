@@ -166,7 +166,8 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 4px; 
+  height: 4px!important;
+  padding: 0; 
   background: var(--background); 
   cursor: pointer;
   border-radius: 12px; 
@@ -199,4 +200,9 @@
   background: var(--background);
   /* Mantém o fundo */
   border-radius: 16px;
+    border: 1px solid var(--border); 
+}
+
+input::placeholder,
+textarea::placeholder {opacity: 0.3;
 }

@@ -133,7 +133,8 @@ export default function Dashboard() {
                 <input type="text" value={`/profissional/${professional.id}`} readOnly name="url" ref={inputRef} className="flex-1 min-w-[200px] px-3 py-2 bg-muted rounded-lg text-sm" />
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Button size="sm" onClick={handleCopyLink} className="flex-1 sm:flex-none">Copiar</Button>
-                  <Link href={`/profissional/${professional.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center text-sm text-primary bg-zinc-900 px-3 rounded-lg flex-1 sm:flex-none">Acessar <SquareArrowOutUpRight className="ml-2 w-4 h-4" />
+                  <Link href={`/profissional/${professional.id}`} target="_blank" rel="noopener noreferrer" >
+                    <Button size="sm" onClick={handleCopyLink} variant="outline" className="flex-1 sm:flex-none"> <SquareArrowOutUpRight className="ml-2 w-4 h-4" /> Acessar </Button>
                   </Link>
                 </div>
               </div>
